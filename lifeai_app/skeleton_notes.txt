@@ -1,0 +1,24 @@
+lib/
+  main.dart                # Ponto de entrada do app
+
+  core/                    # Configurações e recursos globais
+    theme/                 # Cores, tipografia, estilos
+    utils/                 # Funções auxiliares (formatadores, validadores)
+    constants/             # Strings fixas, rotas, configs (!!!não criei)
+
+  data/                    # Comunicação com dados
+    models/                # Classes de dados (User, Product...)
+    services/              # APIs, Firebase, banco de dados
+    repositories/          # Camada de abstração de dados (!!!não criei)
+
+  features/                # Funcionalidades separadas por módulo
+    home/
+      pages/               # Telas dessa funcionalidade
+      widgets/             # Componentes visuais reutilizáveis
+      controllers/         # Estado (GetX, Riverpod, Provider, etc.) (!!!não criei)
+    profile/
+      pages/
+      widgets/
+      controllers/
+
+  widgets/                 # Widgets compartilhados pelo app
