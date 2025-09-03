@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lifeai_app/widgets/bottom_nav.dart';
+import 'package:lifeai_app/features/login/main_login.dart';
 
 void main() {
   runApp(const MyApp()); // primeira função que starta a aplicação.
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF673AB7)),
       ),
-      home: BottomNav(),
+      home: MainLogin() ,
     );
   }
 }

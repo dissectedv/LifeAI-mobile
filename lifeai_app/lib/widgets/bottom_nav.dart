@@ -32,49 +32,76 @@ class _BottomNav extends State<BottomNav> {
           labelTextStyle: WidgetStateProperty.resolveWith<TextStyle>((states) {
             if (states.contains(WidgetState.selected)) {
               return const TextStyle(
-                color: Colors.white, // título selecionado
+                color: Color(0xFF4194C8),
                 fontWeight: FontWeight.bold,
               );
             }
-            return const TextStyle(
-              color: Colors.white70, // título não selecionado
-            );
+            return const TextStyle(color: Color(0xFF4194C8));
           }),
-          iconTheme: WidgetStateProperty.resolveWith<IconThemeData>((states) {
-            if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Colors.white); // ícone ativo
-            }
-            return const IconThemeData(color: Colors.white70); // ícone inativo
-          }),
+          // removi iconTheme pra controlar via animação nos destinos
         ),
         child: NavigationBar(
-          height: 70,
+          height: 80,
           backgroundColor: const Color(0xFF061721),
-          indicatorColor: Colors.indigo.shade400, // bolha de seleção
+          indicatorColor: Colors.transparent, // sem bolha
           selectedIndex: _indiceAtual,
           onDestinationSelected: (index) {
             setState(() {
               _indiceAtual = index;
             });
           },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home),
-              label: "Início"),
-            NavigationDestination(
-              icon: Icon(Icons.health_and_safety_sharp),
+          destinations: [
+            _buildAnimatedDestination(
+              index: 0,
+              icon: Icons.home,
+              label: "Início",
+            ),
+            _buildAnimatedDestination(
+              index: 1,
+              icon: Icons.health_and_safety_sharp,
               label: "Saúde",
             ),
-            NavigationDestination(
-              icon: Icon(Icons.mark_unread_chat_alt_outlined),
+            _buildAnimatedDestination(
+              index: 2,
+              icon: Icons.mark_unread_chat_alt_outlined,
               label: "Chat IA",
             ),
-            NavigationDestination(
-              icon: Icon(Icons.supervised_user_circle_outlined),
+            _buildAnimatedDestination(
+              index: 3,
+              icon: Icons.supervised_user_circle_outlined,
               label: "Usuário",
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  NavigationDestination _buildAnimatedDestination({
+    required int index,
+    required IconData icon,
+    required String label,
+  }) {
+    final bool selecionado = _indiceAtual == index;
+
+    return NavigationDestination(
+      label: label,
+      icon: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+        tween: Tween<double>(
+          begin: selecionado ? 26 : 32,
+          end: selecionado ? 32 : 26,
+        ),
+        builder: (context, size, child) {
+          return Icon(
+            icon,
+            size: size,
+            color: selecionado
+                ? const Color(0xFF1AB1A9) // ativo
+                : const Color(0xFF278E88), // inativo
+          );
+        },
       ),
     );
   }
