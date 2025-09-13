@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'package:lifeai_app/features/login/main_login.dart';
-import 'package:lifeai_app/features/criacao_perfil/main_criacao_perfil.dart'; // caminho certo
+import 'package:lifeai_app/features/criacao_perfil/main_criacao_perfil.dart';
+import 'package:lifeai_app/features/disclaimer/disclaimer.dart'; // ajuste o caminho correto
 
 void main() {
   runApp(const MyApp());
@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false,
-      home: const CriacaoPerfil(), // tela inicial
+      home: const DisclaimerPage(), // agora a tela inicial é o disclaimer
     );
   }
 }
