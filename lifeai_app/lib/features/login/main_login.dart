@@ -8,7 +8,7 @@ import 'package:lifeai_app/features/login/pages/register.dart';
 class MainLogin extends StatefulWidget {
   static final String routeName = '/page1';
 
-  const MainLogin({Key? key}) : super(key: key);
+  const MainLogin({super.key});
 
   @override
   State<MainLogin> createState() => _MainLogin();

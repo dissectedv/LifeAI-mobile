@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class MainSaude extends StatelessWidget {
   static final String routeName = '/MainSaude';
 
-  MainSaude({Key? key}) : super(key: key);
+  const MainSaude({super.key});
 
   @override
   Widget build(BuildContext context) {

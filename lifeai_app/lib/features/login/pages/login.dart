@@ -10,7 +10,7 @@ class Login extends StatelessWidget {
   final VoidCallback onGoogleLogin;
 
   const Login({
-    Key? key,
+    super.key,
     required this.formKey,
     required this.userController,
     required this.passController,
@@ -18,7 +18,7 @@ class Login extends StatelessWidget {
     required this.onLogin,
     required this.onRegister,
     required this.onGoogleLogin,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +59,8 @@ class Login extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(32))),
+                    borderRadius: BorderRadius.all(Radius.circular(32)),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -71,7 +72,8 @@ class Login extends StatelessWidget {
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(32))),
+                    borderRadius: BorderRadius.all(Radius.circular(32)),
+                  ),
                 ),
                 obscureText: true,
               ),

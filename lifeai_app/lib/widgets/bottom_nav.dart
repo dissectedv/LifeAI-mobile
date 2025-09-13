@@ -5,6 +5,8 @@ import 'package:lifeai_app/features/perfil_user/main_config_perfil.dart';
 import 'package:lifeai_app/features/saude/main_saude.dart';
 
 class BottomNav extends StatefulWidget {
+  const BottomNav({super.key});
+
   @override
   _BottomNav createState() => _BottomNav();
 }

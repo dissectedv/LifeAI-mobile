@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ChatIA extends StatelessWidget {
   static final String routeName = '/ChatIA';
 
-  ChatIA({Key? key}) : super(key: key);
+  const ChatIA({super.key});
 
   @override
   Widget build(BuildContext context) {

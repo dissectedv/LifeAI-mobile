@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class MainHome extends StatelessWidget {
   static final String routeName = '/MainHome';
 
-  MainHome({Key? key}) : super(key: key);
+  const MainHome({super.key});
 
   @override
   Widget build(BuildContext context) {

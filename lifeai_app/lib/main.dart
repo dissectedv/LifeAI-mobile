@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:lifeai_app/features/login/main_login.dart';
+// import 'package:lifeai_app/features/login/main_login.dart';
+import 'package:lifeai_app/features/criacao_perfil/main_criacao_perfil.dart'; // caminho certo
 
 void main() {
-  runApp(const MyApp()); // primeira função que starta a aplicação.
-  // Myapp é o primeiro widget usado no start.
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // TUDO é widget.
   const MyApp({super.key});
 
   @override
@@ -16,8 +15,10 @@ class MyApp extends StatelessWidget {
       title: 'LifeAI',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF673AB7)),
+        useMaterial3: true,
       ),
-      home: MainLogin() ,
+      debugShowCheckedModeBanner: false,
+      home: const CriacaoPerfil(), // tela inicial
     );
   }
 }

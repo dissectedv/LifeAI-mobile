@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class MainPerfil extends StatelessWidget {
   static final String routeName = '/MainPerfil';
 
-  MainPerfil({Key? key}) : super(key: key);
+  const MainPerfil({super.key});
 
   @override
   Widget build(BuildContext context) {
