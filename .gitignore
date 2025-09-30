@@ -1,15 +1,38 @@
+# ============================
+# Android / Kotlin Gitignore
+# ============================
+
+# IntelliJ / Android Studio
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.idea/
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Gradle
+.gradle/
+build/
+
+# Local configuration
 local.properties
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Captures e builds
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystore (NUNCA subir!)
+*.jks
+*.keystore
+
+# IntelliJ extra
+out/
