@@ -1,0 +1,74 @@
+# ===============================
+# AMBIENTE VIRTUAL
+# ===============================
+venv/
+env/
+.venv/
+
+# ===============================
+# CACHE E ARQUIVOS TEMPORÁRIOS DO PYTHON
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ===============================
+# CONFIGURAÇÕES E SEGREDOS
+# ===============================
+*.env
+*.ini
+*.cfg
+settings_local.py
+db.sqlite3
+
+# ===============================
+# DJANGO ESPECÍFICOS
+# ===============================
+# Migrations compiladas (mantém apenas as pastas, não os .pyc)
+**/migrations/__pycache__/
+# Evita subir arquivos estáticos coletados
+/staticfiles/
+# Evita arquivos temporários de mídia (uploads locais)
+media/
+# Arquivos de logs
+*.log
+
+# ===============================
+# TESTES E COBERTURA
+# ===============================
+.coverage
+.tox/
+.nox/
+pytest_cache/
+htmlcov/
+.coverage.*
+test_results/
+
+# ===============================
+# ARQUIVOS DE SISTEMAS OPERACIONAIS
+# ===============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ===============================
+# IDEs E EDITORES
+# ===============================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# ===============================
+# DOCKER E BUILD
+# ===============================
+*.pid
+*.seed
+*.manifest
+*.spec
+node_modules/
+build/
+dist/
+docker-compose.override.yml
