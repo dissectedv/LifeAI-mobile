@@ -1,15 +1,80 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+# ===============================
+# AMBIENTE
+# ===============================
+# Virtual environments Python
+.venv/
+venv/
+env/
+
+# Android local properties
+/LifeAI-mobile/local.properties
+
+# ===============================
+# CONFIGURAÇÕES SENSÍVEIS / SEGREDOS
+# ===============================
+# Arquivos de ambiente
+.env
+.env.*
+!.env.example
+
+# Keystores Android
+/LifeAI-mobile/*.jks
+/LifeAI-mobile/*.keystore
+/LifeAI-mobile/keystore.properties
+
+# ===============================
+# ARQUIVOS DE SISTEMAS OPERACIONAIS
+# ===============================
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ===============================
+# IDEs / EDITORES
+# ===============================
+.idea/
+*.iml
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.swp
+
+# ===============================
+# PYTHON / DJANGO
+# ===============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+*.sqlite3
+db.sqlite3
+
+staticfiles/
+media/
+
+*.log
+
+# Coverage / Test
+.coverage
+htmlcov/
+pytest_cache/
+
+# ===============================
+# ANDROID / KOTLIN
+# ===============================
+/LifeAI-mobile/build/
+/LifeAI-mobile/app/build/
+/LifeAI-mobile/captures/
+/LifeAI-mobile/.cxx/
+*build-id.txt
+
+# Gradle
+.gradle/
+/LifeAI-mobile/.gradle/
+
+# ===============================
+# CONSTANTES / UTILS (ex: Kotlin)
+# ===============================
+LifeAI-mobile/app/src/main/java/com/example/lifeai_mobile/utils/*.kt
+
