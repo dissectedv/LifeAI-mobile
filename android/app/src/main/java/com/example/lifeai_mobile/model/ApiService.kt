@@ -18,3 +18,15 @@ data class UserData(
     val username: String,
     val email: String
 )
+
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+data class LoginResponse(
+    val message: String,
+    val refresh: String?,
+    val access: String?,
+    val user: UserData?
+)

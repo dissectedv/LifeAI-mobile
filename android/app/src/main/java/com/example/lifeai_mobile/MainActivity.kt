@@ -8,6 +8,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
+import com.example.lifeai_mobile.viewmodel.HomeScreen
+import com.example.lifeai_mobile.viewmodel.LoginScreen
 import com.example.lifeai_mobile.viewmodel.RegisterScreen
 
 class MainActivity : ComponentActivity() {
@@ -17,8 +19,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             LifeAImobileTheme {
                 val navController = rememberNavController()
-                NavHost(navController, startDestination = "createAccount"){
+                NavHost(navController, startDestination = "loginAccount"){
                     composable("createAccount") {RegisterScreen(navController)}
+                    composable("loginAccount") {LoginScreen(navController)}
+                    composable("home") { HomeScreen(navController) }
                 }
             }
         }
