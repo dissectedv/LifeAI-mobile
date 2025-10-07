@@ -78,3 +78,4 @@ pytest_cache/
 # ===============================
 LifeAI-mobile/app/src/main/java/com/example/lifeai_mobile/utils
 
+android/local.properties

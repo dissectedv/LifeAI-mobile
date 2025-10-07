@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             LifeAImobileTheme {
                 val navController = rememberNavController()
-                NavHost(navController, startDestination = "loginAccount"){
+                NavHost(navController, startDestination = "createAccount"){
                     composable("createAccount") {RegisterScreen(navController)}
                     composable("loginAccount") {LoginScreen(navController)}
                     composable("home") { HomeScreen(navController) }

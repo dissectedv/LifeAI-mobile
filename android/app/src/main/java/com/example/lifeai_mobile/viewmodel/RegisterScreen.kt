@@ -248,7 +248,7 @@ fun RegisterScreen(navController: NavController) {
                     Text("Possui uma conta? ", color = textColorSecondary)
                     ClickableText(
                         text = AnnotatedString("FAÇA LOGIN"),
-                        onClick = { navController.navigate("login") },
+                        onClick = { navController.navigate("loginAccount") },
                         style = TextStyle(
                             color = accentColor,
                             fontWeight = FontWeight.Bold
