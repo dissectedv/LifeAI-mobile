@@ -5,10 +5,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY . /app
+COPY . /app/
 
-# Cria virtualenv, instala requirements, cria diretórios e permissões
-RUN python -m venv /venv && \
+# Instala ferramentas do sistema, cria virtualenv, instala requirements e permissões
+RUN apk add --no-cache netcat-openbsd && \
+    python -m venv /venv && \
     /venv/bin/pip install --upgrade pip && \
     /venv/bin/pip install -r /app/requirements.txt && \
     adduser --disabled-password --no-create-home duser && \

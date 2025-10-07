@@ -76,5 +76,5 @@ pytest_cache/
 # ===============================
 # CONSTANTES / UTILS (ex: Kotlin)
 # ===============================
-LifeAI-mobile/app/src/main/java/com/example/lifeai_mobile/utils/*.kt
+LifeAI-mobile/app/src/main/java/com/example/lifeai_mobile/utils
 
