@@ -1,12 +1,12 @@
 package com.example.lifeai_mobile.viewmodel
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,17 +20,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.model.RetrofitInstance
 import com.example.lifeai_mobile.repository.AuthRepository
 import com.example.lifeai_mobile.view.AuthViewModel
@@ -48,18 +48,21 @@ fun RegisterScreen(navController: NavController) {
 
     val registerResponse by authViewModel.registerResponse.collectAsState()
     val errorState by authViewModel.errorMessage.collectAsState()
-    var successMessage by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(registerResponse, errorState) {
-        registerResponse?.let { successMessage = it.message }
+        registerResponse?.let {
+            navController.navigate("disclaimer") {
+                launchSingleTop = true
+            }
+            authViewModel.resetRegisterState()
+        }
         errorState?.let { errorMessage = it }
     }
 
-    val backgroundColor = Color(0xFF10161C)
     val cardBackgroundColor = Color(0xFF161B22)
     val accentColor = Color(0xFF58C4D3)
-    val borderColor = Color(0xFF5A5A5A) // Nova cor cinza para a borda
+    val borderColor = Color(0xFF5A5A5A)
     val backButtonBackgroundColor = Color(0xFF2D333B)
     val textColorPrimary = Color.White
     val textColorSecondary = Color(0xFF8B949E)
@@ -67,7 +70,7 @@ fun RegisterScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor)
+            .background(Color.Transparent)
             .systemBarsPadding()
             .imePadding()
     ) {
@@ -90,7 +93,9 @@ fun RegisterScreen(navController: NavController) {
                         .background(backButtonBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = {
+                        navController.popBackStack("welcome", inclusive = false)
+                    }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
@@ -102,7 +107,13 @@ fun RegisterScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Image(
+                painter = painterResource(id = R.drawable.lifeai_logo),
+                contentDescription = "LifeAI Logo",
+                modifier = Modifier.size(80.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Bem-vindo! Comece agora!",
@@ -144,7 +155,10 @@ fun RegisterScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { username = it },
+                    onValueChange = {
+                        username = it
+                        if (errorMessage != null) authViewModel.clearErrorMessage()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("admin") },
                     leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Usuário", tint = accentColor) },
@@ -152,7 +166,7 @@ fun RegisterScreen(navController: NavController) {
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = borderColor, // Alterado para cinza
+                        unfocusedBorderColor = borderColor,
                         cursorColor = accentColor,
                         focusedTextColor = textColorPrimary,
                         unfocusedTextColor = textColorPrimary,
@@ -167,7 +181,10 @@ fun RegisterScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = {
+                        email = it
+                        if (errorMessage != null) authViewModel.clearErrorMessage()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("admin@email.com") },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email", tint = accentColor) },
@@ -176,7 +193,7 @@ fun RegisterScreen(navController: NavController) {
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = borderColor, // Alterado para cinza
+                        unfocusedBorderColor = borderColor,
                         cursorColor = accentColor,
                         focusedTextColor = textColorPrimary,
                         unfocusedTextColor = textColorPrimary,
@@ -191,7 +208,10 @@ fun RegisterScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = {
+                        password = it
+                        if (errorMessage != null) authViewModel.clearErrorMessage()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("••••••") },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Senha", tint = accentColor) },
@@ -200,7 +220,7 @@ fun RegisterScreen(navController: NavController) {
                     visualTransformation = PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = accentColor,
-                        unfocusedBorderColor = borderColor, // Alterado para cinza
+                        unfocusedBorderColor = borderColor,
                         cursorColor = accentColor,
                         focusedTextColor = textColorPrimary,
                         unfocusedTextColor = textColorPrimary,
@@ -229,11 +249,11 @@ fun RegisterScreen(navController: NavController) {
                     )
                 }
 
-                if (successMessage != null || errorMessage != null) {
+                if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = successMessage ?: errorMessage ?: "",
-                        color = if (successMessage != null) Color(0xFF238636) else MaterialTheme.colorScheme.error,
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -241,18 +261,19 @@ fun RegisterScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Row(
-                    modifier = Modifier.padding(bottom = 32.dp, top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                TextButton(
+                    onClick = {
+                        navController.navigate("loginAccount") {
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
                 ) {
-                    Text("Possui uma conta? ", color = textColorSecondary)
-                    ClickableText(
-                        text = AnnotatedString("FAÇA LOGIN"),
-                        onClick = { navController.navigate("loginAccount") },
-                        style = TextStyle(
-                            color = accentColor,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text(
+                        "Já possui uma conta? Faça Login",
+                        color = textColorSecondary,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
             }

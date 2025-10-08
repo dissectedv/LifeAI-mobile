@@ -1,14 +1,12 @@
-// CRIE ESTE NOVO ARQUIVO: viewmodel/LoginScreen.kt
-
 package com.example.lifeai_mobile.viewmodel
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,7 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.model.RetrofitInstance
 import com.example.lifeai_mobile.repository.AuthRepository
 import com.example.lifeai_mobile.view.AuthViewModel
@@ -50,11 +49,11 @@ fun LoginScreen(navController: NavController) {
     var displayMessage by remember { mutableStateOf<String?>(null) }
     var isError by remember { mutableStateOf(false) }
 
-
     LaunchedEffect(loginResponse) {
         loginResponse?.let {
-            navController.navigate("home") {
-                popUpTo("login") { inclusive = true }
+            navController.navigate("onboarding") {
+                launchSingleTop = true
+                popUpTo("welcome") { inclusive = true }
             }
         }
     }
@@ -66,7 +65,6 @@ fun LoginScreen(navController: NavController) {
         }
     }
 
-    val backgroundColor = Color(0xFF10161C)
     val cardBackgroundColor = Color(0xFF161B22)
     val accentColor = Color(0xFF58C4D3)
     val borderColor = Color(0xFF5A5A5A)
@@ -77,7 +75,7 @@ fun LoginScreen(navController: NavController) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(backgroundColor)
+            .background(Color.Transparent)
             .systemBarsPadding()
             .imePadding()
     ) {
@@ -87,7 +85,6 @@ fun LoginScreen(navController: NavController) {
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Botão voltar (opcional, dependendo do fluxo de navegação)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -101,7 +98,7 @@ fun LoginScreen(navController: NavController) {
                         .background(backButtonBackgroundColor),
                     contentAlignment = Alignment.Center
                 ) {
-                    IconButton(onClick = { /* navController.popBackStack() ou outra ação */ }) {
+                    IconButton(onClick = { navController.popBackStack("welcome", inclusive = false) }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Voltar",
@@ -113,7 +110,13 @@ fun LoginScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Image(
+                painter = painterResource(id = R.drawable.lifeai_logo),
+                contentDescription = "LifeAI Logo",
+                modifier = Modifier.size(80.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Bem-vindo de volta!",
@@ -155,7 +158,10 @@ fun LoginScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = {
+                        email = it
+                        if (displayMessage != null) authViewModel.clearErrorMessage()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("admin@email.com") },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email", tint = accentColor) },
@@ -179,7 +185,10 @@ fun LoginScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = {
+                        password = it
+                        if (displayMessage != null) authViewModel.clearErrorMessage()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("••••••") },
                     leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Senha", tint = accentColor) },
@@ -203,7 +212,8 @@ fun LoginScreen(navController: NavController) {
 
                 OutlinedButton(
                     onClick = {
-                        displayMessage = null // Limpa a mensagem anterior antes de uma nova tentativa
+                        isError = false
+                        displayMessage = null
                         authViewModel.login(email, password)
                     },
                     modifier = Modifier
@@ -232,18 +242,19 @@ fun LoginScreen(navController: NavController) {
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Row(
-                    modifier = Modifier.padding(bottom = 32.dp, top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                TextButton(
+                    onClick = {
+                        navController.navigate("createAccount") {
+                            launchSingleTop = true
+                        }
+                    },
+                    modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
                 ) {
-                    Text("Não possui uma conta? ", color = textColorSecondary)
-                    ClickableText(
-                        text = AnnotatedString("REGISTRE-SE"),
-                        onClick = { navController.navigate("createAccount") },
-                        style = TextStyle(
-                            color = accentColor,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text(
+                        "Não possui uma conta? Registre-se",
+                        color = textColorSecondary,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
                     )
                 }
             }

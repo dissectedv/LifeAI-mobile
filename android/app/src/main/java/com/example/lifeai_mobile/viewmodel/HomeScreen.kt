@@ -5,5 +5,5 @@ import androidx.navigation.NavController
 
 @Composable
 fun HomeScreen(navController: NavController) {
-
+    // Conteúdo da sua tela principal virá aqui
 }
