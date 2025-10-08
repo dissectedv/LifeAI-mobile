@@ -1,10 +1,13 @@
 package com.example.lifeai_mobile.viewmodel
 
+import android.annotation.SuppressLint
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lifeai_mobile.model.PerfilImcBase
+import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -20,7 +23,7 @@ data class OnboardingStep(
     val inputType: InputType
 )
 
-class OnboardingViewModel : ViewModel() {
+class OnboardingViewModel(private val repository: AuthRepository) : ViewModel() {
 
     private val steps = listOf(
         OnboardingStep("1/6", "Qual seu nome?", InputType.TEXT),
@@ -30,6 +33,9 @@ class OnboardingViewModel : ViewModel() {
         OnboardingStep("5/6", "Qual seu peso (kg)?", InputType.NUMBER),
         OnboardingStep("6/6", "Qual o seu principal objetivo com sua saúde hoje?", InputType.TEXT)
     )
+
+    private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
+    val uiState = _uiState.asStateFlow()
 
     private val _currentStepIndex = MutableStateFlow(0)
     val currentStepIndex = _currentStepIndex.asStateFlow()
@@ -56,6 +62,7 @@ class OnboardingViewModel : ViewModel() {
 
     var objective by mutableStateOf("")
     var objectiveError by mutableStateOf<String?>(null)
+
 
 
     val isNextButtonEnabled: Boolean
@@ -131,17 +138,16 @@ class OnboardingViewModel : ViewModel() {
         }
     }
 
+    @SuppressLint("RestrictedApi")
     fun onNext() {
-        if (!isNextButtonEnabled) return
+        if (!isNextButtonEnabled || _uiState.value == UiState.Loading) return
         if (!validateCurrentStep()) return
 
         if (_currentStepIndex.value < steps.lastIndex) {
             _currentStepIndex.update { it + 1 }
             _currentStep.value = steps[_currentStepIndex.value]
         } else {
-            viewModelScope.launch {
-                _navigateToHome.emit(Unit)
-            }
+            submitProfileData()
         }
     }
 
@@ -150,5 +156,42 @@ class OnboardingViewModel : ViewModel() {
             _currentStepIndex.update { it - 1 }
             _currentStep.value = steps[_currentStepIndex.value]
         }
+    }
+
+    private fun submitProfileData() {
+        viewModelScope.launch {
+            _uiState.value = UiState.Loading
+            try {
+                // Converte a altura de cm para metros, como a API do IMC base espera
+                val heightInMeters = height.toDoubleOrNull()?.div(100.0) ?: 0.0
+
+                val profileData = PerfilImcBase(
+                    nome = name,
+                    idade = age.toInt(),
+                    // Sua API para imc_base_perfil espera altura em metros.
+                    altura = heightInMeters,
+                    peso = weight.toDouble(),
+                    sexo = gender,
+                    objetivo = objective
+                )
+
+                val response = repository.imcBase(profileData)
+                if (response.isSuccessful) {
+                    _uiState.value = UiState.Success
+                    _navigateToHome.emit(Unit) // Navega para a home em caso de sucesso
+                } else {
+                    _uiState.value = UiState.Error("Erro ao salvar perfil: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _uiState.value = UiState.Error(e.message ?: "Ocorreu um erro desconhecido.")
+            }
+        }
+    }
+
+    sealed class UiState {
+        object Idle : UiState()
+        object Loading : UiState()
+        object Success : UiState()
+        data class Error(val message: String) : UiState()
     }
 }

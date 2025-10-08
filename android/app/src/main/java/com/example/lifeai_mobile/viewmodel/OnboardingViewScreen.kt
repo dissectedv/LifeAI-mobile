@@ -21,10 +21,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.lifeai_mobile.model.RetrofitInstance
+import com.example.lifeai_mobile.repository.AuthRepository
+import com.example.lifeai_mobile.view.OnboardingViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OnboardingScreen(navController: NavController, onboardingViewModel: OnboardingViewModel = viewModel()) {
+fun OnboardingScreen(navController: NavController) {
+
+    val repository = remember { AuthRepository(RetrofitInstance.api) }
+    val factory = remember { OnboardingViewModelFactory(repository) }
+    val onboardingViewModel: OnboardingViewModel = viewModel(factory = factory)
 
     val currentStep by onboardingViewModel.currentStep.collectAsState()
     val currentStepIndex by onboardingViewModel.currentStepIndex.collectAsState()

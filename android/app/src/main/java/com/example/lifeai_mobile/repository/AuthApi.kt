@@ -2,6 +2,7 @@ package com.example.lifeai_mobile.repository
 
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
+import com.example.lifeai_mobile.model.PerfilImcBase
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
 import retrofit2.Response
@@ -15,4 +16,7 @@ interface  AuthApi {
     // ADICIONE ESTE NOVO MÉTODO
     @POST("login/") // Verifique se o endpoint no seu backend Django está correto
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+    @POST("imc_base_perfil/")
+    suspend fun imcBase(@Body profileData: PerfilImcBase): Response<Unit>
 }
