@@ -40,7 +40,7 @@ fun OnboardingScreen(navController: NavController) {
     LaunchedEffect(Unit) {
         onboardingViewModel.navigateToHome.collect {
             navController.navigate("home") {
-                popUpTo("onboarding") { inclusive = true }
+                popUpTo("welcome") { inclusive = true }
             }
         }
     }

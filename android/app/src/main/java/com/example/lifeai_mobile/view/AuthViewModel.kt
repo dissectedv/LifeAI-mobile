@@ -4,14 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.RegisterResponse
-import com.example.lifeai_mobile.model.RetrofitInstance
 import com.example.lifeai_mobile.repository.AuthRepository
+import com.example.lifeai_mobile.utils.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 
-class AuthViewModel(private val repository: AuthRepository): ViewModel() {
+class AuthViewModel(
+    private val repository: AuthRepository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     private val _registerResponse = MutableStateFlow<RegisterResponse?>(null)
     val registerResponse: StateFlow<RegisterResponse?> = _registerResponse
@@ -29,7 +32,9 @@ class AuthViewModel(private val repository: AuthRepository): ViewModel() {
                 val response = repository.registerUser(username, email, password)
                 if (response.isSuccessful) {
                     val body = response.body()
-                    body?.access?.let { RetrofitInstance.setToken(it) }
+                    body?.access?.let { token ->
+                        sessionManager.saveAuthToken(token)
+                    }
                     _registerResponse.value = body
                 } else {
                     val errorBody = response.errorBody()?.string()
@@ -68,7 +73,9 @@ class AuthViewModel(private val repository: AuthRepository): ViewModel() {
                 val response = repository.loginUser(email, password)
                 if (response.isSuccessful) {
                     val body = response.body()
-                    body?.access?.let { RetrofitInstance.setToken(it) }
+                    body?.access?.let { token ->
+                        sessionManager.saveAuthToken(token)
+                    }
                     _loginResponse.value = body
                 } else {
                     _errorMessage.value = "E-mail e/ou senha incorretos."

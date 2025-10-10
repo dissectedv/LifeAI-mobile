@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -33,13 +34,16 @@ import androidx.navigation.NavController
 import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.model.RetrofitInstance
 import com.example.lifeai_mobile.repository.AuthRepository
+import com.example.lifeai_mobile.utils.SessionManager
 import com.example.lifeai_mobile.view.AuthViewModel
 import com.example.lifeai_mobile.view.AuthViewModelFactory
 
 @Composable
 fun RegisterScreen(navController: NavController) {
+    val context = LocalContext.current
+    val sessionManager = remember { SessionManager(context) }
     val repository = remember { AuthRepository(RetrofitInstance.api) }
-    val factory = remember { AuthViewModelFactory(repository) }
+    val factory = remember { AuthViewModelFactory(repository, sessionManager) }
     val authViewModel: AuthViewModel = viewModel(factory = factory)
 
     var username by remember { mutableStateOf("") }
