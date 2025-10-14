@@ -15,31 +15,42 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
-import com.example.lifeai_mobile.utils.SessionManager
+import com.example.lifeai_mobile.view.AuthViewModel
+import com.example.lifeai_mobile.view.AuthViewModelFactory
+import com.example.lifeai_mobile.view.OnboardingViewModel
+import com.example.lifeai_mobile.view.OnboardingViewModelFactory
 import com.example.lifeai_mobile.viewmodel.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val sessionManager = SessionManager(applicationContext)
 
+        val app = application as MyApplication
+        val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
+        val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         setContent {
             LifeAImobileTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF10161C)
                 ) {
-                    val token by sessionManager.authToken.collectAsState(initial = "LOADING")
+                    val token by app.sessionManager.authToken.collectAsState(initial = "LOADING")
+                    val onboardingCompleted by app.sessionManager.onboardingCompleted.collectAsState(initial = null)
                     var startDestination by remember { mutableStateOf<String?>(null) }
 
-                    LaunchedEffect(token) {
-                        if (token != "LOADING") {
-                            startDestination = if (token.isNullOrBlank()) "welcome" else "home"
+                    LaunchedEffect(token, onboardingCompleted) {
+                        if (token != "LOADING" && onboardingCompleted != null) {
+                            startDestination = when {
+                                token.isNullOrBlank() -> "welcome"
+                                !onboardingCompleted!! -> "disclaimer"
+                                else -> "home"
+                            }
                         }
                     }
 
@@ -49,16 +60,31 @@ class MainActivity : ComponentActivity() {
                             navController = navController,
                             startDestination = startDestination!!,
                             enterTransition = { fadeIn(animationSpec = tween(500)) },
-                            exitTransition = { fadeOut(animationSpec = tween(500)) },
-                            popEnterTransition = { fadeIn(animationSpec = tween(500)) },
-                            popExitTransition = { fadeOut(animationSpec = tween(500)) }
+                            exitTransition = { fadeOut(animationSpec = tween(500)) }
                         ) {
                             composable("welcome") { WelcomeScreen(navController) }
-                            composable("createAccount") { RegisterScreen(navController) }
+
+                            composable("createAccount") {
+                                val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
+                                RegisterScreen(navController, authViewModel)
+                            }
+
                             composable("disclaimer") { DisclaimerScreen(navController) }
-                            composable("loginAccount") { LoginScreen(navController) }
-                            composable("onboarding") { OnboardingScreen(navController) }
-                            composable("home") { MainAppScreen(navController) }
+
+                            composable("loginAccount") {
+                                val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
+                                LoginScreen(navController, authViewModel)
+                            }
+
+                            composable("onboarding") {
+                                val onboardingViewModel: OnboardingViewModel = viewModel(factory = onboardingViewModelFactory)
+                                OnboardingScreen(navController, onboardingViewModel)
+                            }
+
+                            composable("home") {
+                                val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
+                                MainAppScreen(navController, authViewModel)
+                            }
                         }
                     } else {
                         Box(

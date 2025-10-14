@@ -5,10 +5,11 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.lifeai_mobile.view.AuthViewModel
 import com.example.lifeai_mobile.viewmodel.*
 
 @Composable
-fun NavigationGraph(navController: NavHostController, mainNavController: NavController) {
+fun NavigationGraph(navController: NavHostController, mainNavController: NavController, authViewModel: AuthViewModel) {
     NavHost(
         navController = navController,
         startDestination = BottomNavItem.Inicio.route
@@ -23,7 +24,7 @@ fun NavigationGraph(navController: NavHostController, mainNavController: NavCont
             ChatIAScreen()
         }
         composable(BottomNavItem.Usuario.route) {
-            UsuarioScreen(mainNavController)
+            UsuarioScreen(mainNavController, authViewModel)
         }
     }
 }

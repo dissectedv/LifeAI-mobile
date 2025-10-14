@@ -18,5 +18,5 @@ interface  AuthApi {
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     @POST("imc_base_perfil/")
-    suspend fun imcBase(@Body profileData: PerfilImcBase): Response<Unit>
+    suspend fun imcBase(@Body request: PerfilImcBase): Response<Unit>
 }

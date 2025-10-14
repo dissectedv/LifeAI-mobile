@@ -1,11 +1,12 @@
 package com.example.lifeai_mobile.view
 
+import SessionManager
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.RegisterResponse
 import com.example.lifeai_mobile.repository.AuthRepository
-import com.example.lifeai_mobile.utils.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -15,7 +16,9 @@ class AuthViewModel(
     private val repository: AuthRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
-
+    init {
+        Log.d("INSTANCE_DEBUG", "AuthViewModel está usando SessionManager: $sessionManager")
+    }
     private val _registerResponse = MutableStateFlow<RegisterResponse?>(null)
     val registerResponse: StateFlow<RegisterResponse?> = _registerResponse
 
@@ -25,6 +28,7 @@ class AuthViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+
     fun register(username: String, email: String, password: String) {
         viewModelScope.launch {
             try {
@@ -32,6 +36,9 @@ class AuthViewModel(
                 val response = repository.registerUser(username, email, password)
                 if (response.isSuccessful) {
                     val body = response.body()
+                    body?.access?.let { token ->
+                        sessionManager.saveAuthToken(token)
+                    }
                     _registerResponse.value = body
                 } else {
                     val errorBody = response.errorBody()?.string()
@@ -93,5 +100,11 @@ class AuthViewModel(
 
     fun clearErrorMessage() {
         _errorMessage.value = null
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            sessionManager.clearAuthToken()
+        }
     }
 }

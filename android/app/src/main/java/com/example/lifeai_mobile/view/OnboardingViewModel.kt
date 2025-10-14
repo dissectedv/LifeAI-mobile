@@ -1,5 +1,6 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
+import SessionManager
 import android.annotation.SuppressLint
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,7 +24,7 @@ data class OnboardingStep(
     val inputType: InputType
 )
 
-class OnboardingViewModel(private val repository: AuthRepository) : ViewModel() {
+class OnboardingViewModel(private val repository: AuthRepository, private val sessionManager: SessionManager) : ViewModel() {
 
     private val steps = listOf(
         OnboardingStep("1/6", "Qual seu nome?", InputType.TEXT),
@@ -168,7 +169,6 @@ class OnboardingViewModel(private val repository: AuthRepository) : ViewModel() 
                 val profileData = PerfilImcBase(
                     nome = name,
                     idade = age.toInt(),
-                    // Sua API para imc_base_perfil espera altura em metros.
                     altura = heightInMeters,
                     peso = weight.toDouble(),
                     sexo = gender,
@@ -177,6 +177,7 @@ class OnboardingViewModel(private val repository: AuthRepository) : ViewModel() 
 
                 val response = repository.imcBase(profileData)
                 if (response.isSuccessful) {
+                    sessionManager.setOnboardingCompleted(true)
                     _uiState.value = UiState.Success
                     _navigateToHome.emit(Unit) // Navega para a home em caso de sucesso
                 } else {

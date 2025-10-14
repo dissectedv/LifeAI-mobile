@@ -28,22 +28,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.lifeai_mobile.R
-import com.example.lifeai_mobile.model.RetrofitInstance
-import com.example.lifeai_mobile.repository.AuthRepository
-import com.example.lifeai_mobile.utils.SessionManager
 import com.example.lifeai_mobile.view.AuthViewModel
-import com.example.lifeai_mobile.view.AuthViewModelFactory
 
 @Composable
-fun LoginScreen(navController: NavController) {
-    val context = LocalContext.current
-    val sessionManager = remember { SessionManager(context) }
-    val repository = remember { AuthRepository(RetrofitInstance.api) }
-    val factory = remember { AuthViewModelFactory(repository, sessionManager) }
-    val authViewModel: AuthViewModel = viewModel(factory = factory)
+fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

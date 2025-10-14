@@ -19,23 +19,19 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.lifeai_mobile.model.RetrofitInstance
-import com.example.lifeai_mobile.repository.AuthRepository
-import com.example.lifeai_mobile.view.OnboardingViewModelFactory
+import com.example.lifeai_mobile.view.InputType
+import com.example.lifeai_mobile.view.OnboardingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OnboardingScreen(navController: NavController) {
-
-    val repository = remember { AuthRepository(RetrofitInstance.api) }
-    val factory = remember { OnboardingViewModelFactory(repository) }
-    val onboardingViewModel: OnboardingViewModel = viewModel(factory = factory)
+fun OnboardingScreen(navController: NavController, onboardingViewModel: OnboardingViewModel) {
 
     val currentStep by onboardingViewModel.currentStep.collectAsState()
     val currentStepIndex by onboardingViewModel.currentStepIndex.collectAsState()
     val isButtonEnabled = onboardingViewModel.isNextButtonEnabled
+
+    val uiState by onboardingViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         onboardingViewModel.navigateToHome.collect {
@@ -167,25 +163,44 @@ fun OnboardingScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                OutlinedButton(
-                    onClick = { onboardingViewModel.onNext() },
-                    enabled = isButtonEnabled,
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    border = BorderStroke(1.5.dp, if (isButtonEnabled) accentColor else textColorSecondary),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (isButtonEnabled) textColorPrimary else textColorSecondary,
-                        disabledContentColor = textColorSecondary
-                    )
-                ) {
-                    Text(
-                        text = if (currentStep.progressText == "6/6") "Vamos começar!" else "Próximo",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                // MUDANÇA: Mostrar o loading ou o botão, dependendo do estado da UI
+                when (uiState) {
+                    is OnboardingViewModel.UiState.Loading -> {
+                        CircularProgressIndicator(color = accentColor)
+                    }
+                    else -> {
+                        OutlinedButton(
+                            onClick = { onboardingViewModel.onNext() },
+                            enabled = isButtonEnabled,
+                            modifier = Modifier
+                                .fillMaxWidth(0.6f)
+                                .height(56.dp),
+                            shape = RoundedCornerShape(28.dp),
+                            border = BorderStroke(1.5.dp, if (isButtonEnabled) accentColor else textColorSecondary),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = if (isButtonEnabled) textColorPrimary else textColorSecondary,
+                                disabledContentColor = textColorSecondary
+                            )
+                        ) {
+                            Text(
+                                text = if (currentStep.progressText == "6/6") "Vamos começar!" else "Próximo",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
+            }
+
+            if (uiState is OnboardingViewModel.UiState.Error) {
+                val errorMessage = (uiState as OnboardingViewModel.UiState.Error).message
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))
