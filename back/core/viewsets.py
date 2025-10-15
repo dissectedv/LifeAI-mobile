@@ -56,6 +56,7 @@ class LoginView(APIView):
             return Response({"error": "Usuário com esse email não encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
         user = authenticate(username=user.username, password=password)
+        onboarding_completed = models.imc_user_base.objects.filter(id_usuario=user).exists()
 
         if user is not None:
             refresh = RefreshToken.for_user(user)
@@ -66,6 +67,7 @@ class LoginView(APIView):
                 'user_id': user.id,
                 'username': user.username,
                 'email': user.email,
+                'onboarding_completed': onboarding_completed
             })
         else:
             return Response({'message': 'Credenciais inválidas'}, status=401)

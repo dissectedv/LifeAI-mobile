@@ -80,6 +80,9 @@ class AuthViewModel(
                     body?.access?.let { token ->
                         sessionManager.saveAuthToken(token)
                     }
+                    if (body != null) {
+                        sessionManager.setOnboardingCompleted(body.onboardingCompleted)
+                    }
                     _loginResponse.value = body
                 } else {
                     _errorMessage.value = "E-mail e/ou senha incorretos."
