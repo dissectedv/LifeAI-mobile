@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.repository
 
+import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.PerfilImcBase
@@ -24,5 +25,9 @@ class AuthRepository(private val api: AuthApi) {
 
     suspend fun imcBase(profileData: PerfilImcBase): Response<Unit> {
         return api.imcBase(profileData)
+    }
+
+    suspend fun getImcBaseDashboard(): Response<List<ImcBaseProfile>> {
+        return api.getImcBaseDashboard()
     }
 }

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.RegisterResponse
 import com.example.lifeai_mobile.repository.AuthRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -30,7 +31,7 @@ class AuthViewModel(
 
 
     fun register(username: String, email: String, password: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 _errorMessage.value = null
                 val response = repository.registerUser(username, email, password)
@@ -71,7 +72,7 @@ class AuthViewModel(
     }
 
     fun login(email: String, password: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 _errorMessage.value = null
                 val response = repository.loginUser(email, password)

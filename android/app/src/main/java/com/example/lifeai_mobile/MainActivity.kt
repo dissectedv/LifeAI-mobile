@@ -24,6 +24,7 @@ import com.example.lifeai_mobile.view.AuthViewModel
 import com.example.lifeai_mobile.view.AuthViewModelFactory
 import com.example.lifeai_mobile.view.OnboardingViewModel
 import com.example.lifeai_mobile.view.OnboardingViewModelFactory
+import com.example.lifeai_mobile.view.ResumoViewModelFactory
 import com.example.lifeai_mobile.viewmodel.*
 
 class MainActivity : ComponentActivity() {
@@ -34,6 +35,9 @@ class MainActivity : ComponentActivity() {
         val app = application as MyApplication
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
         val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
+
+        val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
+
         setContent {
             LifeAImobileTheme {
                 Surface(
@@ -83,7 +87,11 @@ class MainActivity : ComponentActivity() {
 
                             composable("home") {
                                 val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
-                                MainAppScreen(navController, authViewModel)
+                                MainAppScreen(
+                                    mainNavController = navController,
+                                    authViewModel = authViewModel,
+                                    resumoViewModelFactory = resumoViewModelFactory
+                                )
                             }
                         }
                     } else {

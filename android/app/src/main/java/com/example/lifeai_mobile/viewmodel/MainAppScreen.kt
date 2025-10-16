@@ -13,9 +13,14 @@ import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.navigation.BottomNavigationBar
 import com.example.lifeai_mobile.ui.navigation.NavigationGraph
 import com.example.lifeai_mobile.view.AuthViewModel
+import com.example.lifeai_mobile.view.ResumoViewModelFactory
 
 @Composable
-fun MainAppScreen(mainNavController: NavController, authViewModel: AuthViewModel) {
+fun MainAppScreen(
+    mainNavController: NavController,
+    authViewModel: AuthViewModel,
+    resumoViewModelFactory: ResumoViewModelFactory
+) {
     val bottomBarNavController = rememberNavController()
 
     Surface(
@@ -36,7 +41,8 @@ fun MainAppScreen(mainNavController: NavController, authViewModel: AuthViewModel
                 NavigationGraph(
                     navController = bottomBarNavController,
                     mainNavController = mainNavController,
-                    authViewModel = authViewModel
+                    authViewModel = authViewModel,
+                    resumoViewModelFactory = resumoViewModelFactory
                 )
             }
         }

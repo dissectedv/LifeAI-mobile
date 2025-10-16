@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.PerfilImcBase
 import com.example.lifeai_mobile.repository.AuthRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -160,7 +161,7 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
     }
 
     private fun submitProfileData() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = UiState.Loading
             try {
                 // Converte a altura de cm para metros, como a API do IMC base espera
