@@ -25,7 +25,6 @@ import androidx.navigation.NavController
 fun DisclaimerScreen(navController: NavController) {
     var isChecked by remember { mutableStateOf(false) }
 
-    val backButtonBackgroundColor = Color(0xFF2D333B)
     val accentColor = Color(0xFF58C4D3)
     val titleColor = Color(0xFFFACC15)
     val textColorPrimary = Color.White
@@ -37,24 +36,7 @@ fun DisclaimerScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { },
-                navigationIcon = {
-                    Box(
-                        modifier = Modifier
-                            .padding(start = 16.dp)
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(backButtonBackgroundColor),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Voltar",
-                                tint = accentColor
-                            )
-                        }
-                    }
-                },
+                // O BOTÃO DE VOLTAR (navigationIcon) FOI REMOVIDO DAQUI
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
                 )

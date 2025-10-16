@@ -1,5 +1,8 @@
 package com.example.lifeai_mobile.viewmodel
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,7 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -59,6 +63,9 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
         }
     }
 
+    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
+    val backgroundPrimary = Color(0xFF0D1117)
     val cardBackgroundColor = Color(0xFF161B22)
     val accentColor = Color(0xFF58C4D3)
     val borderColor = Color(0xFF5A5A5A)
@@ -69,187 +76,200 @@ fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Transparent)
+            .background(backgroundPrimary)
             .systemBarsPadding()
-            .imePadding()
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxSize()
+                .imePadding()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.Start
+            AnimatedVisibility(
+                visible = !isKeyboardOpen,
+                exit = fadeOut(animationSpec = tween(durationMillis = 200))
             ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(backButtonBackgroundColor),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    IconButton(onClick = { navController.popBackStack("welcome", inclusive = false) }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar",
-                            tint = accentColor
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(backButtonBackgroundColor),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(onClick = { navController.popBackStack("welcome", inclusive = false) }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Voltar",
+                                    tint = accentColor
+                                )
+                            }
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Image(
+                        painter = painterResource(id = R.drawable.lifeai_logo),
+                        contentDescription = "LifeAI Logo",
+                        modifier = Modifier.size(80.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Bem-vindo de volta!",
+                        style = TextStyle(
+                            color = textColorPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            if (!isKeyboardOpen) {
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
-            Image(
-                painter = painterResource(id = R.drawable.lifeai_logo),
-                contentDescription = "LifeAI Logo",
-                modifier = Modifier.size(80.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Bem-vindo de volta!",
-                style = TextStyle(
-                    color = textColorPrimary,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            )
-        }
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(0.75f)
-                .align(Alignment.BottomCenter),
-            color = cardBackgroundColor,
-            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 24.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Surface(
+                modifier = if (isKeyboardOpen) {
+                    Modifier.fillMaxWidth()
+                } else {
+                    Modifier.fillMaxWidth()
+                },
+                color = cardBackgroundColor,
+                shape = if (isKeyboardOpen) RectangleShape else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
-
-                Text(
-                    text = "Login",
-                    style = TextStyle(
-                        color = textColorPrimary,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = {
-                        email = it
-                        if (displayMessage != null) authViewModel.clearErrorMessage()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("admin@email.com") },
-                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email", tint = accentColor) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = accentColor,
-                        unfocusedBorderColor = borderColor,
-                        cursorColor = accentColor,
-                        focusedTextColor = textColorPrimary,
-                        unfocusedTextColor = textColorPrimary,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedPlaceholderColor = textColorSecondary,
-                        unfocusedPlaceholderColor = textColorSecondary,
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        if (displayMessage != null) authViewModel.clearErrorMessage()
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("••••••") },
-                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Senha", tint = accentColor) },
-                    shape = RoundedCornerShape(16.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    visualTransformation = PasswordVisualTransformation(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = accentColor,
-                        unfocusedBorderColor = borderColor,
-                        cursorColor = accentColor,
-                        focusedTextColor = textColorPrimary,
-                        unfocusedTextColor = textColorPrimary,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedPlaceholderColor = textColorSecondary,
-                        unfocusedPlaceholderColor = textColorSecondary,
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        isError = false
-                        displayMessage = null
-                        authViewModel.login(email, password)
-                    },
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(50),
-                    border = BorderStroke(1.dp, accentColor),
+                        .padding(horizontal = 24.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        "Entrar",
-                        fontSize = 18.sp,
-                        color = textColorPrimary,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+                    Spacer(modifier = Modifier.height(40.dp))
 
-                if (displayMessage != null) {
+                    Text(
+                        text = "Login",
+                        style = TextStyle(
+                            color = textColorPrimary,
+                            fontSize = 36.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            if (displayMessage != null) authViewModel.clearErrorMessage()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("admin@email.com") },
+                        leadingIcon = { Icon(Icons.Default.Email, "Email", tint = accentColor) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = accentColor,
+                            unfocusedBorderColor = borderColor,
+                            cursorColor = accentColor,
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedPlaceholderColor = textColorSecondary,
+                            unfocusedPlaceholderColor = textColorSecondary,
+                        )
+                    )
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = displayMessage ?: "",
-                        color = if (isError) MaterialTheme.colorScheme.error else Color(0xFF238636),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                TextButton(
-                    onClick = {
-                        navController.navigate("createAccount") {
-                            launchSingleTop = true
-                        }
-                    },
-                    modifier = Modifier.padding(bottom = 24.dp, top = 16.dp)
-                ) {
-                    Text(
-                        "Não possui uma conta? Registre-se",
-                        color = textColorSecondary,
-                        fontSize = 16.sp,
-                        textAlign = TextAlign.Center
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            if (displayMessage != null) authViewModel.clearErrorMessage()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("••••••") },
+                        leadingIcon = { Icon(Icons.Default.Lock, "Senha", tint = accentColor) },
+                        shape = RoundedCornerShape(16.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        visualTransformation = PasswordVisualTransformation(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = accentColor,
+                            unfocusedBorderColor = borderColor,
+                            cursorColor = accentColor,
+                            focusedTextColor = textColorPrimary,
+                            unfocusedTextColor = textColorPrimary,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedPlaceholderColor = textColorSecondary,
+                            unfocusedPlaceholderColor = textColorSecondary,
+                        )
                     )
+
+                    Spacer(modifier = Modifier.height(40.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            isError = false
+                            displayMessage = null
+                            authViewModel.login(email, password)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(50),
+                        border = BorderStroke(1.dp, accentColor),
+                    ) {
+                        Text(
+                            "Entrar",
+                            fontSize = 18.sp,
+                            color = textColorPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    if (displayMessage != null) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = displayMessage ?: "",
+                            color = if (isError) MaterialTheme.colorScheme.error else Color(0xFF238636),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    TextButton(
+                        onClick = {
+                            navController.navigate("createAccount") {
+                                launchSingleTop = true
+                            }
+                        },
+                        modifier = Modifier.padding(vertical = 24.dp)
+                    ) {
+                        Text(
+                            "Não possui uma conta? Registre-se",
+                            color = textColorSecondary,
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
         }
