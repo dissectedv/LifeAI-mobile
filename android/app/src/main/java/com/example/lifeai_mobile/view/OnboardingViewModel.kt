@@ -164,16 +164,37 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = UiState.Loading
             try {
-                // Converte a altura de cm para metros, como a API do IMC base espera
-                val heightInMeters = height.toDoubleOrNull()?.div(100.0) ?: 0.0
+                val pesoFloat = weight.toFloatOrNull() ?: 0.0f
+                val alturaFloatCm = height.toFloatOrNull() ?: 0.0f
+                val alturaDoubleM = alturaFloatCm / 100.0f
 
+                // 👇 LÓGICA DE CÁLCULO ADICIONADA AQUI 👇
+
+                // 1. Calcular o IMC
+                val imcValor = if (alturaDoubleM > 0f) {
+                    pesoFloat / (alturaDoubleM * alturaDoubleM)
+                } else {
+                    0.0f
+                }
+
+                // 2. Determinar a Classificação (lógica da sua API Django)
+                val classificacao = when {
+                    imcValor < 18.5f -> "Abaixo do peso"
+                    imcValor < 25f -> "Peso normal"
+                    imcValor < 30f -> "Sobrepeso"
+                    else -> "Obesidade"
+                }
+
+                // 3. Criar o objeto de requisição com os dados calculados
                 val profileData = PerfilImcBase(
                     nome = name,
                     idade = age.toInt(),
-                    altura = heightInMeters,
-                    peso = weight.toDouble(),
+                    altura = alturaFloatCm,
+                    peso = pesoFloat,
                     sexo = gender,
-                    objetivo = objective
+                    objetivo = objective,
+                    imcResultado = imcValor, // Enviando o IMC calculado
+                    classificacao = classificacao // Enviando a classificação calculada
                 )
 
                 val response = repository.imcBase(profileData)

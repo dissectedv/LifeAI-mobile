@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ImcBaseProfile
@@ -29,7 +30,9 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
             try {
                 val response = repository.getImcBaseDashboard()
                 if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                    _state.value = ResumoState.Success(response.body()!!.first())
+                    val profile = response.body()!!.first()
+                    _state.value = ResumoState.Success(profile)
+                    Log.d("API_RESPONSE", "Dados do perfil recebidos: $profile")
                 } else {
                     _state.value = ResumoState.Error("Perfil não encontrado.")
                 }
@@ -39,23 +42,23 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
-    fun obterMensagemIMC(imc: Double): String {
+    fun obterMensagemIMC(imc: Float): String {
         return when {
-            imc < 18.5 -> "🌱 Abaixo do ideal."
-            imc < 25 -> "🏆 Equilíbrio ideal!"
-            imc < 30 -> "🎯 Leve sobrepeso."
+            imc < 18.5f -> "🌱 Abaixo do ideal."
+            imc < 25f -> "🏆 Equilíbrio ideal!"
+            imc < 30f -> "🎯 Leve sobrepeso."
             else -> "🚀 Acima do ideal."
         }
     }
 
-    fun calcularPosicao(imc: Double): Float {
-        val min = 15.0
-        val max = 40.0
+    fun calcularPosicao(imc: Float): Float {
+        val min = 15.0f
+        val max = 40.0f
         val clamped = imc.coerceIn(min, max)
-        return ((clamped - min) / (max - min)).toFloat()
+        return ((clamped - min) / (max - min))
     }
 
-    fun calcularScore(imc: Double): Int {
+    fun calcularScore(imc: Float): Int {
         return when {
             imc < 18.5 -> 4
             imc < 25 -> 10

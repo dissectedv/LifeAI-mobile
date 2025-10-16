@@ -28,9 +28,9 @@ fun ResumoImcCard(
     modifier: Modifier = Modifier
 ) {
     val imc = profile.imcResultado
-    val posicaoBarra = viewModel.calcularPosicao(imc)
+    val posicaoBarra = viewModel.calcularPosicao(imc.toFloat())
 
-    val score = viewModel.calcularScore(imc)
+    val score = viewModel.calcularScore(imc.toFloat())
     val scoreDescription = viewModel.getScoreDescription(score)
 
     val progressBrush = Brush.horizontalGradient(
@@ -64,7 +64,7 @@ fun ResumoImcCard(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = viewModel.obterMensagemIMC(profile.imcResultado),
+                text = viewModel.obterMensagemIMC(profile.imcResultado.toFloat()),
                 fontSize = 18.sp,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,

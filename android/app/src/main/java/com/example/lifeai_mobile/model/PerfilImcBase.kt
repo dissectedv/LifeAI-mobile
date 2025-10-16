@@ -10,14 +10,20 @@ data class PerfilImcBase (
     val idade: Int,
 
     @SerializedName("peso")
-    val peso: Double,
+    val peso: Float,
 
     @SerializedName("altura")
-    val altura: Double,
+    val altura: Float,
 
     @SerializedName("sexo")
     val sexo: String,
 
     @SerializedName("objetivo")
-    val objetivo: String
+    val objetivo: String,
+
+    @SerializedName("imc_res")
+    val imcResultado: Float,
+
+    @SerializedName("classificacao")
+    val classificacao: String
 )
