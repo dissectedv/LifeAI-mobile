@@ -1,6 +1,8 @@
 package com.example.lifeai_mobile.repository
 
 import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.ImcRecordRequest
+import com.example.lifeai_mobile.model.ImcRecordResponse
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.PerfilImcBase
@@ -24,4 +26,7 @@ interface  AuthApi {
 
     @GET("imc_base_dashboard/")
     suspend fun getImcBaseDashboard(): Response<List<ImcBaseProfile>>
+
+    @POST("imc/")
+    suspend fun createImcRecord(@Body request: ImcRecordRequest): Response<ImcRecordResponse>
 }

@@ -15,6 +15,7 @@
     import androidx.compose.ui.Alignment
     import androidx.compose.ui.Modifier
     import androidx.compose.ui.graphics.Color
+    import androidx.lifecycle.ViewModelProvider
     import androidx.lifecycle.viewmodel.compose.viewModel
     import androidx.navigation.compose.NavHost
     import androidx.navigation.compose.composable
@@ -22,6 +23,8 @@
     import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
     import com.example.lifeai_mobile.view.AuthViewModel
     import com.example.lifeai_mobile.view.AuthViewModelFactory
+    import com.example.lifeai_mobile.view.ImcCalculatorViewModel
+    import com.example.lifeai_mobile.view.ImcCalculatorViewModelFactory
     import com.example.lifeai_mobile.view.OnboardingViewModel
     import com.example.lifeai_mobile.view.OnboardingViewModelFactory
     import com.example.lifeai_mobile.view.ResumoViewModelFactory
@@ -37,6 +40,8 @@
             val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
 
             val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
+
+            val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
 
             setContent {
                 LifeAImobileTheme {
@@ -92,6 +97,11 @@
                                         authViewModel = authViewModel,
                                         resumoViewModelFactory = resumoViewModelFactory
                                     )
+                                }
+
+                                composable("imc_calculator") {
+                                    val viewModel: ImcCalculatorViewModel = viewModel(factory = imcCalculatorViewModelFactory)
+                                    ImcCalculatorScreen(navController = navController, viewModel = viewModel)
                                 }
                             }
                         } else {

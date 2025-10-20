@@ -24,7 +24,7 @@ fun NavigationGraph(
             HomeScreen(resumoViewModelFactory = resumoViewModelFactory)
         }
         composable(BottomNavItem.Saude.route) {
-            SaudeScreen()
+            SaudeScreen(mainNavController = mainNavController)
         }
         composable(BottomNavItem.ChatIA.route) {
             ChatIAScreen()
