@@ -94,16 +94,6 @@ fun ImcCalculatorScreen(
         ) {
             Text("Preencha os dados abaixo para registrar seu progresso.", color = Color.White.copy(alpha = 0.8f))
             Spacer(modifier = Modifier.height(32.dp))
-
-            OutlinedTextField(
-                value = viewModel.idade,
-                onValueChange = {},
-                label = { Text("Sua Idade") },
-                enabled = false,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
             OutlinedTextField(
                 value = viewModel.peso,
                 onValueChange = { viewModel.onPesoChange(it) },
