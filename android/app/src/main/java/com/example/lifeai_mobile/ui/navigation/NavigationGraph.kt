@@ -6,14 +6,13 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-
-// Imports corrigidos e adicionados
 import com.example.lifeai_mobile.view.AuthViewModel
-import com.example.lifeai_mobile.view.ChatIAScreen            // <--- ADICIONADO
-import com.example.lifeai_mobile.view.ChatIAViewModelFactory
+import com.example.lifeai_mobile.viewmodel.ChatIAScreen
 import com.example.lifeai_mobile.view.ResumoViewModelFactory
-import com.example.lifeai_mobile.viewmodel.ChatIAViewModel   // <--- CORRIGIDO/ADICIONADO
+import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
+import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
 import com.example.lifeai_mobile.viewmodel.HomeScreen
+import com.example.lifeai_mobile.viewmodel.ProfileEditScreen
 import com.example.lifeai_mobile.viewmodel.SaudeScreen
 import com.example.lifeai_mobile.viewmodel.UsuarioScreen
 
@@ -42,7 +41,15 @@ fun NavigationGraph(
         }
 
         composable(BottomNavItem.Usuario.route) {
-            UsuarioScreen(mainNavController = mainNavController, authViewModel = authViewModel)
+            UsuarioScreen(
+                mainNavController = mainNavController,
+                internalNavController = navController,
+                authViewModel = authViewModel
+            )
+        }
+
+        composable("profile_edit") {
+            ProfileEditScreen(navController = navController)
         }
     }
 }

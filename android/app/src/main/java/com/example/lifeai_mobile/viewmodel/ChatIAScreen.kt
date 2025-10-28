@@ -1,8 +1,8 @@
-package com.example.lifeai_mobile.view
+package com.example.lifeai_mobile.viewmodel // PACOTE CORRIGIDO
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.* // IMPORTAR
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -30,48 +30,44 @@ import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
 @Composable
 fun ChatIAScreen(
     viewModel: ChatIAViewModel = viewModel(factory = ChatIAViewModelFactory())
+    // REMOVIDO o bottomBarPadding
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        containerColor = Color(0xFF0D1B2A),
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_gemini_logo),
-                            contentDescription = "Powered by Gemini",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            "LifeAI Chat",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.Transparent
-                )
+    // TROQUE O SCAFFOLD POR UMA COLUMN
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0D1B2A))
+            // ESTA É A MÁGICA (que agora funciona):
+            .navigationBarsPadding() // Adiciona padding para a barra de navegação
+            .imePadding()           // Adiciona padding para o teclado (e substitui o de cima)
+    ) {
+        CenterAlignedTopAppBar(
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_gemini_logo),
+                        contentDescription = "Powered by Gemini",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "LifeAI Chat",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                containerColor = Color.Transparent
             )
-        },
-        bottomBar = {
-            UserInputBar(
-                message = uiState.inputText,
-                onMessageChange = viewModel::onInputTextChange,
-                onSendClick = viewModel::sendMessage
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {
+        )
+
+        // O chat ocupa o espaço
+        Box(modifier = Modifier.weight(1f)) {
             if (uiState.messages.size <= 1) {
                 EmptyChatView(
                     onSuggestionClick = { topic ->
@@ -93,8 +89,17 @@ fun ChatIAScreen(
                 }
             }
         }
+
+        // A barra de digitação é o último item
+        UserInputBar(
+            message = uiState.inputText,
+            onMessageChange = viewModel::onInputTextChange,
+            onSendClick = viewModel::sendMessage
+        )
     }
 }
+
+// ... O RESTO DO ARQUIVO NÃO MUDA ...
 
 @Composable
 fun EmptyChatView(onSuggestionClick: (String) -> Unit) {
