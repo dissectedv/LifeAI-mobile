@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -22,40 +22,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lifeai_mobile.model.ImcBaseProfile
-import com.example.lifeai_mobile.view.ResumoViewModelFactory
+import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 import java.util.Locale
 
 @Composable
-fun HomeScreen(resumoViewModelFactory: ResumoViewModelFactory) {
+fun HomeScreen(
+    resumoViewModelFactory: ResumoViewModelFactory,
+    modifier: Modifier = Modifier
+) {
     val viewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
     val state by viewModel.state.collectAsState()
 
-    // 1. Column principal (NÃO rolável) que define o fundo
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0D1A26))
+            .statusBarsPadding()
     ) {
-        // 2. O seu texto, agora fixo no topo
         Text(
-            text = "LifeAI", // <-- MUDANÇA DE TEXTO
+            text = "LifeAI",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             color = Color.White,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp) // <-- Adiciona o padding só para o texto
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp)
         )
 
-        // 3. Column interna (ROLÁVEL) com o resto do conteúdo
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()) // <-- SCROLL APLICADO AQUI
-                .padding(horizontal = 16.dp), // <-- Padding horizontal para os cards
+                .verticalScroll(rememberScrollState())
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Todo o seu conteúdo (exceto o texto do título) vai aqui
             ImcHistoricoCard()
 
             when (val currentState = state) {
@@ -106,16 +106,10 @@ fun HomeScreen(resumoViewModelFactory: ResumoViewModelFactory) {
                 AtividadesCard(modifier = Modifier.weight(1f))
             }
 
-            // Adiciona um espaço no final para o último card não colar na BottomBar
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
-
-//
-// O restante do seu código (GerarDicaIAButton, ResumoImcCard, etc.)
-// permanece exatamente igual.
-//
 
 @Composable
 private fun GerarDicaIAButton() {

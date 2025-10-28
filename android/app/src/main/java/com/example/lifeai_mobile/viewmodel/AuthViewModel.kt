@@ -1,6 +1,5 @@
-package com.example.lifeai_mobile.view
+package com.example.lifeai_mobile.viewmodel
 
-import SessionManager
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,11 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import com.example.lifeai_mobile.utils.SessionManager
 
 class AuthViewModel(
     private val repository: AuthRepository,
     private val sessionManager: SessionManager
 ) : ViewModel() {
+
+
     init {
         Log.d("INSTANCE_DEBUG", "AuthViewModel está usando SessionManager: $sessionManager")
     }

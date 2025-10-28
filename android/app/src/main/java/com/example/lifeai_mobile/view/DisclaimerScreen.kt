@@ -1,13 +1,9 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,7 +32,6 @@ fun DisclaimerScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { },
-                // O BOTÃO DE VOLTAR (navigationIcon) FOI REMOVIDO DAQUI
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent
                 )

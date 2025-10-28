@@ -1,6 +1,6 @@
 package com.example.lifeai_mobile.repository
 
-import SessionManager
+import com.example.lifeai_mobile.utils.SessionManager
 import android.util.Log
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -14,7 +14,6 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
         val token = runBlocking {
             sessionManager.authToken.first()
         }
-        // ESTA É A LINHA MAIS IMPORTANTE PARA O NOSSO DIAGNÓSTICO
         Log.d("AUTH_DEBUG", "Interceptor está enviando requisição. Token lido: $token")
 
         val request = chain.request().newBuilder()

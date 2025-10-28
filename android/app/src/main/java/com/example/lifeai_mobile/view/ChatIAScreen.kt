@@ -1,8 +1,8 @@
-package com.example.lifeai_mobile.viewmodel // PACOTE CORRIGIDO
+package com.example.lifeai_mobile.view // Pacote correto
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.* // IMPORTAR
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity // Import necessário
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,23 +26,37 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.viewmodel.ChatMessage
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
+// Imports para WindowInsets e ime
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatIAScreen(
-    viewModel: ChatIAViewModel = viewModel(factory = ChatIAViewModelFactory())
-    // REMOVIDO o bottomBarPadding
+    viewModel: ChatIAViewModel = viewModel(factory = ChatIAViewModelFactory()),
+    bottomBarPadding: PaddingValues // Recebe o padding
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val density = LocalDensity.current
 
-    // TROQUE O SCAFFOLD POR UMA COLUMN
+    // Lógica de cálculo do padding final
+    val imeBottomPx = WindowInsets.ime.getBottom(density) // É Int
+    val navBarBottomPx = with(density) { // É Float
+        bottomBarPadding.calculateBottomPadding().toPx()
+    }
+
+    // CORREÇÃO: Garantir que o resultado seja Float antes de .toDp()
+    val finalPaddingDp = with(density) {
+        (if (imeBottomPx > 0) imeBottomPx.toFloat() else navBarBottomPx).toDp()
+    }
+
+    // Usa Column em vez de Scaffold
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0D1B2A))
-            // ESTA É A MÁGICA (que agora funciona):
-            .navigationBarsPadding() // Adiciona padding para a barra de navegação
-            .imePadding()           // Adiciona padding para o teclado (e substitui o de cima)
+        // Nenhum padding aplicado aqui
     ) {
         CenterAlignedTopAppBar(
             title = {
@@ -61,12 +76,15 @@ fun ChatIAScreen(
                     )
                 }
             },
-            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                containerColor = Color.Transparent
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                titleContentColor = Color.White,
+                navigationIconContentColor = Color.White,
+                actionIconContentColor = Color.White
             )
         )
 
-        // O chat ocupa o espaço
+        // Lista de mensagens ocupa o espaço
         Box(modifier = Modifier.weight(1f)) {
             if (uiState.messages.size <= 1) {
                 EmptyChatView(
@@ -90,16 +108,19 @@ fun ChatIAScreen(
             }
         }
 
-        // A barra de digitação é o último item
+        // Barra de digitação
         UserInputBar(
             message = uiState.inputText,
             onMessageChange = viewModel::onInputTextChange,
             onSendClick = viewModel::sendMessage
         )
+
+        // Spacer inteligente no final
+        Spacer(modifier = Modifier.height(finalPaddingDp))
     }
 }
 
-// ... O RESTO DO ARQUIVO NÃO MUDA ...
+// ... O resto do arquivo (EmptyChatView, UserInputBar, ChatBubble) não muda ...
 
 @Composable
 fun EmptyChatView(onSuggestionClick: (String) -> Unit) {

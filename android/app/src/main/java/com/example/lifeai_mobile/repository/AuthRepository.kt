@@ -19,7 +19,6 @@ class AuthRepository(private val api: AuthApi) {
         return api.register(request)
     }
 
-    // ADICIONE ESTA NOVA FUNÇÃO
     suspend fun loginUser(email: String, password: String): Response<LoginResponse> {
         val request = LoginRequest(email, password)
         return api.login(request)

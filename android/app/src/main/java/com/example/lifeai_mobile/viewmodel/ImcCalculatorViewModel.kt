@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.view
+package com.example.lifeai_mobile.viewmodel
 
 import android.util.Log
 import androidx.compose.runtime.getValue

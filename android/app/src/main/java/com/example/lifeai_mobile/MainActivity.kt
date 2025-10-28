@@ -21,7 +21,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
 import com.example.lifeai_mobile.view.*
-import com.example.lifeai_mobile.viewmodel.*
+import com.example.lifeai_mobile.viewmodel.AuthViewModel
+import com.example.lifeai_mobile.viewmodel.AuthViewModelFactory
+import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModel
+import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModelFactory
+import com.example.lifeai_mobile.viewmodel.OnboardingViewModel
+import com.example.lifeai_mobile.viewmodel.OnboardingViewModelFactory
+import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +36,8 @@ class MainActivity : ComponentActivity() {
 
         val app = application as MyApplication
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
-        val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
+        val onboardingViewModelFactory =
+            OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
 

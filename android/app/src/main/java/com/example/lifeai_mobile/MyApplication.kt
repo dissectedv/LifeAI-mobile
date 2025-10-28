@@ -1,6 +1,7 @@
-package com.example.lifeai_mobile
+package com.example.lifeai_mobile // 1. PACOTE ADICIONADO
 
-import SessionManager
+// 2. IMPORT CORRIGIDO
+import com.example.lifeai_mobile.utils.SessionManager
 import android.app.Application
 import android.util.Log
 import com.example.lifeai_mobile.model.RetrofitInstance
@@ -16,6 +17,7 @@ class MyApplication : Application() {
         super.onCreate()
 
         // A ordem aqui é importante!
+        // Agora o compilador sabe o que é SessionManager
         sessionManager = SessionManager(applicationContext)
         retrofitInstance = RetrofitInstance(sessionManager)
         authRepository = AuthRepository(retrofitInstance.api)

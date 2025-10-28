@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,27 +34,33 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.lifeai_mobile.R
-import com.example.lifeai_mobile.view.AuthViewModel
+import com.example.lifeai_mobile.viewmodel.AuthViewModel
 
 @Composable
-fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
+fun LoginScreen(navController: NavController, authViewModel: AuthViewModel) {
 
-    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    val registerResponse by authViewModel.registerResponse.collectAsState()
+    val loginResponse by authViewModel.loginResponse.collectAsState()
     val errorState by authViewModel.errorMessage.collectAsState()
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var displayMessage by remember { mutableStateOf<String?>(null) }
+    var isError by remember { mutableStateOf(false) }
 
-    LaunchedEffect(registerResponse, errorState) {
-        registerResponse?.let {
-            navController.navigate("disclaimer") {
+    LaunchedEffect(loginResponse) {
+        loginResponse?.let {
+            navController.navigate("home") {
                 launchSingleTop = true
+                popUpTo("welcome") { inclusive = true }
             }
-            authViewModel.resetRegisterState()
         }
-        errorState?.let { errorMessage = it }
+    }
+
+    LaunchedEffect(errorState) {
+        errorState?.let {
+            displayMessage = it
+            isError = true
+        }
     }
 
     val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
@@ -102,9 +107,7 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                                 .background(backButtonBackgroundColor),
                             contentAlignment = Alignment.Center
                         ) {
-                            IconButton(onClick = {
-                                navController.popBackStack("welcome", inclusive = false)
-                            }) {
+                            IconButton(onClick = { navController.popBackStack("welcome", inclusive = false) }) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Voltar",
@@ -125,7 +128,7 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Bem-vindo! Comece agora!",
+                        text = "Bem-vindo de volta!",
                         style = TextStyle(
                             color = textColorPrimary,
                             fontSize = 20.sp,
@@ -141,7 +144,7 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
 
             Surface(
                 modifier = if (isKeyboardOpen) {
-                    Modifier.fillMaxSize()
+                    Modifier.fillMaxWidth()
                 } else {
                     Modifier.fillMaxWidth()
                 },
@@ -158,7 +161,7 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                     Spacer(modifier = Modifier.height(40.dp))
 
                     Text(
-                        text = "Registrar",
+                        text = "Login",
                         style = TextStyle(
                             color = textColorPrimary,
                             fontSize = 36.sp,
@@ -169,36 +172,10 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                     Spacer(modifier = Modifier.height(32.dp))
 
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = {
-                            username = it
-                            if (errorMessage != null) authViewModel.clearErrorMessage()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("admin") },
-                        leadingIcon = { Icon(Icons.Default.Person, "Usuário", tint = accentColor) },
-                        shape = RoundedCornerShape(16.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = accentColor,
-                            unfocusedBorderColor = borderColor,
-                            cursorColor = accentColor,
-                            focusedTextColor = textColorPrimary,
-                            unfocusedTextColor = textColorPrimary,
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedPlaceholderColor = textColorSecondary,
-                            unfocusedPlaceholderColor = textColorSecondary,
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
                         value = email,
                         onValueChange = {
                             email = it
-                            if (errorMessage != null) authViewModel.clearErrorMessage()
+                            if (displayMessage != null) authViewModel.clearErrorMessage()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("admin@email.com") },
@@ -225,7 +202,7 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                         value = password,
                         onValueChange = {
                             password = it
-                            if (errorMessage != null) authViewModel.clearErrorMessage()
+                            if (displayMessage != null) authViewModel.clearErrorMessage()
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("••••••") },
@@ -249,7 +226,11 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                     Spacer(modifier = Modifier.height(40.dp))
 
                     OutlinedButton(
-                        onClick = { authViewModel.register(username, email, password) },
+                        onClick = {
+                            isError = false
+                            displayMessage = null
+                            authViewModel.login(email, password)
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
@@ -257,18 +238,18 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
                         border = BorderStroke(1.dp, accentColor),
                     ) {
                         Text(
-                            "Criar Conta",
+                            "Entrar",
                             fontSize = 18.sp,
                             color = textColorPrimary,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
 
-                    if (errorMessage != null) {
+                    if (displayMessage != null) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = errorMessage ?: "",
-                            color = MaterialTheme.colorScheme.error,
+                            text = displayMessage ?: "",
+                            color = if (isError) MaterialTheme.colorScheme.error else Color(0xFF238636),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -276,14 +257,14 @@ fun RegisterScreen(navController: NavController, authViewModel: AuthViewModel) {
 
                     TextButton(
                         onClick = {
-                            navController.navigate("loginAccount") {
+                            navController.navigate("createAccount") {
                                 launchSingleTop = true
                             }
                         },
                         modifier = Modifier.padding(vertical = 24.dp)
                     ) {
                         Text(
-                            "Já possui uma conta? Faça Login",
+                            "Não possui uma conta? Registre-se",
                             color = textColorSecondary,
                             fontSize = 16.sp,
                             textAlign = TextAlign.Center

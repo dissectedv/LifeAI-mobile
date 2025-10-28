@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -20,8 +20,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import com.example.lifeai_mobile.view.InputType
-import com.example.lifeai_mobile.view.OnboardingViewModel
+import com.example.lifeai_mobile.viewmodel.InputType
+import com.example.lifeai_mobile.viewmodel.OnboardingViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

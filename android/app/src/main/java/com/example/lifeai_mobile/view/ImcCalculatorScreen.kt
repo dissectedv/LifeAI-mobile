@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,8 +20,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.lifeai_mobile.view.ImcCalculatorViewModel
-import com.example.lifeai_mobile.view.UiEvent
+import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModel
+import com.example.lifeai_mobile.viewmodel.UiEvent
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -175,11 +175,10 @@ fun ImcCalculatorScreen(
 
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Botão com estilo sólido e sutil brilho superior
             val buttonBrush = Brush.verticalGradient(
                 colors = listOf(
-                    Color(0xFF1E88E5), // Azul principal
-                    Color(0xFF1565C0)  // Azul escuro
+                    Color(0xFF1E88E5),
+                    Color(0xFF1565C0)
                 )
             )
 

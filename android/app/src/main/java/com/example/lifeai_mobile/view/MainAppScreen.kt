@@ -1,19 +1,20 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.navigation.BottomNavigationBar
 import com.example.lifeai_mobile.ui.navigation.NavigationGraph
-import com.example.lifeai_mobile.view.AuthViewModel
-import com.example.lifeai_mobile.view.ResumoViewModelFactory
+import com.example.lifeai_mobile.viewmodel.AuthViewModel
+import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 
 @Composable
 fun MainAppScreen(
@@ -31,18 +32,19 @@ fun MainAppScreen(
             containerColor = Color.Transparent,
             bottomBar = {
                 BottomNavigationBar(navController = bottomBarNavController)
-            }
+            },
+            contentWindowInsets = WindowInsets(0.dp)
         ) { innerPadding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
             ) {
                 NavigationGraph(
                     navController = bottomBarNavController,
                     mainNavController = mainNavController,
                     authViewModel = authViewModel,
-                    resumoViewModelFactory = resumoViewModelFactory
+                    resumoViewModelFactory = resumoViewModelFactory,
+                    bottomBarPadding = innerPadding
                 )
             }
         }

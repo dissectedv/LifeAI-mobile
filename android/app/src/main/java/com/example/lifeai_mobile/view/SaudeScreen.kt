@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MonitorHeart
-import androidx.compose.material.icons.filled.Nightlight
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -23,14 +22,18 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 
 @Composable
-fun SaudeScreen(mainNavController: NavController) {
+fun SaudeScreen(
+    mainNavController: NavController,
+    modifier: Modifier = Modifier // Recebe o modifier (padding inferior)
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier // Aplica o modifier (padding inferior)
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top // <-- MUDANÇA AQUI
+            // ADICIONE ISTO para o padding superior da barra de status
+            .statusBarsPadding()
+            .padding(16.dp), // Padding original da tela
+        verticalArrangement = Arrangement.Top
     ) {
-        // Removido o Column extra que agrupava os itens de cima
         Text(
             "Saúde e Bem-estar",
             style = MaterialTheme.typography.headlineMedium,
@@ -60,14 +63,8 @@ fun SaudeScreen(mainNavController: NavController) {
                 icon = Icons.Default.Restaurant,
                 onClick = { }
             )
-            SaudeCard(
-                title = "Análise de Sono",
-                description = "Monitore sua qualidade do sono.",
-                icon = Icons.Default.Nightlight,
-                onClick = { }
-            )
+            // CARD DE SONO REMOVIDO DAQUI
 
-            // <-- CARD DE IMC MOVIDO PARA CÁ
             SaudeCard(
                 title = "Calculadora de IMC",
                 description = "Calcule seu IMC e acompanhe sua evolução.",
@@ -75,11 +72,10 @@ fun SaudeScreen(mainNavController: NavController) {
                 onClick = { mainNavController.navigate("imc_calculator") }
             )
         }
-
-        // <-- CARD DE IMC REMOVIDO DAQUI
     }
 }
 
+// ... A função SaudeCard permanece igual ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SaudeCard(

@@ -17,8 +17,7 @@ interface  AuthApi {
     @POST("registro/")
     suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
 
-    // ADICIONE ESTE NOVO MÉTODO
-    @POST("login/") // Verifique se o endpoint no seu backend Django está correto
+    @POST("login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     @POST("imc_base_perfil/")

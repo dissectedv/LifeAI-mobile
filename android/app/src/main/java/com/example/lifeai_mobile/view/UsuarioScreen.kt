@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.viewmodel
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,20 +24,22 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.lifeai_mobile.view.AuthViewModel
+import com.example.lifeai_mobile.viewmodel.AuthViewModel
 
 @Composable
 fun UsuarioScreen(
     mainNavController: NavController,
     internalNavController: NavController,
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    modifier: Modifier = Modifier
 ) {
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0D1A26))
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Text(
@@ -142,6 +144,7 @@ fun UsuarioScreen(
     }
 }
 
+// ... A função UsuarioCard não muda ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UsuarioCard(
@@ -207,6 +210,7 @@ private fun UsuarioCard(
     }
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileEditScreen(navController: NavController) {
@@ -245,6 +249,8 @@ fun ProfileEditScreen(navController: NavController) {
             modifier = Modifier
                 .padding(inner)
                 .fillMaxSize()
+                .navigationBarsPadding()
+                .imePadding()
                 .padding(16.dp)
                 .verticalScroll(scroll),
             horizontalAlignment = Alignment.CenterHorizontally
