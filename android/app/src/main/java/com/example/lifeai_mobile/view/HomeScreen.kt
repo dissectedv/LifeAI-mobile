@@ -320,7 +320,7 @@ private fun ImcHistoricoCard() {
                 .background(gradientOverlay),
             contentAlignment = Alignment.Center
         ) {
-            Text("Placeholder: IMC Histórico", color = Color.White.copy(alpha = 0.7f))
+            Text("IMC Histórico", color = Color.White.copy(alpha = 0.7f))
         }
     }
 }
@@ -342,7 +342,7 @@ private fun PassosCard(modifier: Modifier = Modifier) {
                 .background(gradientOverlay),
             contentAlignment = Alignment.Center
         ) {
-            Text("Placeholder: Passos", color = Color.White.copy(alpha = 0.7f))
+            Text("Passos", color = Color.White.copy(alpha = 0.7f))
         }
     }
 }
@@ -364,7 +364,7 @@ private fun AtividadesCard(modifier: Modifier = Modifier) {
                 .background(gradientOverlay),
             contentAlignment = Alignment.Center
         ) {
-            Text("Placeholder: Atividades", color = Color.White.copy(alpha = 0.7f))
+            Text("Atividades", color = Color.White.copy(alpha = 0.7f))
         }
     }
 }
