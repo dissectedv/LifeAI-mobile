@@ -16,6 +16,7 @@ from django.conf import settings
 conversas_em_memoria = defaultdict(list)
 
 def perguntar_ia_lm_studio(historico_mensagens):
+    # (Esta função não será chamada no modo de simulação)
     prompt_sistema = {
         "role": "system",
         "content": (
@@ -47,16 +48,25 @@ def chat_ia_view(request):
     if not pergunta:
         return Response({"erro": "Pergunta é obrigatória."}, status=status.HTTP_400_BAD_REQUEST)
     if not sessao_id:
+        # Corrigi aqui: O status correto para "bad request" é 400, não 500
         return Response({"erro": "sessao_id é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
         # Adiciona a pergunta ao histórico
         conversas_em_memoria[sessao_id].append({"role": "user", "content": pergunta})
 
-        # Gera a resposta com base no histórico
-        resposta = perguntar_ia_lm_studio(conversas_em_memoria[sessao_id])
+        ### INÍCIO DA SIMULAÇÃO DE TESTE ###
 
-        # Adiciona a resposta ao histórico
+        # 1. Comente a linha original que chama a IA
+        # resposta = perguntar_ia_lm_studio(conversas_em_memoria[sessao_id])
+
+        # 2. Adicione sua resposta simulada (mock)
+        resposta = f"Esta é uma resposta simulada para a pergunta: '{pergunta}'"
+        
+        ### FIM DA SIMULAÇÃO DE TESTE ###
+
+
+        # Adiciona a resposta (agora simulada) ao histórico
         conversas_em_memoria[sessao_id].append({"role": "assistant", "content": resposta})
 
         return Response({"resposta": resposta})

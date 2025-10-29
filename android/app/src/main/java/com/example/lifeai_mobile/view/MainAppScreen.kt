@@ -3,6 +3,7 @@ package com.example.lifeai_mobile.view
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -14,13 +15,15 @@ import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.navigation.BottomNavigationBar
 import com.example.lifeai_mobile.ui.navigation.NavigationGraph
 import com.example.lifeai_mobile.viewmodel.AuthViewModel
+import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
 import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 
 @Composable
 fun MainAppScreen(
     mainNavController: NavController,
     authViewModel: AuthViewModel,
-    resumoViewModelFactory: ResumoViewModelFactory
+    resumoViewModelFactory: ResumoViewModelFactory,
+    chatViewModelFactory: ChatIAViewModelFactory
 ) {
     val bottomBarNavController = rememberNavController()
 
@@ -38,12 +41,14 @@ fun MainAppScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(innerPadding)
             ) {
                 NavigationGraph(
                     navController = bottomBarNavController,
                     mainNavController = mainNavController,
                     authViewModel = authViewModel,
                     resumoViewModelFactory = resumoViewModelFactory,
+                    chatViewModelFactory = chatViewModelFactory,
                     bottomBarPadding = innerPadding
                 )
             }

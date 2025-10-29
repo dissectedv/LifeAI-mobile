@@ -1,5 +1,7 @@
 package com.example.lifeai_mobile.repository
 
+import com.example.lifeai_mobile.model.ChatRequest
+import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
@@ -34,5 +36,9 @@ class AuthRepository(private val api: AuthApi) {
 
     suspend fun createImcRecord(record: ImcRecordRequest): Response<ImcRecordResponse> {
         return api.createImcRecord(record)
+    }
+
+    suspend fun postChatMessage(request: ChatRequest): Response<ChatResponse> {
+        return api.postChatMessage(request)
     }
 }

@@ -16,26 +16,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity // Import necessário
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.viewmodel.ChatMessage
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
-// Imports para WindowInsets e ime
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.imePadding // <-- IMPORTANTE
+import androidx.compose.foundation.layout.WindowInsets // (Você já deve ter)
 import androidx.compose.foundation.layout.ime
-import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
+import androidx.compose.ui.platform.LocalDensity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatIAScreen(
-    viewModel: ChatIAViewModel = viewModel(factory = ChatIAViewModelFactory()),
-    bottomBarPadding: PaddingValues // Recebe o padding
+    viewModel: ChatIAViewModel, // <-- Recebe o ViewModel pronto
+    bottomBarPadding: PaddingValues
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val density = LocalDensity.current

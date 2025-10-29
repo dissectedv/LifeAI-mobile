@@ -1,5 +1,7 @@
 package com.example.lifeai_mobile.repository
 
+import com.example.lifeai_mobile.model.ChatRequest
+import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
@@ -28,4 +30,7 @@ interface  AuthApi {
 
     @POST("imc/")
     suspend fun createImcRecord(@Body request: ImcRecordRequest): Response<ImcRecordResponse>
+
+    @POST("chat-ia/")
+    suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
 }

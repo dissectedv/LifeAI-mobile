@@ -23,6 +23,7 @@ import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
 import com.example.lifeai_mobile.view.*
 import com.example.lifeai_mobile.viewmodel.AuthViewModel
 import com.example.lifeai_mobile.viewmodel.AuthViewModelFactory
+import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
 import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModel
 import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModelFactory
 import com.example.lifeai_mobile.viewmodel.OnboardingViewModel
@@ -40,6 +41,8 @@ class MainActivity : ComponentActivity() {
             OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
+
+        val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
 
         setContent {
             LifeAImobileTheme {
@@ -94,7 +97,8 @@ class MainActivity : ComponentActivity() {
                                 MainAppScreen(
                                     mainNavController = navController, // usado para logout e rotas globais
                                     authViewModel = authViewModel,
-                                    resumoViewModelFactory = resumoViewModelFactory
+                                    resumoViewModelFactory = resumoViewModelFactory,
+                                    chatViewModelFactory = chatViewModelFactory
                                 )
                             }
 

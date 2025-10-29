@@ -2,11 +2,15 @@ package com.example.lifeai_mobile.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lifeai_mobile.model.ChatRequest
+import com.example.lifeai_mobile.repository.AuthRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(
@@ -17,10 +21,13 @@ data class ChatUiState(
 
 data class ChatMessage(val text: String, val isUser: Boolean)
 
-class ChatIAViewModel : ViewModel() {
+class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState = _uiState.asStateFlow()
+
+    // Gera um ID de sessão único para esta conversa
+    private val sessaoId: String = UUID.randomUUID().toString()
 
     fun onInputTextChange(text: String) {
         _uiState.update { it.copy(inputText = text) }
@@ -50,14 +57,42 @@ class ChatIAViewModel : ViewModel() {
             it.copy(messages = it.messages + userMessage + thinkingMessage)
         }
 
-        viewModelScope.launch {
-            delay(2000)
-            val apiResponse = "Esta é uma resposta simulada para '$userInput'! 🧠"
+        viewModelScope.launch(Dispatchers.IO) {
+            val request = ChatRequest(pergunta = userInput, sessaoId = sessaoId)
+            try {
+                val response = repository.postChatMessage(request)
 
-            _uiState.update { currentState ->
-                val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(apiResponse, isUser = false)
-                currentState.copy(messages = updatedMessages)
+                val apiResponse: String
+                if (response.isSuccessful && response.body() != null) {
+                    apiResponse = response.body()?.resposta ?: "A API retornou uma resposta vazia."
+                } else {
+                    apiResponse = "Erro ao conectar com a IA: ${response.message()}"
+                }
+
+                // Atualiza a lista, substituindo "Processando..." pela resposta final
+                _uiState.update { currentState ->
+                    val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(apiResponse, isUser = false)
+                    currentState.copy(messages = updatedMessages)
+                }
+
+            } catch (e: Exception) {
+                // Em caso de falha de conexão
+                val errorResponse = "Falha na conexão: ${e.message}"
+                _uiState.update { currentState ->
+                    val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(errorResponse, isUser = false)
+                    currentState.copy(messages = updatedMessages)
+                }
             }
         }
+
+//        viewModelScope.launch {
+//            delay(2000)
+//            val apiResponse = "Esta é uma resposta simulada para '$userInput'! 🧠"
+//
+//            _uiState.update { currentState ->
+//                val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(apiResponse, isUser = false)
+//                currentState.copy(messages = updatedMessages)
+//            }
+//        }
     }
 }

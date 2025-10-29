@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">18.188.47.129</domain>
-<!--        <domain includeSubdomains="true">18.191.207.220</domain>-->
+<!--&lt;!&ndash;        <domain includeSubdomains="true">18.188.47.129</domain>&ndash;&gt;  ip da instancia do joao-->
+        <domain includeSubdomains="true">192.168.0.12</domain> <!-- ip local       -->
     </domain-config>
 </network-security-config>

@@ -18,6 +18,7 @@ import com.example.lifeai_mobile.view.UsuarioScreen
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun NavigationGraph(
@@ -25,6 +26,7 @@ fun NavigationGraph(
     mainNavController: NavController,
     authViewModel: AuthViewModel,
     resumoViewModelFactory: ResumoViewModelFactory,
+    chatViewModelFactory: ChatIAViewModelFactory,
     bottomBarPadding: PaddingValues
 ) {
     NavHost(
@@ -46,9 +48,10 @@ fun NavigationGraph(
         }
 
         composable(BottomNavItem.ChatIA.route) {
-            val viewModel: ChatIAViewModel = viewModel(factory = ChatIAViewModelFactory())
+            // 3. PASSE A FACTORY E O PADDING PARA A TELA DE CHAT
+            val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
             ChatIAScreen(
-                viewModel = viewModel,
+                viewModel = chatViewModel,
                 bottomBarPadding = bottomBarPadding
             )
         }
