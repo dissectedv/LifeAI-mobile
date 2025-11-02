@@ -1,4 +1,4 @@
-package com.example.lifeai_mobile.view // Pacote correto
+package com.example.lifeai_mobile.view
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,37 +25,34 @@ import androidx.compose.ui.unit.sp
 import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.viewmodel.ChatMessage
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
-import androidx.compose.foundation.layout.imePadding // <-- IMPORTANTE
-import androidx.compose.foundation.layout.WindowInsets // (Você já deve ter)
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.ParagraphStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatIAScreen(
-    viewModel: ChatIAViewModel, // <-- Recebe o ViewModel pronto
+    viewModel: ChatIAViewModel,
     bottomBarPadding: PaddingValues
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val density = LocalDensity.current
-
-    // Lógica de cálculo do padding final
-    val imeBottomPx = WindowInsets.ime.getBottom(density) // É Int
-    val navBarBottomPx = with(density) { // É Float
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val navBarBottomPx = with(density) {
         bottomBarPadding.calculateBottomPadding().toPx()
     }
-
-    // CORREÇÃO: Garantir que o resultado seja Float antes de .toDp()
     val finalPaddingDp = with(density) {
         (if (imeBottomPx > 0) imeBottomPx.toFloat() else navBarBottomPx).toDp()
     }
 
-    // Usa Column em vez de Scaffold
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0D1B2A))
-        // Nenhum padding aplicado aqui
     ) {
         CenterAlignedTopAppBar(
             title = {
@@ -82,7 +80,6 @@ fun ChatIAScreen(
             )
         )
 
-        // Lista de mensagens ocupa o espaço
         Box(modifier = Modifier.weight(1f)) {
             if (uiState.messages.size <= 1) {
                 EmptyChatView(
@@ -106,19 +103,15 @@ fun ChatIAScreen(
             }
         }
 
-        // Barra de digitação
         UserInputBar(
             message = uiState.inputText,
             onMessageChange = viewModel::onInputTextChange,
             onSendClick = viewModel::sendMessage
         )
 
-        // Spacer inteligente no final
         Spacer(modifier = Modifier.height(finalPaddingDp))
     }
 }
-
-// ... O resto do arquivo (EmptyChatView, UserInputBar, ChatBubble) não muda ...
 
 @Composable
 fun EmptyChatView(onSuggestionClick: (String) -> Unit) {
@@ -202,6 +195,55 @@ fun UserInputBar(
 }
 
 @Composable
+fun MarkdownText(text: String, modifier: Modifier = Modifier) {
+    val annotatedString = buildAnnotatedString {
+        val lines = text.split('\n')
+        lines.forEachIndexed { index, line ->
+            var processedLine = line.trim()
+            val isBoldTitle = processedLine.startsWith("**") && processedLine.endsWith("**")
+            val isBulletPoint = processedLine.startsWith("* ")
+            val numberRegex = """^(\d+)\.\s""".toRegex()
+            val numberMatch = numberRegex.find(processedLine)
+            val isNumberedList = numberMatch != null
+            if (isBulletPoint || isNumberedList) {
+                pushStyle(ParagraphStyle(textIndent = TextIndent(firstLine = 0.sp, restLine = 12.sp)))
+                if (isBulletPoint) {
+                    append("\u2022 ")
+                    processedLine = processedLine.substring(2)
+                } else if (numberMatch != null) {
+                    append(numberMatch.value)
+                    processedLine = processedLine.substring(numberMatch.value.length)
+                }
+            } else if (isBoldTitle) {
+                processedLine = processedLine.removeSurrounding("**")
+            }
+            val parts = processedLine.split("**")
+            parts.forEachIndexed { partIndex, part ->
+                if (isBoldTitle || partIndex % 2 == 1) {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(part)
+                    }
+                } else {
+                    append(part)
+                }
+            }
+            if (index < lines.size - 1) {
+                append("\n")
+            }
+            if (isBulletPoint || isNumberedList) {
+                pop()
+            }
+        }
+    }
+    Text(
+        text = annotatedString,
+        color = Color.White,
+        fontSize = 15.sp,
+        modifier = modifier
+    )
+}
+
+@Composable
 fun ChatBubble(message: ChatMessage) {
     val bubbleColor = if (message.isUser) Color(0xFF2E8BC0) else Color(0xFF1B263B)
     val horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
@@ -220,11 +262,7 @@ fun ChatBubble(message: ChatMessage) {
                 .widthIn(max = 280.dp),
             contentAlignment = contentAlignment
         ) {
-            Text(
-                text = message.text,
-                color = Color.White,
-                fontSize = 15.sp
-            )
+            MarkdownText(text = message.text)
         }
     }
 }
