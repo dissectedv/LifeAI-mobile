@@ -1,0 +1,12 @@
+# base/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lifeai-config
+  namespace: lifeai
+data:
+  DB_ENGINE: "django.db.backends.postgresql_psycopg2"
+  DB_HOST: "postgres-service"
+  DB_NAME: "lifeAI"
+  DB_PORT: "5432"
+  FRONT_HOST: "http://localhost:90"

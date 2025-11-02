@@ -10,22 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Setup Docker Buildx
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3. Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 4. Build and Push backend image
       - name: Build and Push Backend Image
         uses: docker/build-push-action@v6
         with:
@@ -42,12 +38,10 @@ jobs:
     needs: build-and-push
 
     steps:
-      # 1. Decode SSH key from Base64
       - name: Decode SSH key (Base64)
         id: decode_key
         run: echo "key=$(echo ${{ secrets.LIFEAI_SSH_KEY_B64 }} | base64 --decode)" >> $GITHUB_OUTPUT
 
-      # 2. Connect via SSH and update Kubernetes deployment
       - name: Update Kubernetes deployment on EC2
         uses: appleboy/ssh-action@v0.1.9
         with:
@@ -57,7 +51,7 @@ jobs:
           debug: true
           script: |
             echo "Updating LifeAI backend image..."
-            kubectl set image deployment/backend app=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
-            kubectl rollout restart deployment/backend -n lifeai
-            kubectl rollout status deployment/backend -n lifeai
+            kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
+            kubectl rollout restart deployment/django-deployment -n lifeai
+            kubectl rollout status deployment/django-deployment -n lifeai
             echo "Deployment completed successfully on Kubernetes cluster"

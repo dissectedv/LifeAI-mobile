@@ -1,0 +1,25 @@
+# kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: lifeai
+
+resources:
+  # Recursos na raiz
+  - namespace.yaml
+  - secret.yaml
+  - configmap.yaml
+
+  # Recursos dentro da pasta 'postgres'
+  - postgres/postgres-pv.yaml
+  - postgres/postgres-pvc.yaml
+  - postgres/postgres-deployment.yaml
+  - postgres/postgres-service.yaml
+
+  # Recursos dentro da pasta 'django-api'
+  - django-api/django-deployment.yaml
+  - django-api/django-service.yaml
+
+  # Novos recursos do pgAdmin
+  - deployment/pgadmin-deployment.yaml
+  - deployment/pgadmin-service.yaml
