@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -58,10 +59,10 @@ fun UsuarioScreen(
             UsuarioCard("Perfil", Icons.Default.Person) {
                 internalNavController.navigate("profile_edit")
             }
-            UsuarioCard("Seja Premium!", Icons.Default.VerifiedUser, titleColor = Color(0xFFFFC107)) { }
-            UsuarioCard("Configurações", Icons.Default.Settings) { }
-            UsuarioCard("Avalie-nos", Icons.Default.StarRate) { }
-            UsuarioCard("Sobre o App", Icons.Default.Info) { }
+            UsuarioCard("Seja Premium!", Icons.Default.VerifiedUser, titleColor = Color(0xFFFFC107)) {}
+            UsuarioCard("Configurações", Icons.Default.Settings) {}
+            UsuarioCard("Avalie-nos", Icons.Default.StarRate) {}
+            UsuarioCard("Sobre o App", Icons.Default.Info) {}
             UsuarioCard(
                 title = "Sair da Conta",
                 icon = Icons.AutoMirrored.Filled.Logout,
@@ -144,7 +145,6 @@ fun UsuarioScreen(
     }
 }
 
-// ... A função UsuarioCard não muda ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UsuarioCard(
@@ -210,10 +210,12 @@ private fun UsuarioCard(
     }
 }
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileEditScreen(navController: NavController) {
+fun ProfileEditScreen(
+    navController: NavController,
+    bottomBarPadding: PaddingValues
+) {
     val scroll = rememberScrollState()
     var nome by remember { mutableStateOf("Fulano") }
     var sobrenome by remember { mutableStateOf("Fulanes") }
@@ -221,37 +223,45 @@ fun ProfileEditScreen(navController: NavController) {
     var senha by remember { mutableStateOf("*****") }
     var showSavedPopup by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Informações do Perfil",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
+    val density = LocalDensity.current
+    val imeBottomPx = WindowInsets.ime.getBottom(density)
+    val navBarBottomPx = with(density) {
+        bottomBarPadding.calculateBottomPadding().toPx()
+    }
+    val finalPaddingDp = with(density) {
+        (if (imeBottomPx > 0) imeBottomPx.toFloat() else navBarBottomPx).toDp()
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0D1A26))
+    ) {
+        TopAppBar(
+            title = {
+                Text(
+                    "Informações do Perfil",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = Color.White
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D1A26))
-            )
-        },
-        containerColor = Color(0xFF0D1A26)
-    ) { inner ->
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+        )
+
         Column(
             modifier = Modifier
-                .padding(inner)
+                .weight(1f)
                 .fillMaxSize()
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(scroll),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -270,7 +280,7 @@ fun ProfileEditScreen(navController: NavController) {
                     )
                 }
                 FloatingActionButton(
-                    onClick = { },
+                    onClick = {},
                     containerColor = Color(0xFF4A90E2),
                     modifier = Modifier.size(34.dp)
                 ) {
@@ -292,7 +302,9 @@ fun ProfileEditScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 colors = fieldColors()
             )
+
             Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = sobrenome,
                 onValueChange = { sobrenome = it },
@@ -300,7 +312,9 @@ fun ProfileEditScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 colors = fieldColors()
             )
+
             Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -309,7 +323,9 @@ fun ProfileEditScreen(navController: NavController) {
                 modifier = Modifier.fillMaxWidth(),
                 colors = fieldColors()
             )
+
             Spacer(modifier = Modifier.height(12.dp))
+
             OutlinedTextField(
                 value = senha,
                 onValueChange = { senha = it },
@@ -335,7 +351,9 @@ fun ProfileEditScreen(navController: NavController) {
                 ) {
                     Text("Cancelar")
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 val brush = Brush.horizontalGradient(listOf(Color(0xFF00C9A7), Color(0xFF009688)))
                 Button(
                     onClick = { showSavedPopup = true },
@@ -356,7 +374,11 @@ fun ProfileEditScreen(navController: NavController) {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        Spacer(modifier = Modifier.height(finalPaddingDp))
     }
 
     if (showSavedPopup) {

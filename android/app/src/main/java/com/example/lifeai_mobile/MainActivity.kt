@@ -21,14 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
 import com.example.lifeai_mobile.view.*
-import com.example.lifeai_mobile.viewmodel.AuthViewModel
-import com.example.lifeai_mobile.viewmodel.AuthViewModelFactory
-import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
-import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModel
-import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModelFactory
-import com.example.lifeai_mobile.viewmodel.OnboardingViewModel
-import com.example.lifeai_mobile.viewmodel.OnboardingViewModelFactory
-import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
+import com.example.lifeai_mobile.viewmodel.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,11 +30,9 @@ class MainActivity : ComponentActivity() {
 
         val app = application as MyApplication
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
-        val onboardingViewModelFactory =
-            OnboardingViewModelFactory(app.authRepository, app.sessionManager)
+        val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
-
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
 
         setContent {
@@ -91,24 +82,14 @@ class MainActivity : ComponentActivity() {
                                 OnboardingScreen(navController, onboardingViewModel)
                             }
 
-                            // Tela principal com BottomNavigation
                             composable("home") {
                                 val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 MainAppScreen(
-                                    mainNavController = navController, // usado para logout e rotas globais
+                                    mainNavController = navController,
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory
                                 )
-                            }
-
-                            composable("imc_calculator") {
-                                val viewModel: ImcCalculatorViewModel = viewModel(factory = imcCalculatorViewModelFactory)
-                                ImcCalculatorScreen(navController = navController, viewModel = viewModel)
-                            }
-
-                            composable("profile_edit") {
-                                ProfileEditScreen(navController = navController)
                             }
                         }
                     } else {

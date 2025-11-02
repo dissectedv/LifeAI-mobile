@@ -58,5 +58,13 @@ jobs:
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
 
-            echo "Deployment completed successfully on Kubernetes cluster."
+            echo "Running health check..."
+            STATUS_CODE=\$(curl -s -o /dev/null -w "%{http_code}" http://3.14.126.94:30540/admin/login/)
+
+            if [ "\$STATUS_CODE" -eq 200 ]; then
+              echo "✅ Health check passed (HTTP 200)"
+            else
+              echo "❌ Health check failed (HTTP \$STATUS_CODE)"
+              exit 1
+            fi
           EOF

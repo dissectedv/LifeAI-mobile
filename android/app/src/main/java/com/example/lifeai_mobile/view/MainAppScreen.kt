@@ -3,7 +3,6 @@ package com.example.lifeai_mobile.view
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -39,9 +38,7 @@ fun MainAppScreen(
             contentWindowInsets = WindowInsets(0.dp)
         ) { innerPadding ->
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                modifier = Modifier.fillMaxSize()
             ) {
                 NavigationGraph(
                     navController = bottomBarNavController,

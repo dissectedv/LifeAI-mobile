@@ -48,7 +48,6 @@ fun NavigationGraph(
         }
 
         composable(BottomNavItem.ChatIA.route) {
-            // 3. PASSE A FACTORY E O PADDING PARA A TELA DE CHAT
             val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
             ChatIAScreen(
                 viewModel = chatViewModel,
@@ -66,7 +65,10 @@ fun NavigationGraph(
         }
 
         composable("profile_edit") {
-            ProfileEditScreen(navController = navController)
+            ProfileEditScreen(
+                navController = navController,
+                bottomBarPadding = bottomBarPadding
+            )
         }
     }
 }
