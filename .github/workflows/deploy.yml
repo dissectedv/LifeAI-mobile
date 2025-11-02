@@ -41,17 +41,22 @@ jobs:
             ${{ env.DOCKER_USER }}/${{ env.BACKEND_NAME }}:${{ github.sha }}
 
       # 5️⃣ Atualizar deployment na instância remota via SSH
+      - name: Decodificar chave base64 para arquivo
+        run: |
+          echo "${{ secrets.REMOTE_SSH_KEY }}" | base64 --decode > ssh_key
+          chmod 600 ssh_key
+
       - name: Atualizar deploys na instância remota
         uses: appleboy/ssh-action@v0.1.9
         with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key_path: ssh_key
           debug: true
-          host: ${{ secrets.REMOTE_HOST }}      # IP da instância
-          username: ${{ secrets.REMOTE_USER }}  # usuário de serviço
-          key: ${{ secrets.REMOTE_SSH_KEY }}    # chave privada
           script: |
             echo "✅ Atualizando backend..."
-            
             kubectl set image deployment/django-deployment backend=${{ env.DOCKER_USER }}/${{ env.BACKEND_NAME }}:${{ github.sha }} -n ${{ env.NAMESPACE }}
             kubectl rollout status deployment/django-deployment -n ${{ env.NAMESPACE }}
-
             echo "🚀 Deploy concluído na instância remota"
+
+
