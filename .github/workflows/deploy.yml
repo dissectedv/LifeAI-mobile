@@ -47,6 +47,7 @@ jobs:
           host: ${{ secrets.REMOTE_HOST }}      # IP da instância
           username: ${{ secrets.REMOTE_USER }}  # usuário de serviço
           key: ${{ secrets.REMOTE_SSH_KEY }}    # chave privada
+          debug: true
           script: |
             echo "✅ Atualizando backend..."
             
