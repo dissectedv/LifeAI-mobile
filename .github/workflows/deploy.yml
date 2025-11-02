@@ -10,22 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Docker Buildx
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3️⃣ Login to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 4️⃣ Build and Push backend image
       - name: Build and Push Backend Image
         uses: docker/build-push-action@v6
         with:
@@ -42,7 +38,6 @@ jobs:
     needs: build-and-push
 
     steps:
-      # 1️⃣ Decode SSH key from Base64 and prepare access
       - name: Decode SSH key (Base64)
         run: |
           echo "${{ secrets.LIFEAI_SSH_KEY_B64 }}" | base64 --decode > private_key.pem
@@ -50,23 +45,13 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
 
-      # 2️⃣ Copy Kubernetes manifests to EC2
-      - name: Copy Kubernetes manifests to EC2
+      - name: Apply Kubernetes manifests and update image
         run: |
-          echo "Copying lifeai-k8s/ folder to EC2..."
-          scp -o StrictHostKeyChecking=no -i private_key.pem -r lifeai-k8s ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }}:/home/${{ secrets.LIFEAI_USER }}/
+          echo "Connecting to EC2 and deploying..."
 
-      # 3️⃣ Apply manifests and restart deployment
-      - name: Apply and restart Kubernetes resources
-        uses: appleboy/ssh-action@v0.1.9
-        with:
-          host: ${{ secrets.LIFEAI_HOST }}
-          username: ${{ secrets.LIFEAI_USER }}
-          key: ${{ secrets.LIFEAI_SSH_KEY_B64 }}
-          script_stop: true
-          script: |
-            echo "Applying Kubernetes manifests..."
-            kubectl apply -k ~/lifeai-k8s
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << 'EOF'
+            echo "Applying latest Kubernetes manifests..."
+            kubectl apply -k ~/LifeAI/lifeai-k8s
 
             echo "Updating LifeAI backend image..."
             kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
@@ -75,4 +60,5 @@ jobs:
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
 
-            echo "✅ Deployment completed successfully on Kubernetes cluster"
+            echo "Deployment completed successfully on Kubernetes cluster."
+          EOF
