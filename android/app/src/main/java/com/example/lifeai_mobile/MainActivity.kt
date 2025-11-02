@@ -15,6 +15,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.core.splashscreen.SplashScreen
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,10 +27,13 @@ import com.example.lifeai_mobile.viewmodel.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Instala a Splash Screen antes de qualquer renderização
+        val splashScreen: SplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         val app = application as MyApplication
+
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
         val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
