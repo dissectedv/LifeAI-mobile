@@ -58,16 +58,14 @@ jobs:
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
 
-            echo "Running health check..."
-            sleep 10 
+            echo "Running internal health check..."
+            POD_NAME=$(kubectl get pod -n lifeai -l app=django -o jsonpath='{.items[0].metadata.name}')
 
-            STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://3.14.126.94:30540/health/)
-
-            if [ "$STATUS_CODE" -eq 200 ]; then
-              echo "✅ Health check passed (HTTP 200)"
+            if kubectl exec -n lifeai "$POD_NAME" -- wget -qO- http://localhost:8000/health/ > /dev/null; then
+              echo "Health check passed (HTTP 200)"
             else
-              echo "❌ Health check failed (HTTP $STATUS_CODE)"
-              echo "Logs do pod Django:"
+              echo "Health check failed inside pod"
+              echo "Django logs:"
               kubectl logs -n lifeai -l app=django --tail=50
               exit 1
             fi
