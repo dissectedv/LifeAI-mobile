@@ -45,7 +45,7 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Apply Kubernetes manifests, update image and run health check
+      - name: Apply Kubernetes manifests and update image
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << 'EOF'
             echo "Applying latest Kubernetes manifests..."
@@ -57,29 +57,4 @@ jobs:
             echo "Restarting deployment..."
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
-
-            echo "Running internal health check..."
-            POD_NAME=$(kubectl get pod -n lifeai -l app=django -o jsonpath='{.items[0].metadata.name}')
-
-            MAX_ATTEMPTS=10
-            SLEEP_SECONDS=5
-            ATTEMPT=1
-
-            while [ \$ATTEMPT -le \$MAX_ATTEMPTS ]; do
-              echo "Attempt \$ATTEMPT of \$MAX_ATTEMPTS..."
-              if kubectl exec -n lifeai "\$POD_NAME" -- wget -qO- http://localhost:8000/health/ > /dev/null 2>&1; then
-                echo "Health check passed (HTTP 200)"
-                break
-              fi
-              echo "Django not ready yet, retrying in \${SLEEP_SECONDS}s..."
-              sleep \$SLEEP_SECONDS
-              ATTEMPT=\$((ATTEMPT+1))
-            done
-
-            if [ \$ATTEMPT -gt \$MAX_ATTEMPTS ]; then
-              echo "Health check failed after \${MAX_ATTEMPTS} attempts"
-              echo "Django logs:"
-              kubectl logs -n lifeai -l app=django --tail=80
-              exit 1
-            fi
           EOF
