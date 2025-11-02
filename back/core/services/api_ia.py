@@ -34,7 +34,7 @@ def perguntar_ia_gemini(historico_mensagens):
         raise Exception("GEMINI_API_KEY não configurada no settings.py")
 
     url_base = settings.LM_API_URL
-    url_completa = f"{url_base}:generateContent?key={settings.GEMINI_API_KEY}"
+    url_completa = f"{url_base}/generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
 
     resposta = requests.post(url_completa, json=payload, headers=headers)
