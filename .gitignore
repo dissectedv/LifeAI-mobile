@@ -8,6 +8,7 @@ env/
 
 # Android local properties
 /LifeAI-mobile/local.properties
+/android/local.properties
 
 # ===============================
 # CONFIGURAÇÕES SENSÍVEIS / SEGREDOS
@@ -21,6 +22,29 @@ env/
 /LifeAI-mobile/*.jks
 /LifeAI-mobile/*.keystore
 /LifeAI-mobile/keystore.properties
+
+# Chaves SSH, certificados e segredos
+*.pem
+*.ppk
+*.key
+*.crt
+*.csr
+*.b64
+*.base64
+*.enc
+*.secret
+*.token
+*.cert
+*.bak
+*secret.txt
+*.pub
+key_base64.txt
+github-actions-kubeconfig
+*.kubeconfig
+kubeconfig.yaml
+id_rsa*
+id_ecdsa*
+secrets.yaml
 
 # ===============================
 # ARQUIVOS DE SISTEMAS OPERACIONAIS
@@ -79,3 +103,21 @@ pytest_cache/
 LifeAI-mobile/app/src/main/java/com/example/lifeai_mobile/utils
 
 android/local.properties
+
+# ===============================
+# DOCKER / CI-CD
+# ===============================
+.dockerignore
+*.tar
+*.pid
+*.img
+**/docker-data/
+**/docker-volume/
+**/tmp_docker/
+**/docker_tmp/
+**/.docker/
+**/docker-compose*.yml
+**/docker-compose*.yaml
+.github/secrets/
+.github/.env
+.github/workflows/tmp/

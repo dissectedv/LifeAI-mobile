@@ -1,0 +1,56 @@
+name: 🚀 Build & Deploy Docker para Kubernetes (LifeAI via SSH)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Backend LifeAI
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout do código
+      - name: 🧩 Checkout do repositório
+        uses: actions/checkout@v3
+
+      # 2️⃣ Configurar ambiente Docker Buildx
+      - name: 🔧 Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3️⃣ Login no Docker Hub (com secrets)
+      - name: 🔐 Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 4️⃣ Build & Push da imagem do backend
+      - name: 🏗️ Build & Push Backend LifeAI
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest
+            ${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }}
+          no-cache: true
+
+      # 5️⃣ Conectar na instância remota e atualizar deployment
+      - name: 📜 Decodificar chave SSH Base64
+        id: decode_key
+        run: echo "key=$(echo ${{ secrets.LIFEAI_SSH_KEY_B64 }} | base64 --decode)" >> $GITHUB_OUTPUT
+
+      - name: 🌐 Atualizar deployment Kubernetes remoto (EC2)
+        uses: appleboy/ssh-action@v0.1.9
+        with:
+          host: ${{ secrets.LIFEAI_HOST }}
+          username: ${{ secrets.LIFEAI_USER }}
+          key: ${{ steps.decode_key.outputs.key }}
+          debug: true
+          script: |
+            echo "🧠 Atualizando imagem do backend LifeAI..."
+            kubectl set image deployment/backend app=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
+            kubectl rollout restart deployment/backend -n lifeai
+            kubectl rollout status deployment/backend -n lifeai
+            echo "✅ Deploy concluído no cluster Kubernetes LifeAI"
