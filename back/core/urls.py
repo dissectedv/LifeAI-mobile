@@ -1,5 +1,6 @@
 from django.urls import path
 from core import viewsets
+from core import views
 from core.services.api_ia import chat_ia_view
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -23,4 +24,5 @@ urlpatterns = [
     path('checklists/<int:checklist_id>/pontuacao/', viewsets.GerarPontuacaoAPIView.as_view()),
     path('pontuacoes/', viewsets.PontuacaoCheckListAPIView.as_view(), name='pontuacoes'),
     path('pontuacoes/mensal/', viewsets.DesempenhoMensalAPIView.as_view(), name='pontuacoes-mensal'),
+    path("health/", views.health_check, name="health_check"),
 ]
