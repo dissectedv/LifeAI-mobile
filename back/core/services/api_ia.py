@@ -61,7 +61,7 @@ def chat_ia_view(request):
         # resposta = perguntar_ia_lm_studio(conversas_em_memoria[sessao_id])
 
         # 2. Adicione sua resposta simulada (mock)
-        resposta = f"Esta é uma resposta simulada para a pergunta (testes): '{pergunta}'"
+        resposta = f"Esta é uma resposta simulada para a pergunta (teste!): '{pergunta}'"
         
         ### FIM DA SIMULAÇÃO DE TESTE ###
 
