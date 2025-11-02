@@ -2,22 +2,13 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# ------------------------------
-# BASE DIR
-# ------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ------------------------------
-# ENVIRONMENT VARIABLES
-# ------------------------------
 load_dotenv()
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret-key")
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 
-# ------------------------------
-# APPLICATIONS
-# ------------------------------
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -25,22 +16,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core',  # seu app principal
-
-    # libs
+    'core',
     'rest_framework',
     'django_filters',
     'corsheaders',
     'rest_framework_simplejwt',
 ]
 
-# ------------------------------
-# MIDDLEWARE
-# ------------------------------
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -49,15 +34,9 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# ------------------------------
-# URLS
-# ------------------------------
 ROOT_URLCONF = 'LIFEAI_.urls'
 WSGI_APPLICATION = 'LIFEAI_.wsgi.application'
 
-# ------------------------------
-# DATABASE
-# ------------------------------
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
@@ -69,26 +48,16 @@ DATABASES = {
     }
 }
 
-# ------------------------------
-# LANGUAGE, TIMEZONE
-# ------------------------------
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# ------------------------------
-# STATIC & MEDIA
-# ------------------------------
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # pasta onde collectstatic salva
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # pasta para uploads
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# ------------------------------
-# DJANGO REST & CORS
-# ------------------------------
 CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
@@ -106,15 +75,10 @@ REST_FRAMEWORK = {
     ),
 }
 
-# ------------------------------
-# LM API
-# ------------------------------
-LM_API_URL = os.getenv("LM_API_URL", "http://localhost:1234/v1/chat/completions")
-LM_API_MODEL = os.getenv("LM_API_MODEL", "meta-llama-3-8b-instruct")
+LM_API_URL = os.getenv("LM_API_URL", "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+LM_API_MODEL = os.getenv("LM_API_MODEL", "")
 
-# ------------------------------
-# PASSWORD VALIDATION
-# ------------------------------
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -124,9 +88,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ------------------------------
-# TEMPLATES
-# ------------------------------
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

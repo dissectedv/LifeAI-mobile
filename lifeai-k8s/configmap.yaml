@@ -1,12 +1,20 @@
-# base/configmap.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: lifeai-config
   namespace: lifeai
 data:
+  # Banco de dados
   DB_ENGINE: "django.db.backends.postgresql_psycopg2"
   DB_HOST: "postgres-service"
   DB_NAME: "lifeAI"
   DB_PORT: "5432"
+
+  # App settings
   FRONT_HOST: "http://localhost:90"
+  DJANGO_SECRET_KEY: "django-insecure-5a@!8#w45r65*^40gfi5&dlr1solf-\$mtsen+a4-g%s8r2kghp"
+
+  # IA e Gemini
+  GEMINI_API_KEY: "AIzaSyDzUZlA4AZUp0UddYaw-Q9zWkTwCtBiKrw"
+  LM_API_URL: "http://127.0.0.1:1234/v1/chat/completions"
+  LM_API_MODEL: "meta-llama-3-8b-instruct"
