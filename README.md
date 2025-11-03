@@ -5,7 +5,7 @@ Nosso objetivo com este projeto é **aprender profissionalmente** e **propagar a
 
 ---
 
-## 🧠 Visão Geral
+## Visão Geral
 
 O **LifeAI Mobile** é um aplicativo Android desenvolvido em **Kotlin**, com o propósito de auxiliar usuários a acompanharem hábitos de saúde e bem-estar, oferecendo insights e recomendações personalizadas baseadas em dados e inteligência artificial.
 
@@ -13,7 +13,7 @@ O projeto faz parte de uma solução integrada, composta por **aplicativo mobile
 
 ---
 
-## 🚀 Objetivos do Projeto
+## Objetivos do Projeto
 
 - Desenvolver um aplicativo completo utilizando **Jetpack Compose** e **arquitetura MVVM**.  
 - Criar uma API backend segura e funcional em **Django / Node.js**, com integração ao banco de dados **MySQL**.  
@@ -22,7 +22,7 @@ O projeto faz parte de uma solução integrada, composta por **aplicativo mobile
 
 ---
 
-## 🧩 Estrutura do Repositório
+## Estrutura do Repositório
 
 ```bash
 LifeAI-mobile/
