@@ -2,6 +2,6 @@
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
         <!-- IP público da instância AWS -->
-        <domain includeSubdomains="true">3.14.126.94</domain>
+        <domain includeSubdomains="true">3.128.194.210</domain>
     </domain-config>
 </network-security-config>
