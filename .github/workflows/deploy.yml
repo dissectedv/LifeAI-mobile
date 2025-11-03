@@ -38,9 +38,9 @@ jobs:
     needs: build-and-push
 
     steps:
-      - name: Decode SSH key (Base64)
+      - name: Add SSH key directly
         run: |
-          echo "${{ secrets.LIFEAI_SSH_KEY_B64 }}" | base64 --decode > private_key.pem
+          echo "${{ secrets.LIFEAI_SSH_KEY }}" > private_key.pem
           chmod 600 private_key.pem
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
