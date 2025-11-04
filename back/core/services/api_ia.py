@@ -63,8 +63,7 @@ def chat_ia_view(request):
         return Response({"erro": "sessao_id é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        conversas_em_memoria[sessao_id].append({"role": "user", "content": pergunta})
-        resposta = perguntar_ia_gemini(conversas_em_memoria[sessao_id])
+        conversas_em_memoria[sessao_id].append({"role": "user", "content": pergunta})   
         conversas_em_memoria[sessao_id].append({"role": "assistant", "content": resposta})
         return Response({"resposta": resposta})
     except Exception as e:

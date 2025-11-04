@@ -5,14 +5,14 @@ import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
+import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.PerfilImcBase
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.POST
+import retrofit2.HttpException
 
 class AuthRepository(private val api: AuthApi) {
 
@@ -40,5 +40,16 @@ class AuthRepository(private val api: AuthApi) {
 
     suspend fun postChatMessage(request: ChatRequest): Response<ChatResponse> {
         return api.postChatMessage(request)
+    }
+
+    suspend fun getHistoricoImc(): List<ImcRegistro> {
+        return api.getHistoricoImc()
+    }
+
+    suspend fun deleteImcRegistro(id: Int) {
+        val response = api.deleteImcRegistro(id)
+        if (!response.isSuccessful) {
+            throw HttpException(response)
+        }
     }
 }

@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
 
+        val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
         // Linha removida (não é mais necessária)
         // val atividadeFisicaViewModelFactory = AtividadeFisicaViewModelFactory(app.authRepository)
 
@@ -100,6 +101,23 @@ class MainActivity : ComponentActivity() {
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory
                                     // Factory removida da chamada
+                                )
+                            }
+                            composable("imc_calculator") {
+                                // Cria o ViewModel para o formulário
+                                val imcViewModel: ImcCalculatorViewModel = viewModel(
+                                    factory = imcCalculatorViewModelFactory
+                                )
+                                // Cria o ViewModel para a tabela
+                                val historicoViewModel: HistoricoImcViewModel = viewModel(
+                                    factory = historicoImcViewModelFactory
+                                )
+
+                                // Passa AMBOS os ViewModels para a tela
+                                ImcCalculatorScreen(
+                                    navController = navController,
+                                    viewModel = imcViewModel,
+                                    historicoViewModel = historicoViewModel // <-- Passe o novo VM
                                 )
                             }
                         }
