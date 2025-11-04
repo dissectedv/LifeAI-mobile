@@ -40,6 +40,8 @@ class MainActivity : ComponentActivity() {
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
 
+        val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
+
         setContent {
             LifeAImobileTheme {
                 Surface(
@@ -94,6 +96,23 @@ class MainActivity : ComponentActivity() {
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory
+                                )
+                            }
+                            composable("imc_calculator") {
+                                // Cria o ViewModel para o formulário
+                                val imcViewModel: ImcCalculatorViewModel = viewModel(
+                                    factory = imcCalculatorViewModelFactory
+                                )
+                                // Cria o ViewModel para a tabela
+                                val historicoViewModel: HistoricoImcViewModel = viewModel(
+                                    factory = historicoImcViewModelFactory
+                                )
+
+                                // Passa AMBOS os ViewModels para a tela
+                                ImcCalculatorScreen(
+                                    navController = navController,
+                                    viewModel = imcViewModel,
+                                    historicoViewModel = historicoViewModel // <-- Passe o novo VM
                                 )
                             }
                         }

@@ -5,6 +5,7 @@ import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
+import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.PerfilImcBase
@@ -12,8 +13,10 @@ import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface  AuthApi {
     @POST("registro/")
@@ -33,4 +36,10 @@ interface  AuthApi {
 
     @POST("chat-ia/")
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
+
+    @GET("imc/registrosConsultas/")
+    suspend fun getHistoricoImc(): List<ImcRegistro>
+
+    @DELETE("imc/{id}/")
+    suspend fun deleteImcRegistro(@Path("id") id: Int): Response<Unit>
 }
