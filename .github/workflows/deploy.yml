@@ -2,7 +2,7 @@ name: Build and Deploy Docker to Kubernetes (LifeAI via SSH)
 
 on:
   push:
-    branches: [ "gui" ]
+    branches: [ "main" ]
 
 jobs:
   build-and-push:
