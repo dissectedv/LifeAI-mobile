@@ -8,7 +8,10 @@ import com.example.lifeai_mobile.model.ImcRecordResponse
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
+import com.example.lifeai_mobile.model.LogoutRequest
 import com.example.lifeai_mobile.model.PerfilImcBase
+import com.example.lifeai_mobile.model.RefreshTokenRequest
+import com.example.lifeai_mobile.model.RefreshTokenResponse
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
 import retrofit2.Response
@@ -42,4 +45,10 @@ interface  AuthApi {
 
     @DELETE("imc/{id}/")
     suspend fun deleteImcRegistro(@Path("id") id: Int): Response<Unit>
+
+    @POST("api/token/refresh/")
+    suspend fun refreshToken(@Body request: RefreshTokenRequest): Response<RefreshTokenResponse>
+
+    @POST("logout/")
+    suspend fun logout(@Body request: LogoutRequest): Response<Unit>
 }

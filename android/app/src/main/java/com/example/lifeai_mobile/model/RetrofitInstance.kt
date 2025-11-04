@@ -1,8 +1,9 @@
 package com.example.lifeai_mobile.model
 
-import com.example.lifeai_mobile.utils.SessionManager // <-- IMPORT CORRIGIDO
+import com.example.lifeai_mobile.utils.SessionManager
 import com.example.lifeai_mobile.repository.AuthApi
 import com.example.lifeai_mobile.repository.AuthInterceptor
+import com.example.lifeai_mobile.repository.TokenRefreshAuthenticator
 import com.example.lifeai_mobile.utils.Constants.BASE_URL
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -15,7 +16,10 @@ class RetrofitInstance(sessionManager: SessionManager) {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    private val authenticator = TokenRefreshAuthenticator(sessionManager)
+
     private val client = OkHttpClient.Builder()
+        .authenticator(authenticator)
         .addInterceptor(AuthInterceptor(sessionManager))
         .addInterceptor(loggingInterceptor)
         .build()

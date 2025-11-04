@@ -13,8 +13,15 @@ import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
 import retrofit2.Response
 import retrofit2.HttpException
+import com.example.lifeai_mobile.utils.SessionManager
+import kotlinx.coroutines.flow.firstOrNull
+import com.example.lifeai_mobile.model.RefreshTokenRequest
+import com.example.lifeai_mobile.model.LogoutRequest
 
-class AuthRepository(private val api: AuthApi) {
+class AuthRepository(
+    private val api: AuthApi,
+    private val sessionManager: SessionManager
+) {
 
     suspend fun registerUser(username: String, email: String, password: String): Response<RegisterResponse> {
         val request = RegisterRequest(username, email, password)
@@ -23,7 +30,52 @@ class AuthRepository(private val api: AuthApi) {
 
     suspend fun loginUser(email: String, password: String): Response<LoginResponse> {
         val request = LoginRequest(email, password)
-        return api.login(request)
+        val response = api.login(request)
+
+        if (response.isSuccessful) {
+            val body = response.body()
+            if (body != null && body.access != null && body.refresh != null) {
+                sessionManager.saveTokens(body.access, body.refresh)
+            }
+        }
+        return response
+    }
+
+    suspend fun refreshToken(): Boolean {
+        val currentRefreshToken = sessionManager.refreshToken.firstOrNull() ?: return false
+
+        return try {
+            val request = RefreshTokenRequest(currentRefreshToken)
+            val response = api.refreshToken(request)
+
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body != null) {
+                    sessionManager.saveTokens(body.access, currentRefreshToken)
+                    true
+                } else {
+                    false
+                }
+            } else {
+                sessionManager.clearTokens()
+                false
+            }
+        } catch (e: Exception) {
+            sessionManager.clearTokens()
+            false
+        }
+    }
+
+    suspend fun logoutUser() {
+        val currentRefreshToken = sessionManager.refreshToken.firstOrNull()
+        if (currentRefreshToken != null) {
+            try {
+                val request = LogoutRequest(currentRefreshToken)
+                api.logout(request)
+            } catch (e: Exception) {
+            }
+        }
+        sessionManager.clearTokens()
     }
 
     suspend fun imcBase(profileData: PerfilImcBase): Response<Unit> {
