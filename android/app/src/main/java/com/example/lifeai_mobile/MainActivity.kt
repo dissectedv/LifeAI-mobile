@@ -25,9 +25,11 @@ import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
 import com.example.lifeai_mobile.view.*
 import com.example.lifeai_mobile.viewmodel.*
 
+// Import removido (não é mais necessário aqui)
+// import com.example.lifeai_mobile.viewmodel.AtividadeFisicaViewModelFactory
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Instala a Splash Screen antes de qualquer renderização
         val splashScreen: SplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -41,6 +43,8 @@ class MainActivity : ComponentActivity() {
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
 
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
+        // Linha removida (não é mais necessária)
+        // val atividadeFisicaViewModelFactory = AtividadeFisicaViewModelFactory(app.authRepository)
 
         setContent {
             LifeAImobileTheme {
@@ -96,6 +100,7 @@ class MainActivity : ComponentActivity() {
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory
+                                    // Factory removida da chamada
                                 )
                             }
                             composable("imc_calculator") {
