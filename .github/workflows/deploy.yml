@@ -45,16 +45,16 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Apply Kubernetes manifests and update image
+      - name: Update Kubernetes deployment image
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << 'EOF'
-            echo "Applying latest Kubernetes manifests..."
-            kubectl apply -k ~/lifeai-k8s
-
             echo "Updating LifeAI backend image..."
             kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
 
             echo "Restarting deployment..."
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
+
+            echo "Current pods:"
+            kubectl get pods -n lifeai -o wide
           EOF

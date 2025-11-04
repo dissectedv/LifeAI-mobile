@@ -11,6 +11,8 @@ import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -20,18 +22,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.lifeai_mobile.viewmodel.ResumoViewModel
+import com.example.lifeai_mobile.viewmodel.ResumoState
 
 @Composable
 fun SaudeScreen(
     mainNavController: NavController,
-    modifier: Modifier = Modifier // Recebe o modifier (padding inferior)
+    navController: NavController,
+    resumoViewModel: ResumoViewModel,
+    modifier: Modifier = Modifier
 ) {
+    val state by resumoViewModel.state.collectAsState()
+
     Column(
-        modifier = modifier // Aplica o modifier (padding inferior)
+        modifier = modifier
             .fillMaxSize()
-            // ADICIONE ISTO para o padding superior da barra de status
             .statusBarsPadding()
-            .padding(16.dp), // Padding original da tela
+            .padding(16.dp),
         verticalArrangement = Arrangement.Top
     ) {
         Text(
@@ -49,7 +56,12 @@ fun SaudeScreen(
                 title = "Atividade Física",
                 description = "Exercícios físicos personalizados com base no seu perfil.",
                 icon = Icons.Default.FitnessCenter,
-                onClick = { }
+                onClick = {
+                    if (state is ResumoState.Success) {
+                        val imc = (state as ResumoState.Success).profile.imcResultado.toFloat()
+                        navController.navigate("atividade_fisica/$imc")
+                    }
+                }
             )
             SaudeCard(
                 title = "Planejamento de Rotina",
@@ -63,8 +75,6 @@ fun SaudeScreen(
                 icon = Icons.Default.Restaurant,
                 onClick = { }
             )
-            // CARD DE SONO REMOVIDO DAQUI
-
             SaudeCard(
                 title = "Calculadora de IMC",
                 description = "Calcule seu IMC e acompanhe sua evolução.",
@@ -75,7 +85,6 @@ fun SaudeScreen(
     }
 }
 
-// ... A função SaudeCard permanece igual ...
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SaudeCard(
@@ -117,9 +126,7 @@ private fun SaudeCard(
                     tint = textColor,
                     modifier = Modifier.size(30.dp)
                 )
-
                 Spacer(modifier = Modifier.width(18.dp))
-
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
@@ -137,9 +144,7 @@ private fun SaudeCard(
                         maxLines = 2
                     )
                 }
-
                 Spacer(modifier = Modifier.width(16.dp))
-
                 Icon(
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = "Acessar",

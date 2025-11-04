@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifeai_mobile.model.ImcBaseProfile
-import com.example.lifeai_mobile.view.ResumoViewModel
+import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable

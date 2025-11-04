@@ -4,8 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.lifeai_mobile.viewmodel.AuthViewModel
 import com.example.lifeai_mobile.view.ChatIAScreen
 import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
@@ -19,6 +21,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.lifeai_mobile.view.AtividadeFisicaScreen
+import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 
 @Composable
 fun NavigationGraph(
@@ -29,13 +33,15 @@ fun NavigationGraph(
     chatViewModelFactory: ChatIAViewModelFactory,
     bottomBarPadding: PaddingValues
 ) {
+    val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
+
     NavHost(
         navController = navController,
         startDestination = BottomNavItem.Inicio.route
     ) {
         composable(BottomNavItem.Inicio.route) {
             HomeScreen(
-                resumoViewModelFactory = resumoViewModelFactory,
+                resumoViewModel = resumoViewModel,
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
@@ -43,6 +49,8 @@ fun NavigationGraph(
         composable(BottomNavItem.Saude.route) {
             SaudeScreen(
                 mainNavController = mainNavController,
+                navController = navController,
+                resumoViewModel = resumoViewModel,
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
@@ -68,6 +76,18 @@ fun NavigationGraph(
             ProfileEditScreen(
                 navController = navController,
                 bottomBarPadding = bottomBarPadding
+            )
+        }
+
+        composable(
+            route = "atividade_fisica/{imc}",
+            arguments = listOf(navArgument("imc") { type = NavType.FloatType })
+        ) { backStackEntry ->
+            val imc = backStackEntry.arguments?.getFloat("imc") ?: 0f
+            AtividadeFisicaScreen(
+                navController = navController,
+                imc = imc,
+                modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
     }

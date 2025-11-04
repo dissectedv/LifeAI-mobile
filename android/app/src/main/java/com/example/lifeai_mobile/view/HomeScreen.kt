@@ -20,18 +20,17 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.lifeai_mobile.model.ImcBaseProfile
-import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
+import com.example.lifeai_mobile.viewmodel.ResumoViewModel
+import com.example.lifeai_mobile.viewmodel.ResumoState
 import java.util.Locale
 
 @Composable
 fun HomeScreen(
-    resumoViewModelFactory: ResumoViewModelFactory,
+    resumoViewModel: ResumoViewModel,
     modifier: Modifier = Modifier
 ) {
-    val viewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
-    val state by viewModel.state.collectAsState()
+    val state by resumoViewModel.state.collectAsState()
 
     Column(
         modifier = modifier
@@ -46,14 +45,14 @@ fun HomeScreen(
             color = Color.White,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             ImcHistoricoCard()
@@ -84,7 +83,7 @@ fun HomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Erro ao carregar resumo: ${currentState.message}",
+                                text = "Erro ao carregar resumo: ${currentState.message}",
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
