@@ -52,9 +52,22 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << EOF
             set -e
-            kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest -n lifeai
-            sudo k3s ctr images rm docker.io/${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest || true
+            echo "[1/6] Atualizando imagem no deployment..."
+            kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
+
+            echo "[2/6] Forçando atualização de cache local..."
+            sudo k3s ctr images rm docker.io/${{ secrets.DOCKERHUB_USER }}/lifeai-backend:* || true
+
+            echo "[3/6] Forçando redeploy via annotation..."
+            kubectl patch deployment django-deployment -n lifeai \
+              -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"redeploy-timestamp\":\"$(date +%s)\"}}}}}"
+
+            echo "[4/6] Reiniciando rollout..."
             kubectl rollout restart deployment/django-deployment -n lifeai
-            kubectl rollout status deployment/django-deployment -n lifeai --timeout=120s
+
+            echo "[5/6] Aguardando rollout completar..."
+            kubectl rollout status deployment/django-deployment -n lifeai --timeout=300s
+
+            echo "[6/6] Verificando pods em execução..."
             kubectl get pods -n lifeai -o wide
           EOF
