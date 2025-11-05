@@ -2,6 +2,7 @@ from django.urls import path
 from core import viewsets
 from core import views
 from core.services.api_ia import chat_ia_view
+from .services import api_ia
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
@@ -25,4 +26,6 @@ urlpatterns = [
     path('pontuacoes/', viewsets.PontuacaoCheckListAPIView.as_view(), name='pontuacoes'),
     path('pontuacoes/mensal/', viewsets.DesempenhoMensalAPIView.as_view(), name='pontuacoes-mensal'),
     path("health/", views.health_check, name="health_check"),
+    path('chat-ia/', api_ia.chat_ia_view, name='chat-ia'),
+    path('gerar-dieta-ia/', api_ia.gerar_dieta_ia_view, name='gerar-dieta-ia'),
 ]
