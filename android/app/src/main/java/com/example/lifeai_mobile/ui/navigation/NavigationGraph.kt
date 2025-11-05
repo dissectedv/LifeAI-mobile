@@ -38,6 +38,12 @@ fun NavigationGraph(
 ) {
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
 
+    // --- CORREÇÃO AQUI ---
+    // 1. Inicialize o ViewModel aqui, fora do NavHost.
+    // Ele agora viverá enquanto o NavigationGraph estiver vivo.
+    val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
+    // --- FIM DA CORREÇÃO ---
+
     NavHost(
         navController = navController,
         startDestination = BottomNavItem.Inicio.route
@@ -59,17 +65,13 @@ fun NavigationGraph(
             )
         }
 
-        // --- CORREÇÃO AQUI ---
-        // Rota do Chat volta a ser simples, sem argumentos.
         composable(BottomNavItem.ChatIA.route) {
-            val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
+            // 2. Agora, apenas passe a instância do ViewModel que já existe.
             ChatIAScreen(
                 viewModel = chatViewModel,
                 bottomBarPadding = bottomBarPadding
-                // O parâmetro 'saudacaoInicial' foi removido
             )
         }
-        // --- FIM DA CORREÇÃO ---
 
         composable(BottomNavItem.Usuario.route) {
             UsuarioScreen(
