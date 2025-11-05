@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -32,12 +33,15 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.ParagraphStyle
+import java.net.URLDecoder // <-- 1. IMPORT NECESSÁRIO
+import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatIAScreen(
     viewModel: ChatIAViewModel,
-    bottomBarPadding: PaddingValues
+    bottomBarPadding: PaddingValues,
+    saudacaoInicial: String? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val density = LocalDensity.current
@@ -48,6 +52,16 @@ fun ChatIAScreen(
     val finalPaddingDp = with(density) {
         (if (imeBottomPx > 0) imeBottomPx.toFloat() else navBarBottomPx).toDp()
     }
+
+    // --- CORREÇÃO BUG 3 (MENSAGEM COM `+`) ---
+    LaunchedEffect(saudacaoInicial) {
+        if (saudacaoInicial != null) {
+            // Decodifica a mensagem (Ex: "Olá+mundo" vira "Olá mundo")
+            val decodedGreeting = URLDecoder.decode(saudacaoInicial, StandardCharsets.UTF_8.name())
+            viewModel.setInitialGreeting(decodedGreeting)
+        }
+    }
+    // --- FIM DA CORREÇÃO ---
 
     Column(
         modifier = Modifier
@@ -81,7 +95,11 @@ fun ChatIAScreen(
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            if (uiState.messages.size <= 1) {
+            // --- CORREÇÃO BUG 2 (TELA VAZIA) ---
+            // Só mostra a tela vazia se NÃO veio saudação E a lista está vazia
+            val mostrarTelaVazia = saudacaoInicial == null && uiState.messages.size <= 1
+
+            if (mostrarTelaVazia) {
                 EmptyChatView(
                     onSuggestionClick = { topic ->
                         viewModel.sendSuggestion(topic)
@@ -101,6 +119,7 @@ fun ChatIAScreen(
                     }
                 }
             }
+            // --- FIM DA CORREÇÃO ---
         }
 
         UserInputBar(

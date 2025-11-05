@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+private const val DEFAULT_GREETING = "Olá! Eu sou sua assistente virtual LifeAI 🤖"
+
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(
-        ChatMessage("Olá! Eu sou sua assistente virtual LifeAI 🤖", isUser = false)
+        ChatMessage(DEFAULT_GREETING, isUser = false)
     ),
     val inputText: String = ""
 )
@@ -26,7 +28,6 @@ class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState = _uiState.asStateFlow()
 
-    // Gera um ID de sessão único para esta conversa
     private val sessaoId: String = UUID.randomUUID().toString()
 
     fun onInputTextChange(text: String) {
@@ -69,14 +70,12 @@ class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
                     apiResponse = "Erro ao conectar com a IA: ${response.message()}"
                 }
 
-                // Atualiza a lista, substituindo "Processando..." pela resposta final
                 _uiState.update { currentState ->
                     val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(apiResponse, isUser = false)
                     currentState.copy(messages = updatedMessages)
                 }
 
             } catch (e: Exception) {
-                // Em caso de falha de conexão
                 val errorResponse = "Falha na conexão: ${e.message}"
                 _uiState.update { currentState ->
                     val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(errorResponse, isUser = false)
@@ -84,15 +83,18 @@ class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
                 }
             }
         }
+    }
 
-//        viewModelScope.launch {
-//            delay(2000)
-//            val apiResponse = "Esta é uma resposta simulada para '$userInput'! 🧠"
-//
-//            _uiState.update { currentState ->
-//                val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(apiResponse, isUser = false)
-//                currentState.copy(messages = updatedMessages)
-//            }
-//        }
+    /**
+     * Chamado pela ChatIAScreen para substituir a saudação padrão
+     * pela saudação vinda da HomeScreen.
+     */
+    fun setInitialGreeting(greeting: String) {
+        // Só substitui a mensagem se a conversa ainda estiver no estado inicial
+        if (_uiState.value.messages.size == 1 && _uiState.value.messages.first().text == DEFAULT_GREETING) {
+            _uiState.update {
+                it.copy(messages = listOf(ChatMessage(greeting, isUser = false)))
+            }
+        }
     }
 }

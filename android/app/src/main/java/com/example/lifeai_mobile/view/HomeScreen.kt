@@ -20,13 +20,19 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import com.example.lifeai_mobile.viewmodel.ResumoState
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
+import java.util.Calendar
 import java.util.Locale
 
 @Composable
 fun HomeScreen(
+    navController: NavHostController, // <-- 1. ADICIONADO
     resumoViewModel: ResumoViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -67,6 +73,8 @@ fun HomeScreen(
                     ) {
                         CircularProgressIndicator()
                     }
+                    // Mostra um "placeholder" do botão de chat enquanto carrega
+                    ChatGreetingCard(profile = null, navController = navController, isLoading = true)
                 }
 
                 is ResumoState.Error -> {
@@ -92,10 +100,14 @@ fun HomeScreen(
 
                 is ResumoState.Success -> {
                     ResumoImcCard(profile = currentState.profile)
+                    // 2. SUBSTITUÍDO o botão pelo novo Card
+                    ChatGreetingCard(
+                        profile = currentState.profile,
+                        navController = navController,
+                        isLoading = false
+                    )
                 }
             }
-
-            GerarDicaIAButton()
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -110,24 +122,58 @@ fun HomeScreen(
     }
 }
 
+/**
+ * Retorna a saudação apropriada baseada na hora do dia.
+ */
+private fun getGreeting(): String {
+    val calendar = Calendar.getInstance()
+    return when (calendar.get(Calendar.HOUR_OF_DAY)) {
+        in 0..11 -> "Bom dia"
+        in 12..17 -> "Boa tarde"
+        else -> "Boa noite"
+    }
+}
+
+/**
+ * O novo Card de Saudação da IA que substitui o GerarDicaIAButton
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GerarDicaIAButton() {
+private fun ChatGreetingCard(
+    profile: ImcBaseProfile?,
+    navController: NavHostController,
+    isLoading: Boolean
+) {
+    val greeting = getGreeting()
+    // Define mensagens padrão enquanto o perfil carrega
+    val userName = profile?.nome?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Usuário"
+    val greetingMessage = "$greeting, $userName!"
+    val subMessage = "Como você está se sentindo hoje?"
+    val fullMessage = "$greetingMessage $subMessage"
+
     val gradient = Brush.horizontalGradient(
         listOf(Color(0xFF007BFF), Color(0xFF6C63FF))
     )
 
-    Button(
-        onClick = { /* TODO: Ação de gerar dica */ },
+    Card(
+        onClick = {
+            if (!isLoading) {
+                // Codifica a mensagem para que possa ser passada na URL
+                val encodedMessage = URLEncoder.encode(fullMessage, StandardCharsets.UTF_8.name())
+                // Navega para a rota de chat, passando a saudação como argumento
+                navController.navigate("${BottomNavItem.ChatIA.route}?saudacao=$encodedMessage")
+            }
+        },
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-        contentPadding = PaddingValues()
+            .height(80.dp),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        enabled = !isLoading
     ) {
         Box(
             modifier = Modifier
-                .background(gradient, shape = RoundedCornerShape(16.dp))
+                .background(gradient, shape = RoundedCornerShape(20.dp))
                 .fillMaxSize(),
             contentAlignment = Alignment.CenterStart
         ) {
@@ -138,12 +184,28 @@ private fun GerarDicaIAButton() {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Gerar dica por IA",
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    if (isLoading) {
+                        Text(
+                            text = "Carregando assistente...",
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        Text(
+                            text = greetingMessage,
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = subMessage,
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Chat,
                     contentDescription = "IA",
@@ -154,6 +216,9 @@ private fun GerarDicaIAButton() {
         }
     }
 }
+
+
+// --- Funções ResumoImcCard e outras (sem alterações) ---
 
 @Composable
 private fun ResumoImcCard(profile: ImcBaseProfile) {

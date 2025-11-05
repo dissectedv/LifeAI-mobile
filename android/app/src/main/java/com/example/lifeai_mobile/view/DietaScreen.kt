@@ -51,14 +51,12 @@ fun DietaScreen(
     val state by viewModel.state.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
 
-    // Gradiente para o background principal da tela, similar ao da HomeScreen
-    val backgroundGradient = Brush.verticalGradient(
-        colors = listOf(Color(0xFF0D1A26), Color(0xFF10161C)),
-        startY = 0f,
-        endY = 1000f // Ajuste conforme necessário para o efeito desejado
-    )
+    // Não precisamos mais do gradiente no Box,
+    // pois o Scaffold terá a cor sólida.
+    // val backgroundGradient = Brush.verticalGradient(...)
 
     Scaffold(
+        modifier = modifier, // <-- O modifier com o padding da bottom bar fica aqui
         topBar = {
             TopAppBar(
                 title = {
@@ -92,18 +90,21 @@ fun DietaScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D1A26)) // Manter o TopAppBar escuro
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D1A26))
             )
         },
-        // Remover containerColor do Scaffold e aplicar o gradiente ao Box abaixo
-        // containerColor = Color(0xFF0D1A26)
+        // --- CORREÇÃO AQUI ---
+        // Definimos a cor de fundo do Scaffold para a cor base da tela.
+        // Isso vai pintar a área "vazada" embaixo da barra de navegação.
+        containerColor = Color(0xFF0D1A26)
+        // --- FIM DA CORREÇÃO ---
     ) { innerPadding ->
 
         Box(
-            modifier = modifier
+            modifier = Modifier // <-- O modifier principal foi removido daqui
                 .fillMaxSize()
                 .padding(innerPadding)
-                .background(backgroundGradient) // Aplicar o gradiente aqui
+            // O background(gradient) foi removido daqui
         ) {
             when (val currentState = state) {
                 is DietaState.Loading -> {
@@ -261,7 +262,7 @@ private fun ErrorState(message: String, onRetryClick: () -> Unit) {
 }
 
 
-// --- COMPOSABLES DE SUCESSO (Abas e Cards, com pequenas alterações) ---
+// --- COMPOSABLES DE SUCESSO (Abas e Cards) ---
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -273,7 +274,7 @@ fun PlanoDietaTabs(dieta: DietaResponse) {
     Column {
         ScrollableTabRow(
             selectedTabIndex = pagerState.currentPage,
-            containerColor = Color.Transparent, // Fundo da TabRow transparente para mostrar o gradiente de baixo
+            containerColor = Color.Transparent, // Fundo da TabRow transparente
             contentColor = Color(0xFF4A90E2),
             edgePadding = 0.dp,
             indicator = { tabPositions ->
@@ -314,7 +315,6 @@ fun PlanoDietaTabs(dieta: DietaResponse) {
 
 @Composable
 fun DiaPlanoScreen(plano: PlanoDiario) {
-    // Gradiente de sobreposição para os Cards, similar ao da HomeScreen
     val gradientOverlay = Brush.verticalGradient(
         listOf(Color(0x334A90E2), Color.Transparent)
     )
@@ -326,12 +326,12 @@ fun DiaPlanoScreen(plano: PlanoDiario) {
         contentPadding = PaddingValues(vertical = 24.dp)
     ) {
         item {
-            ResumoDiaCard(plano, gradientOverlay) // Passar o gradiente
+            ResumoDiaCard(plano, gradientOverlay)
             Spacer(Modifier.height(24.dp))
         }
 
         items(plano.refeicoes) { refeicao ->
-            RefeicaoCard(refeicao, gradientOverlay) // Passar o gradiente
+            RefeicaoCard(refeicao, gradientOverlay)
             Spacer(Modifier.height(16.dp))
         }
     }
@@ -343,12 +343,12 @@ fun ResumoDiaCard(plano: PlanoDiario, gradientOverlay: Brush) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp) // Adicionar elevação
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientOverlay) // Aplicar o gradiente aqui
+                .background(gradientOverlay)
         ) {
             Column(
                 modifier = Modifier
@@ -414,18 +414,19 @@ fun MacroItem(nome: String, valor: Int, cor: Color) {
     }
 }
 
+
 @Composable
 fun RefeicaoCard(refeicao: Refeicao, gradientOverlay: Brush) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp) // Adicionar elevação
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientOverlay) // Aplicar o gradiente aqui
+                .background(gradientOverlay)
         ) {
             Column(
                 modifier = Modifier
@@ -438,26 +439,51 @@ fun RefeicaoCard(refeicao: Refeicao, gradientOverlay: Brush) {
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF4A90E2)
                 )
-                Spacer(Modifier.height(12.dp))
 
-                refeicao.opcoes.forEach { opcao ->
-                    Row(
-                        modifier = Modifier.padding(bottom = 8.dp),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Text(
-                            "•",
-                            color = Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.padding(end = 8.dp),
-                            fontSize = 16.sp
-                        )
-                        Text(
-                            opcao,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
-                    }
-                }
+                OpcaoSubLista(
+                    titulo = "Opções Acessíveis",
+                    corTitulo = Color(0xFF66BB6A),
+                    opcoes = refeicao.opcoesAcessiveis
+                )
+
+                OpcaoSubLista(
+                    titulo = "Opções Ideais",
+                    corTitulo = Color(0xFFFFC107),
+                    opcoes = refeicao.opcoesIdeais
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OpcaoSubLista(titulo: String, corTitulo: Color, opcoes: List<String>) {
+    if (opcoes.isNotEmpty() && opcoes.firstOrNull()?.isNotBlank() == true) {
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = titulo,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = corTitulo,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+
+        opcoes.forEach { opcao ->
+            Row(
+                modifier = Modifier.padding(bottom = 8.dp, start = 4.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    "•",
+                    color = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.padding(end = 8.dp),
+                    fontSize = 16.sp
+                )
+                Text(
+                    opcao,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.9f)
+                )
             }
         }
     }

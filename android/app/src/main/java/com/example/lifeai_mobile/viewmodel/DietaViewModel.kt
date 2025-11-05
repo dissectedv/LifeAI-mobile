@@ -110,6 +110,7 @@ class DietaViewModel(
      * Monta a instrução exata para a IA, usando os dados do perfil.
      */
     private fun construirPrompt(profile: ImcBaseProfile): String {
+        // --- PROMPT ATUALIZADO ---
         return """
             Baseado neste perfil de usuário:
             - Idade: ${profile.idade}
@@ -129,10 +130,21 @@ class DietaViewModel(
                   "resumo_kcal": 2100,
                   "macros": {"proteina_g": 150, "carbo_g": 180, "gordura_g": 70},
                   "refeicoes": [
-                    {"titulo": "Café da Manhã", "opcoes": ["Opção 1: Ovos mexidos...", "Opção 2: Iogurte..."]},
-                    {"titulo": "Almoço", "opcoes": ["Opção 1: 150g de Frango...", "Opção 2: ..."]},
-                    {"titulo": "Jantar", "opcoes": ["Opção 1: Sopa..."]},
-                    {"titulo": "Lanches", "opcoes": ["Opção 1: Fruta...", "Opção 2: Nuts..."]}
+                    {
+                      "titulo": "Café da Manhã", 
+                      "opcoes_acessiveis": ["Exemplo: 2 ovos mexidos e 1 banana."],
+                      "opcoes_ideais": ["Exemplo: 30g de Whey Protein e 50g de aveia."]
+                    },
+                    {
+                      "titulo": "Almoço", 
+                      "opcoes_acessiveis": ["Exemplo: 150g de frango e 100g de arroz."],
+                      "opcoes_ideais": ["Exemplo: 150g de salmão e 100g de quinoa."]
+                    },
+                    {
+                      "titulo": "Jantar", 
+                      "opcoes_acessiveis": ["Exemplo: Sopa de legumes."],
+                      "opcoes_ideais": ["Exemplo: Omelete com queijo cottage."]
+                    }
                   ]
                 }
               ]

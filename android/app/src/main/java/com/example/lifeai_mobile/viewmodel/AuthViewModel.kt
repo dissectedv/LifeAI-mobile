@@ -39,6 +39,16 @@ class AuthViewModel(
                 val response = repository.registerUser(username, email, password)
                 if (response.isSuccessful) {
                     val body = response.body()
+
+                    // --- CORREÇÃO IMPORTANTE AQUI ---
+                    if (body != null && body.access != null && body.refresh != null) {
+                        // Salva os tokens imediatamente após o registro
+                        sessionManager.saveTokens(body.access, body.refresh)
+                        // Define que o onboarding (obviamente) não foi concluído
+                        sessionManager.setOnboardingCompleted(false)
+                    }
+                    // --- FIM DA CORREÇÃO ---
+
                     _registerResponse.value = body
                 } else {
                     val errorBody = response.errorBody()?.string()
@@ -102,9 +112,10 @@ class AuthViewModel(
         _errorMessage.value = null
     }
 
-    fun logout() {
+    fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
             repository.logoutUser()
+            onLogoutComplete()
         }
     }
 }

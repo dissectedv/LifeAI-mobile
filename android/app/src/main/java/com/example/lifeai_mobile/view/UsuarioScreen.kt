@@ -109,13 +109,19 @@ fun UsuarioScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
+                            // --- MUDANÇA PRINCIPAL AQUI ---
                             onClick = {
                                 showLogoutDialog = false
-                                authViewModel.logout()
-                                mainNavController.navigate("welcome") {
-                                    popUpTo(0) { inclusive = true }
+                                // 1. Chama o logout
+                                authViewModel.logout {
+                                    // 2. A navegação agora SÓ acontece
+                                    //    DEPOIS que o logout terminar
+                                    mainNavController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
                             },
+                            // --- FIM DA MUDANÇA ---
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),

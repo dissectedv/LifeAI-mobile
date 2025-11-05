@@ -44,12 +44,22 @@ data class Macros(
 
 /**
  * Representa uma refeição específica (ex: Café da Manhã)
- * com uma ou mais opções.
+ * com as novas opções.
  */
 data class Refeicao(
     @SerializedName("titulo") // Ex: "Café da Manhã"
     val titulo: String,
 
-    @SerializedName("opcoes") // Ex: ["Opção 1: Ovos mexidos...", "Opção 2: Iogurte..."]
-    val opcoes: List<String>
+    // --- MUDANÇA AQUI ---
+    // Removemos o campo "opcoes"
+    // @SerializedName("opcoes")
+    // val opcoes: List<String>
+
+    // Adicionamos os novos campos
+    @SerializedName("opcoes_acessiveis")
+    val opcoesAcessiveis: List<String>,
+
+    @SerializedName("opcoes_ideais")
+    val opcoesIdeais: List<String>
+    // --- FIM DA MUDANÇA ---
 )

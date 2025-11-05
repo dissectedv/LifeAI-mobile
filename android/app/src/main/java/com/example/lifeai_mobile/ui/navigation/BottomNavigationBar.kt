@@ -50,7 +50,10 @@ fun BottomNavigationBar(navController: NavController) {
         val currentRoute = navBackStackEntry?.destination?.route
 
         items.forEach { item ->
-            val isSelected = currentRoute == item.route
+            // --- CORREÇÃO AQUI ---
+            // Agora verifica se a rota atual começa com a rota base do item.
+            // Ex: "chat_ia?saudacao=..." COMEÇA com "chat_ia".
+            val isSelected = currentRoute?.startsWith(item.route) == true
 
             val iconSize by animateDpAsState(
                 targetValue = if (isSelected) 32.dp else 24.dp,
@@ -63,6 +66,7 @@ fun BottomNavigationBar(navController: NavController) {
                 animationSpec = tween(durationMillis = 200),
                 label = "textColor"
             )
+            // --- FIM DA CORREÇÃO ---
 
             val iconTint = when {
                 item.route == BottomNavItem.ChatIA.route && isSelected -> chatIASelectedColor

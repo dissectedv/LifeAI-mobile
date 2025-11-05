@@ -14,11 +14,9 @@ import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
 import com.example.lifeai_mobile.view.HomeScreen
-// Importe os novos arquivos
 import com.example.lifeai_mobile.view.DietaScreen
 import com.example.lifeai_mobile.viewmodel.DietaViewModel
 import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
-// ---
 import com.example.lifeai_mobile.view.SaudeScreen
 import com.example.lifeai_mobile.view.UsuarioScreen
 import androidx.compose.foundation.layout.PaddingValues
@@ -35,7 +33,6 @@ fun NavigationGraph(
     authViewModel: AuthViewModel,
     resumoViewModelFactory: ResumoViewModelFactory,
     chatViewModelFactory: ChatIAViewModelFactory,
-    // --- ADICIONE A NOVA FACTORY AQUI ---
     dietaViewModelFactory: DietaViewModelFactory,
     bottomBarPadding: PaddingValues
 ) {
@@ -47,6 +44,7 @@ fun NavigationGraph(
     ) {
         composable(BottomNavItem.Inicio.route) {
             HomeScreen(
+                navController = navController, // <-- 1. PASSANDO O NAVCONTROLLER
                 resumoViewModel = resumoViewModel,
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
@@ -61,13 +59,29 @@ fun NavigationGraph(
             )
         }
 
-        composable(BottomNavItem.ChatIA.route) {
+        // --- 2. MUDANÇA NA ROTA DO CHAT ---
+        composable(
+            // Define a rota para aceitar um argumento opcional "saudacao"
+            route = "${BottomNavItem.ChatIA.route}?saudacao={saudacao}",
+            arguments = listOf(
+                navArgument("saudacao") {
+                    type = NavType.StringType
+                    nullable = true // É opcional
+                    defaultValue = null // Valor padrão é nulo
+                }
+            )
+        ) { backStackEntry ->
+            // Extrai a saudação que a HomeScreen enviou
+            val saudacao = backStackEntry.arguments?.getString("saudacao")
+
             val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
             ChatIAScreen(
                 viewModel = chatViewModel,
-                bottomBarPadding = bottomBarPadding
+                bottomBarPadding = bottomBarPadding,
+                saudacaoInicial = saudacao // <-- Passa a saudação para a tela
             )
         }
+        // --- FIM DA MUDANÇA ---
 
         composable(BottomNavItem.Usuario.route) {
             UsuarioScreen(
@@ -77,7 +91,6 @@ fun NavigationGraph(
             )
         }
 
-        // --- ADICIONE A NOVA ROTA AQUI ---
         composable("dieta_screen") {
             val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
             DietaScreen(
@@ -86,7 +99,6 @@ fun NavigationGraph(
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
-        // ---
 
         composable(
             route = "atividade_fisica/{imc}",
