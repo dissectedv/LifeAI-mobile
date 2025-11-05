@@ -45,16 +45,30 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Update Kubernetes deployment image
+      - name: Deploy updated image to Kubernetes
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << 'EOF'
-            echo "Updating LifeAI backend image..."
-            kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
+            set -e
+            echo "======================================="
+            echo "Updating LifeAI backend deployment..."
+            echo "======================================="
+            kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest -n lifeai
 
-            echo "Restarting deployment..."
+            echo ""
+            echo "Restarting and waiting for rollout..."
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
 
-            echo "Current pods:"
+            echo ""
+            echo "Current image in use:"
+            kubectl describe deployment django-deployment -n lifeai | grep Image
+
+            echo ""
+            echo "Current running pods:"
             kubectl get pods -n lifeai -o wide
+
+            echo ""
+            echo "Verifying 'gerar-dieta-ia' route in urls.py..."
+            POD_NAME=$(kubectl get pods -n lifeai -l app.kubernetes.io/name=backend -o jsonpath='{.items[0].metadata.name}')
+            kubectl exec -n lifeai \$POD_NAME -- grep gerar-dieta-ia /app/core/urls.py || echo "Route 'gerar-dieta-ia' not found (image may still be old)"
           EOF
