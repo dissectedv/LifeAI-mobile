@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-private const val DEFAULT_GREETING = "Olá! Eu sou sua assistente virtual LifeAI 🤖"
+private const val DEFAULT_GREETING = "Olá! Eu sou sua assistente virtual LifeAI"
 
 data class ChatUiState(
     val messages: List<ChatMessage> = listOf(

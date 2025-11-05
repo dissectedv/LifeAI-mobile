@@ -25,14 +25,15 @@ import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import com.example.lifeai_mobile.viewmodel.ResumoState
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+// Imports de URL (não são mais necessários)
+// import java.net.URLEncoder
+// import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import java.util.Locale
 
 @Composable
 fun HomeScreen(
-    navController: NavHostController, // <-- 1. ADICIONADO
+    navController: NavHostController,
     resumoViewModel: ResumoViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -73,7 +74,6 @@ fun HomeScreen(
                     ) {
                         CircularProgressIndicator()
                     }
-                    // Mostra um "placeholder" do botão de chat enquanto carrega
                     ChatGreetingCard(profile = null, navController = navController, isLoading = true)
                 }
 
@@ -100,7 +100,6 @@ fun HomeScreen(
 
                 is ResumoState.Success -> {
                     ResumoImcCard(profile = currentState.profile)
-                    // 2. SUBSTITUÍDO o botão pelo novo Card
                     ChatGreetingCard(
                         profile = currentState.profile,
                         navController = navController,
@@ -122,9 +121,6 @@ fun HomeScreen(
     }
 }
 
-/**
- * Retorna a saudação apropriada baseada na hora do dia.
- */
 private fun getGreeting(): String {
     val calendar = Calendar.getInstance()
     return when (calendar.get(Calendar.HOUR_OF_DAY)) {
@@ -134,9 +130,6 @@ private fun getGreeting(): String {
     }
 }
 
-/**
- * O novo Card de Saudação da IA que substitui o GerarDicaIAButton
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatGreetingCard(
@@ -145,25 +138,31 @@ private fun ChatGreetingCard(
     isLoading: Boolean
 ) {
     val greeting = getGreeting()
-    // Define mensagens padrão enquanto o perfil carrega
     val userName = profile?.nome?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Usuário"
     val greetingMessage = "$greeting, $userName!"
     val subMessage = "Como você está se sentindo hoje?"
-    val fullMessage = "$greetingMessage $subMessage"
+    // O fullMessage não é mais necessário
 
     val gradient = Brush.horizontalGradient(
         listOf(Color(0xFF007BFF), Color(0xFF6C63FF))
     )
 
     Card(
+        // --- MUDANÇA AQUI ---
         onClick = {
             if (!isLoading) {
-                // Codifica a mensagem para que possa ser passada na URL
-                val encodedMessage = URLEncoder.encode(fullMessage, StandardCharsets.UTF_8.name())
-                // Navega para a rota de chat, passando a saudação como argumento
-                navController.navigate("${BottomNavItem.ChatIA.route}?saudacao=$encodedMessage")
+                // Simplesmente navega para a rota da aba de chat
+                navController.navigate(BottomNavItem.ChatIA.route) {
+                    // Lógica padrão da barra de navegação
+                    popUpTo(navController.graph.startDestinationId) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             }
         },
+        // --- FIM DA MUDANÇA ---
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),

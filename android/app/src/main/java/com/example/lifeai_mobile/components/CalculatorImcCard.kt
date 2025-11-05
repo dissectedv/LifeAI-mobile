@@ -45,7 +45,7 @@ fun CalculatorImcCard(
                 imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary // Usa a cor primária do seu tema
+                tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -62,7 +62,7 @@ fun CalculatorImcCard(
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null, // Ícone indicando que é clicável
+                contentDescription = null,
                 tint = Color.White.copy(alpha = 0.7f)
             )
         }

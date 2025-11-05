@@ -44,7 +44,7 @@ fun NavigationGraph(
     ) {
         composable(BottomNavItem.Inicio.route) {
             HomeScreen(
-                navController = navController, // <-- 1. PASSANDO O NAVCONTROLLER
+                navController = navController,
                 resumoViewModel = resumoViewModel,
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
@@ -59,29 +59,17 @@ fun NavigationGraph(
             )
         }
 
-        // --- 2. MUDANÇA NA ROTA DO CHAT ---
-        composable(
-            // Define a rota para aceitar um argumento opcional "saudacao"
-            route = "${BottomNavItem.ChatIA.route}?saudacao={saudacao}",
-            arguments = listOf(
-                navArgument("saudacao") {
-                    type = NavType.StringType
-                    nullable = true // É opcional
-                    defaultValue = null // Valor padrão é nulo
-                }
-            )
-        ) { backStackEntry ->
-            // Extrai a saudação que a HomeScreen enviou
-            val saudacao = backStackEntry.arguments?.getString("saudacao")
-
+        // --- CORREÇÃO AQUI ---
+        // Rota do Chat volta a ser simples, sem argumentos.
+        composable(BottomNavItem.ChatIA.route) {
             val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
             ChatIAScreen(
                 viewModel = chatViewModel,
-                bottomBarPadding = bottomBarPadding,
-                saudacaoInicial = saudacao // <-- Passa a saudação para a tela
+                bottomBarPadding = bottomBarPadding
+                // O parâmetro 'saudacaoInicial' foi removido
             )
         }
-        // --- FIM DA MUDANÇA ---
+        // --- FIM DA CORREÇÃO ---
 
         composable(BottomNavItem.Usuario.route) {
             UsuarioScreen(
