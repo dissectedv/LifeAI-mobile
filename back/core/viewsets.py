@@ -8,10 +8,8 @@ from core import models
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime
 
-# --- IMPORTAÇÕES ADICIONADAS ---
-import json # Para converter a string JSON da IA em um objeto
-from core.services.api_ia import get_chat_response, get_dieta_json_from_gemini # Assumindo os nomes das funções do seu serviço de IA
-# --- FIM DAS IMPORTAÇÕES ---
+# --- IMPORTAÇÕES DE IA REMOVIDAS DAQUI ---
+# (Não precisamos mais de 'json' ou 'get_chat_response' aqui)
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -211,7 +209,7 @@ class AtividadesPorDataAPIView(APIView):
         try:
             checklist_obj = models.checklist.objects.get(id_usuario=request.user, data=data_convertida)
         except models.checklist.DoesNotExist:
-            return Response({'mensagem': 'Checklist não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'mensagem': 'Checklist não encontrado'}, status=status.HTTP_4404_NOT_FOUND)
 
         atividades = models.atividade.objects.filter(checklist=checklist_obj).order_by('id')
         serializer = serializers.AtividadeSerializer(atividades, many=True)
@@ -250,7 +248,7 @@ class GerarPontuacaoAPIView(APIView):
         try:
             check = models.checklist.objects.get(id=checklist_id, id_usuario=request.user)
         except models.checklist.DoesNotExist:
-            return Response({'erro': 'Checklist não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'erro': 'Checklist não encontrado'}, status=status.HTTP_4404_NOT_FOUND)
 
         atividades = models.atividade.objects.filter(checklist=check).order_by('id')
         total = atividades.count()
@@ -329,67 +327,3 @@ class DesempenhoMensalAPIView(APIView):
             })
 
         return Response(resultado)
-
-# --- VIEWS DA IA ADICIONADAS ABAIXO ---
-
-class ChatIAView(APIView):
-    """
-    View para o chat-ia/
-    Recebe um prompt de texto e retorna uma resposta de texto.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        prompt = request.data.get('pergunta')
-        sessao_id = request.data.get('sessaoId') # Recebe o ID da sessão
-
-        if not prompt:
-            return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
-        if not sessao_id:
-            return Response({"erro": "ID de sessão não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            # 1. Chama o serviço de IA (que retorna TEXTO)
-            # (Você precisa criar esta função em 'api_ia.py')
-            resposta_texto = get_chat_response(prompt, sessao_id)
-            
-            # 2. Retorna a resposta de texto simples
-            return Response({"resposta": resposta_texto}, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"erro": f"Erro interno ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-class GerarDietaIAView(APIView):
-    """
-    View para o gerar-dieta-ia/
-    Recebe um prompt (que já pede JSON) e retorna um objeto JSON.
-    """
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        # O prompt já foi formatado no Android para pedir JSON
-        prompt = request.data.get('pergunta')
-
-        if not prompt:
-            return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            # 1. Chama o serviço de IA (que deve retornar uma STRING JSON)
-            # (Você precisa criar esta função em 'api_ia.py')
-            resposta_string_json = get_dieta_json_from_gemini(prompt)
-            
-            # 2. Converte a string JSON em um objeto Python (dict)
-            try:
-                dieta_data = json.loads(resposta_string_json)
-            except json.JSONDecodeError:
-                # Erro crítico: A IA não retornou um JSON válido
-                return Response({
-                    "erro": "A IA não retornou um JSON válido. A IA disse:",
-                    "resposta_ia_invalida": resposta_string_json
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            # 3. Retorna o objeto JSON
-            return Response(dieta_data, status=status.HTTP_200_OK)
-
-        except Exception as e:
-            return Response({"erro": f"Erro interno ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

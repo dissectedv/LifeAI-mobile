@@ -11,7 +11,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -27,10 +29,11 @@ jobs:
         with:
           context: ./back
           push: true
+          pull: true
+          no-cache: true
           tags: |
             ${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest
             ${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }}
-          no-cache: true
 
   deploy-to-ec2:
     name: Deploy to Kubernetes (EC2)
@@ -45,30 +48,17 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy updated image to Kubernetes
+      - name: Update Kubernetes deployment image
         run: |
           ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << 'EOF'
-            set -e
-            echo "======================================="
-            echo "Updating LifeAI backend deployment..."
-            echo "======================================="
+            echo "Updating LifeAI backend image..."
             kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest -n lifeai
 
-            echo ""
-            echo "Restarting and waiting for rollout..."
+            echo "Forcing clean restart..."
+            sudo k3s ctr images rm docker.io/${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest || true
             kubectl rollout restart deployment/django-deployment -n lifeai
             kubectl rollout status deployment/django-deployment -n lifeai
 
-            echo ""
-            echo "Current image in use:"
-            kubectl describe deployment django-deployment -n lifeai | grep Image
-
-            echo ""
-            echo "Current running pods:"
+            echo "Verifying new pod..."
             kubectl get pods -n lifeai -o wide
-
-            echo ""
-            echo "Verifying 'gerar-dieta-ia' route in urls.py..."
-            POD_NAME=$(kubectl get pods -n lifeai -l app.kubernetes.io/name=backend -o jsonpath='{.items[0].metadata.name}')
-            kubectl exec -n lifeai \$POD_NAME -- grep gerar-dieta-ia /app/core/urls.py || echo "Route 'gerar-dieta-ia' not found (image may still be old)"
           EOF
