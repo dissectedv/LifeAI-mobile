@@ -9,22 +9,22 @@ jobs:
     name: Build and Push Backend Image
     runs-on: ubuntu-latest
 
+    env:
+      BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USER }}/lifeai-backend
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Backend Image
+      - name: Build and push backend image (full rebuild)
         uses: docker/build-push-action@v6
         with:
           context: ./back
@@ -32,42 +32,41 @@ jobs:
           pull: true
           no-cache: true
           tags: |
-            ${{ secrets.DOCKERHUB_USER }}/lifeai-backend:latest
-            ${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:latest
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
 
   deploy-to-ec2:
-    name: Deploy to Kubernetes (EC2)
+    name: Deploy to Kubernetes on EC2
     runs-on: ubuntu-latest
     needs: build-and-push
 
+    env:
+      NAMESPACE: lifeai
+      BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USER }}/lifeai-backend
+      EC2_IP: ${{ secrets.LIFEAI_HOST }}
+      EC2_USER: ${{ secrets.LIFEAI_USER }}
+
     steps:
-      - name: Decode SSH key (Base64)
+      - name: Configure SSH access
         run: |
-          echo "${{ secrets.LIFEAI_SSH_KEY_B64 }}" | base64 --decode > private_key.pem
-          chmod 600 private_key.pem
+          echo "${{ secrets.LIFEAI_SSH_KEY_B64 }}" | base64 --decode > lifeai_key.pem
+          chmod 600 lifeai_key.pem
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.LIFEAI_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H $EC2_IP >> ~/.ssh/known_hosts
 
-      - name: Update Kubernetes deployment image
+      - name: Apply Kubernetes updates on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.LIFEAI_USER }}@${{ secrets.LIFEAI_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -i lifeai_key.pem $EC2_USER@$EC2_IP << EOF
             set -e
-            echo "[1/6] Atualizando imagem no deployment..."
-            kubectl set image deployment/django-deployment backend=${{ secrets.DOCKERHUB_USER }}/lifeai-backend:${{ github.sha }} -n lifeai
+            echo "Updating image in the cluster..."
+            kubectl set image deployment/django-deployment backend=${{ env.BACKEND_IMAGE }}:${{ github.sha }} -n ${{ env.NAMESPACE }}
 
-            echo "[2/6] Forçando atualização de cache local..."
-            sudo k3s ctr images rm docker.io/${{ secrets.DOCKERHUB_USER }}/lifeai-backend:* || true
+            echo "Restarting pods..."
+            kubectl rollout restart deployment/django-deployment -n ${{ env.NAMESPACE }}
 
-            echo "[3/6] Forçando redeploy via annotation..."
-            kubectl patch deployment django-deployment -n lifeai \
-              -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"redeploy-timestamp\":\"$(date +%s)\"}}}}}"
+            echo "Waiting for rollout to complete..."
+            kubectl rollout status deployment/django-deployment -n ${{ env.NAMESPACE }} --timeout=300s
 
-            echo "[4/6] Reiniciando rollout..."
-            kubectl rollout restart deployment/django-deployment -n lifeai
-
-            echo "[5/6] Aguardando rollout completar..."
-            kubectl rollout status deployment/django-deployment -n lifeai --timeout=300s
-
-            echo "[6/6] Verificando pods em execução..."
-            kubectl get pods -n lifeai -o wide
+            echo "Checking active pods..."
+            kubectl get pods -n ${{ env.NAMESPACE }} -o wide
           EOF
