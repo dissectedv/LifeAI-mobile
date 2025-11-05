@@ -1,24 +1,20 @@
 package com.example.lifeai_mobile.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,14 +22,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.viewmodel.HistoricoImcViewModel
+import java.util.Locale
 
-// ### 1. O Componente Principal da Tabela ###
 @Composable
 fun HistoricoImcComponent(
-    modifier: Modifier = Modifier, // Permite que a tela pai defina o tamanho
-    viewModel: HistoricoImcViewModel // Recebe o ViewModel
+    modifier: Modifier = Modifier,
+    viewModel: HistoricoImcViewModel
 ) {
-    // Busca os dados quando o componente é carregado
     LaunchedEffect(Unit) {
         viewModel.buscarHistorico()
     }
@@ -42,89 +37,107 @@ fun HistoricoImcComponent(
     val isLoading by viewModel.isLoading.collectAsState()
     val isDeleting by viewModel.isDeleting.collectAsState()
 
-    // Estado para controlar o Dialog de confirmação
     var showDialog by remember { mutableStateOf(false) }
     var registroParaDeletar by remember { mutableStateOf<ImcRegistro?>(null) }
+    var wasDeleting by remember { mutableStateOf(false) }
 
-    // Estado de rolagem horizontal (compartilhado entre cabeçalho e linhas)
-    val horizontalScrollState = rememberScrollState()
+    LaunchedEffect(isDeleting) {
+        if (wasDeleting && !isDeleting) {
+            viewModel.buscarHistorico()
+        }
+        wasDeleting = isDeleting
+    }
 
-    // Container principal do componente
     Column(
         modifier = modifier
-            .background(Color(0xFF1B263B), shape = RoundedCornerShape(8.dp))
+            .background(Color(0xFF1B263B), shape = RoundedCornerShape(12.dp))
+            .padding(4.dp)
+            .shadow(4.dp, RoundedCornerShape(12.dp))
     ) {
-
-        // --- Cabeçalho da Tabela (com rolagem horizontal) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(horizontalScrollState)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .background(Color(0xFF2E8BC0).copy(alpha = 0.15f))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HistoricoHeaderItem("Data", 100.dp)
-            HistoricoHeaderItem("Peso", 80.dp, TextAlign.Center)
-            HistoricoHeaderItem("Altura", 80.dp, TextAlign.Center)
-            HistoricoHeaderItem("IMC", 80.dp, TextAlign.Center)
-            HistoricoHeaderItem("Status", 120.dp)
-            HistoricoHeaderItem("Ação", 60.dp, TextAlign.End)
+            HistoricoHeaderItem("Data", Modifier.weight(1f))
+            HistoricoHeaderItem("Peso", Modifier.weight(1.2f), TextAlign.Center)
+            HistoricoHeaderItem("Altura", Modifier.weight(1.2f), TextAlign.Center)
+            HistoricoHeaderItem("IMC", Modifier.weight(1f), TextAlign.Center)
+            Spacer(Modifier.weight(0.5f))
         }
 
-        Divider(color = Color(0xFF0D1B2A), thickness = 2.dp)
+        HorizontalDivider(color = Color(0xFF0D1B2A), thickness = 2.dp)
 
-        // --- Corpo da Tabela (com rolagem vertical e horizontal) ---
         if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 CircularProgressIndicator(color = Color(0xFF2E8BC0))
             }
         } else if (registros.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Nenhum registro encontrado.", color = Color.Gray)
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp), contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Icon(
+                        Icons.Filled.Info,
+                        contentDescription = null,
+                        tint = Color.Gray.copy(alpha = 0.5f),
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text("Nenhum registro encontrado.", color = Color.Gray, fontSize = 14.sp)
+                }
             }
         } else {
-            // Lista com rolagem vertical
             LazyColumn(modifier = Modifier.fillMaxWidth()) {
                 items(registros, key = { it.id }) { registro ->
-                    // Linha com rolagem horizontal
+                    val backgroundColor = if (registro.id % 2 == 0) Color(0xFF0D1B2A) else Color(0xFF132238)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .horizontalScroll(horizontalScrollState) // Estado compartilhado
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .background(backgroundColor)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Células de dados
-                        HistoricoRowItem(formatarData(registro.dataConsulta), 100.dp)
-                        HistoricoRowItem(String.format("%.1f kg", registro.peso), 80.dp, TextAlign.Center)
-                        HistoricoRowItem(String.format("%.2f m", registro.altura), 80.dp, TextAlign.Center)
-                        HistoricoRowItem(String.format("%.1f", registro.imcRes), 80.dp, TextAlign.Center)
-                        HistoricoRowItem(registro.classificacao, 120.dp)
+                        HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1f))
+                        HistoricoRowItem(
+                            String.format(Locale.getDefault(), "%.1f kg", registro.peso),
+                            Modifier.weight(1.2f),
+                            TextAlign.Center
+                        )
+                        HistoricoRowItem(
+                            String.format(Locale.getDefault(), "%.2f m", registro.altura),
+                            Modifier.weight(1.2f),
+                            TextAlign.Center
+                        )
 
-                        // Célula do Botão de Deletar
-                        Box(modifier = Modifier.width(60.dp), contentAlignment = Alignment.CenterEnd) {
-                            IconButton(
-                                onClick = {
-                                    registroParaDeletar = registro
-                                    showDialog = true
-                                },
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Deletar",
-                                    tint = Color.Red.copy(alpha = 0.7f)
-                                )
+                        HistoricoImcChipItem(
+                            imcValue = registro.imcRes,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        RegistroOpcoesMenu(
+                            modifier = Modifier.weight(0.5f),
+                            onExcluirClick = {
+                                registroParaDeletar = registro
+                                showDialog = true
                             }
-                        }
+                        )
                     }
-                    Divider(color = Color(0xFF0D1B2A))
+                    HorizontalDivider(color = Color(0xFF0D1B2A))
                 }
             }
         }
     }
 
-    // --- Popup (AlertDialog) de Confirmação ---
     if (showDialog) {
         DeleteConfirmationDialog(
             registro = registroParaDeletar,
@@ -144,12 +157,96 @@ fun HistoricoImcComponent(
     }
 }
 
-// ### 2. Itens do Cabeçalho (usa largura fixa) ###
 @Composable
-private fun HistoricoHeaderItem(text: String, width: androidx.compose.ui.unit.Dp, textAlign: TextAlign = TextAlign.Start) {
+private fun getCorDoImc(imc: Double): Color {
+    return when {
+        imc < 18.5 -> Color(0xFF42A5F5)
+        imc < 25 -> Color(0xFF66BB6A)
+        imc < 30 -> Color(0xFFFFB300)
+        else -> Color(0xFFE53935)
+    }
+}
+
+@Composable
+private fun HistoricoImcChipItem(
+    imcValue: Double,
+    modifier: Modifier = Modifier
+) {
+    val statusColor = getCorDoImc(imcValue)
+    val imcText = String.format(Locale.getDefault(), "%.1f", imcValue)
+
+    Box(
+        modifier = modifier.padding(horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = statusColor.copy(alpha = 0.15f),
+            border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = imcText,
+                color = statusColor,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(vertical = 6.dp, horizontal = 8.dp),
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
+private fun RegistroOpcoesMenu(
+    modifier: Modifier = Modifier,
+    onExcluirClick: () -> Unit
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = modifier.fillMaxHeight(),
+        contentAlignment = Alignment.CenterEnd
+    ) {
+        IconButton(onClick = { menuExpanded = true }) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "Opções",
+                tint = Color.White.copy(alpha = 0.7f)
+            )
+        }
+        DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false },
+            modifier = Modifier.background(Color(0xFF1B2A3D))
+        ) {
+            DropdownMenuItem(
+                text = { Text("Excluir", color = Color.Red.copy(alpha = 0.9f)) },
+                onClick = {
+                    onExcluirClick()
+                    menuExpanded = false
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Excluir",
+                        tint = Color.Red.copy(alpha = 0.9f)
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun HistoricoHeaderItem(
+    text: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
+) {
     Text(
         text = text,
-        modifier = Modifier.width(width).padding(end = 8.dp),
+        modifier = modifier.padding(horizontal = 4.dp),
         fontWeight = FontWeight.Bold,
         color = Color(0xFF2E8BC0),
         textAlign = textAlign,
@@ -157,19 +254,23 @@ private fun HistoricoHeaderItem(text: String, width: androidx.compose.ui.unit.Dp
     )
 }
 
-// ### 3. Itens da Linha (usa largura fixa) ###
 @Composable
-private fun HistoricoRowItem(text: String, width: androidx.compose.ui.unit.Dp, textAlign: TextAlign = TextAlign.Start) {
+private fun HistoricoRowItem(
+    text: String,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign = TextAlign.Start
+) {
     Text(
         text = text,
-        modifier = Modifier.width(width).padding(end = 8.dp),
+        modifier = modifier.padding(horizontal = 4.dp),
         color = Color.White,
         textAlign = textAlign,
-        fontSize = 14.sp
+        fontSize = 15.sp,
+        fontWeight = FontWeight.Medium,
+        maxLines = 1
     )
 }
 
-// ### 4. O Dialog de Confirmação ###
 @Composable
 private fun DeleteConfirmationDialog(
     registro: ImcRegistro?,
@@ -188,7 +289,7 @@ private fun DeleteConfirmationDialog(
                 color = Color.LightGray
             )
         },
-        containerColor = Color(0xFF1B263B), // Cor de fundo do Dialog
+        containerColor = Color(0xFF1B263B),
         confirmButton = {
             Button(
                 onClick = onConfirm,
@@ -207,21 +308,22 @@ private fun DeleteConfirmationDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = Color.White)
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
+            ) {
+                Text("Cancelar", color = Color.White.copy(alpha = 0.7f))
             }
         }
     )
 }
 
-// ### 5. (Opcional) Função helper para formatar a data ###
 @Composable
 private fun formatarData(dataApi: String): String {
-    // dataApi está no formato "YYYY-MM-DD"
     return try {
         val partes = dataApi.split("-")
-        "${partes[2]}/${partes[1]}" // Converte para "DD/MM"
-    } catch (e: Exception) {
-        dataApi // Retorna a data original se der erro
+        "${partes[2]}/${partes[1]}"
+    } catch (_: Exception) {
+        dataApi
     }
 }

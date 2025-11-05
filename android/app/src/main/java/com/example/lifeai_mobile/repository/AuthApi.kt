@@ -2,6 +2,7 @@ package com.example.lifeai_mobile.repository
 
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
+import com.example.lifeai_mobile.model.DietaResponse // <-- 1. IMPORT NOVO
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
@@ -39,6 +40,14 @@ interface  AuthApi {
 
     @POST("chat-ia/")
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
+
+    // --- 2. NOVA FUNÇÃO ADICIONADA ---
+    /**
+     * Envia o prompt de dieta (via ChatRequest) e espera um JSON (DietaResponse) de volta.
+     */
+    @POST("gerar-dieta-ia/")
+    suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
+    // --- FIM DA ADIÇÃO ---
 
     @GET("imc/registrosConsultas/")
     suspend fun getHistoricoImc(): List<ImcRegistro>

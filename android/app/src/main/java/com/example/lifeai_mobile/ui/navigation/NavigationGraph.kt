@@ -14,7 +14,11 @@ import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
 import com.example.lifeai_mobile.view.HomeScreen
-import com.example.lifeai_mobile.view.ProfileEditScreen
+// Importe os novos arquivos
+import com.example.lifeai_mobile.view.DietaScreen
+import com.example.lifeai_mobile.viewmodel.DietaViewModel
+import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
+// ---
 import com.example.lifeai_mobile.view.SaudeScreen
 import com.example.lifeai_mobile.view.UsuarioScreen
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,6 +35,8 @@ fun NavigationGraph(
     authViewModel: AuthViewModel,
     resumoViewModelFactory: ResumoViewModelFactory,
     chatViewModelFactory: ChatIAViewModelFactory,
+    // --- ADICIONE A NOVA FACTORY AQUI ---
+    dietaViewModelFactory: DietaViewModelFactory,
     bottomBarPadding: PaddingValues
 ) {
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
@@ -66,18 +72,21 @@ fun NavigationGraph(
         composable(BottomNavItem.Usuario.route) {
             UsuarioScreen(
                 mainNavController = mainNavController,
-                internalNavController = navController,
                 authViewModel = authViewModel,
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
 
-        composable("profile_edit") {
-            ProfileEditScreen(
+        // --- ADICIONE A NOVA ROTA AQUI ---
+        composable("dieta_screen") {
+            val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
+            DietaScreen(
                 navController = navController,
-                bottomBarPadding = bottomBarPadding
+                viewModel = dietaViewModel,
+                modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
+        // ---
 
         composable(
             route = "atividade_fisica/{imc}",

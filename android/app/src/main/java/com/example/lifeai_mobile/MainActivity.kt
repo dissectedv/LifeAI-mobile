@@ -25,9 +25,6 @@ import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
 import com.example.lifeai_mobile.view.*
 import com.example.lifeai_mobile.viewmodel.*
 
-// Import removido (não é mais necessário aqui)
-// import com.example.lifeai_mobile.viewmodel.AtividadeFisicaViewModelFactory
-
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen: SplashScreen = installSplashScreen()
@@ -36,15 +33,17 @@ class MainActivity : ComponentActivity() {
 
         val app = application as MyApplication
 
+        // Factories existentes
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
         val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
-
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
-        // Linha removida (não é mais necessária)
-        // val atividadeFisicaViewModelFactory = AtividadeFisicaViewModelFactory(app.authRepository)
+
+        // --- 1. NOVA FACTORY ADICIONADA ---
+        val dietaViewModelFactory = DietaViewModelFactory(app.authRepository)
+
 
         setContent {
             LifeAImobileTheme {
@@ -99,25 +98,22 @@ class MainActivity : ComponentActivity() {
                                     mainNavController = navController,
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
-                                    chatViewModelFactory = chatViewModelFactory
-                                    // Factory removida da chamada
+                                    chatViewModelFactory = chatViewModelFactory,
+                                    // --- 2. NOVA FACTORY PASSADA AQUI ---
+                                    dietaViewModelFactory = dietaViewModelFactory
                                 )
                             }
                             composable("imc_calculator") {
-                                // Cria o ViewModel para o formulário
                                 val imcViewModel: ImcCalculatorViewModel = viewModel(
                                     factory = imcCalculatorViewModelFactory
                                 )
-                                // Cria o ViewModel para a tabela
                                 val historicoViewModel: HistoricoImcViewModel = viewModel(
                                     factory = historicoImcViewModelFactory
                                 )
-
-                                // Passa AMBOS os ViewModels para a tela
                                 ImcCalculatorScreen(
                                     navController = navController,
                                     viewModel = imcViewModel,
-                                    historicoViewModel = historicoViewModel // <-- Passe o novo VM
+                                    historicoViewModel = historicoViewModel
                                 )
                             }
                         }

@@ -73,7 +73,10 @@ fun SaudeScreen(
                 title = "Sugestão de Dieta",
                 description = "Dieta sugerida e personalizável com base no seu perfil.",
                 icon = Icons.Default.Restaurant,
-                onClick = { }
+                onClick = {
+                    // --- MUDANÇA AQUI ---
+                    navController.navigate("dieta_screen")
+                }
             )
             SaudeCard(
                 title = "Calculadora de IMC",

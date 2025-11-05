@@ -15,6 +15,8 @@ import com.example.lifeai_mobile.ui.navigation.BottomNavigationBar
 import com.example.lifeai_mobile.ui.navigation.NavigationGraph
 import com.example.lifeai_mobile.viewmodel.AuthViewModel
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
+// 1. Importe a nova factory
+import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
 import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
 
 @Composable
@@ -22,7 +24,9 @@ fun MainAppScreen(
     mainNavController: NavController,
     authViewModel: AuthViewModel,
     resumoViewModelFactory: ResumoViewModelFactory,
-    chatViewModelFactory: ChatIAViewModelFactory
+    chatViewModelFactory: ChatIAViewModelFactory,
+    // 2. Adicione a factory como parâmetro
+    dietaViewModelFactory: DietaViewModelFactory
 ) {
     val bottomBarNavController = rememberNavController()
 
@@ -46,6 +50,7 @@ fun MainAppScreen(
                     authViewModel = authViewModel,
                     resumoViewModelFactory = resumoViewModelFactory,
                     chatViewModelFactory = chatViewModelFactory,
+                    dietaViewModelFactory = dietaViewModelFactory,
                     bottomBarPadding = innerPadding
                 )
             }

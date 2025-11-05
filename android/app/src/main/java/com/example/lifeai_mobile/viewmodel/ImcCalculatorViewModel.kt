@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
-// Eventos para a UI (ex: mostrar mensagens)
 sealed class UiEvent {
     data class ShowSnackbar(val message: String) : UiEvent()
     object NavigateBack : UiEvent()
@@ -23,21 +22,18 @@ sealed class UiEvent {
 
 class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel() {
 
-    // Estados dos campos do formulário
     var idade by mutableStateOf("")
     var sexo by mutableStateOf("")
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
-    var dataConsulta by mutableStateOf(Date()) // Começa com a data de hoje
+    var dataConsulta by mutableStateOf(Date())
 
     var isLoading by mutableStateOf(false)
 
-    // Canal para enviar eventos para a UI
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
 
     init {
-        // Busca os dados base do usuário (idade e sexo) ao iniciar
         loadInitialData()
     }
 
@@ -54,16 +50,18 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
 
     fun onPesoChange(newValue: String) { peso = newValue }
     fun onAlturaChange(newValue: String) { altura = newValue }
-    fun onDataChange(newDate: Date) { dataConsulta = newDate }
+
+    fun onDataChange(newDate: Date) {
+        val adjustedDate = Date(newDate.time + TimeZone.getDefault().getOffset(newDate.time))
+        dataConsulta = adjustedDate
+    }
 
     fun calculateAndRegister() {
-
         Log.d("IMC_CALC_DEBUG", "Iniciando cálculo. Peso: '$peso', Altura: '$altura', Data: '$dataConsulta'")
 
         viewModelScope.launch(Dispatchers.IO) {
             isLoading = true
 
-            // --- Validação (lógica do Angular) ---
             val pesoFloat = peso.replace(',', '.').toFloatOrNull()
             var alturaFloat = altura.replace(',', '.').toFloatOrNull()
 
@@ -77,16 +75,13 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 isLoading = false
                 return@launch
             }
-            // Normaliza a altura para metros
             if (alturaFloat > 3) alturaFloat /= 100f
-
             if (alturaFloat < 0.5f || alturaFloat > 2.5f) {
                 _eventFlow.emit(UiEvent.ShowSnackbar("Altura fora do intervalo (0.5m a 2.5m)"))
                 isLoading = false
                 return@launch
             }
 
-            // Formata a data para "YYYY-MM-DD"
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dataFormatada = dateFormat.format(dataConsulta)
 
@@ -105,7 +100,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 if (response.isSuccessful) {
                     Log.d("IMC_CALC_DEBUG", "Sucesso! Resposta: ${response.body()}")
                     _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
-                    // 👇 EMITIR O EVENTO DE NAVEGAÇÃO
                     _eventFlow.emit(UiEvent.NavigateBack)
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "Corpo do erro vazio"

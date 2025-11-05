@@ -2,6 +2,7 @@ package com.example.lifeai_mobile.repository
 
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
+import com.example.lifeai_mobile.model.DietaResponse // <-- 1. IMPORT NOVO
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
@@ -93,6 +94,15 @@ class AuthRepository(
     suspend fun postChatMessage(request: ChatRequest): Response<ChatResponse> {
         return api.postChatMessage(request)
     }
+
+    // --- 2. NOVA FUNÇÃO ADICIONADA ---
+    /**
+     * Chama a API para gerar o plano de dieta JSON.
+     */
+    suspend fun postDietaRequest(request: ChatRequest): Response<DietaResponse> {
+        return api.postDietaRequest(request)
+    }
+    // --- FIM DA ADIÇÃO ---
 
     suspend fun getHistoricoImc(): List<ImcRegistro> {
         return api.getHistoricoImc()

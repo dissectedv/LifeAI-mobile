@@ -1,20 +1,23 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -27,6 +30,12 @@ import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModel
 import com.example.lifeai_mobile.viewmodel.UiEvent
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,68 +45,59 @@ fun ImcCalculatorScreen(
     historicoViewModel: HistoricoImcViewModel
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
-
     var showDatePicker by remember { mutableStateOf(false) }
-    val datePickerState = rememberDatePickerState(
-        initialSelectedDateMillis = System.currentTimeMillis()
-    )
+    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = System.currentTimeMillis())
 
     val formattedDate by remember {
         derivedStateOf {
             val selectedMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
-            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(selectedMillis))
+            val localDate = Instant.ofEpochMilli(selectedMillis).atZone(ZoneId.of("UTC")).toLocalDate()
+            localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         }
     }
+    var lastImc by remember { mutableStateOf<Float?>(null) }
+    var lastStatus by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(key1 = true) {
         viewModel.eventFlow.collect { event ->
             when (event) {
                 is UiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)
-                    // ### 2. ATUALIZA A TABELA QUANDO OCORRE SUCESSO ###
                     if (event.message.contains("sucesso", ignoreCase = true)) {
                         historicoViewModel.buscarHistorico()
                     }
                 }
                 is UiEvent.NavigateBack -> {
-                    // Se você registrou com sucesso, atualize a tabela
                     historicoViewModel.buscarHistorico()
-                    // Você pode querer que ele volte ou não
-                    // navController.popBackStack()
                 }
             }
         }
     }
 
     LaunchedEffect(datePickerState.selectedDateMillis) {
-        datePickerState.selectedDateMillis?.let {
-            viewModel.onDataChange(Date(it))
+        datePickerState.selectedDateMillis?.let { millis ->
+            val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
+            val date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
+            viewModel.onDataChange(date)
         }
     }
+
+    val buttonPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(if (buttonPressed) 0.97f else 1f, label = "")
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Calculadora de IMC",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Text("Calculadora de IMC", fontWeight = FontWeight.Bold, color = Color.White)
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar",
-                            tint = Color.White
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D1A26)
-                )
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D1A26))
             )
         },
         containerColor = Color(0xFF0D1A26)
@@ -106,66 +106,75 @@ fun ImcCalculatorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp), // Padding horizontal para os itens
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             item {
-                Spacer(modifier = Modifier.height(16.dp)) // Espaço do topo
+                Spacer(Modifier.height(16.dp))
                 Text(
-                    "Preencha os dados abaixo para registrar seu progresso.",
+                    "Acompanhe sua evolução registrando seu IMC.",
                     color = Color.White.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.bodyLarge
                 )
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(Modifier.height(24.dp))
             }
 
             item {
-                OutlinedTextField(
-                    value = viewModel.peso,
-                    onValueChange = { viewModel.onPesoChange(it) },
-                    label = { Text("Seu Peso (kg)") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF4A90E2),
-                        focusedLabelColor = Color(0xFF4A90E2),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
-                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-                        cursorColor = Color(0xFF4A90E2),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.peso,
+                        onValueChange = { viewModel.onPesoChange(it) },
+                        label = { Text("Peso (kg)") },
+                        leadingIcon = {
+                            Icon(Icons.Default.MonitorWeight, contentDescription = null, tint = Color(0xFF4A90E2))
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF4A90E2),
+                            focusedLabelColor = Color(0xFF4A90E2),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                            cursorColor = Color(0xFF4A90E2),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
                     )
-                )
+
+                    OutlinedTextField(
+                        value = viewModel.altura,
+                        onValueChange = { viewModel.onAlturaChange(it) },
+                        label = { Text("Altura (m)") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Height, contentDescription = null, tint = Color(0xFF4A90E2))
+                        },
+                        placeholder = { Text("Ex: 1.75") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF4A90E2),
+                            focusedLabelColor = Color(0xFF4A90E2),
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                            cursorColor = Color(0xFF4A90E2),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true
+                    )
+                }
             }
 
-            item { Spacer(modifier = Modifier.height(16.dp)) }
+            item { Spacer(Modifier.height(16.dp)) }
 
             item {
-                OutlinedTextField(
-                    value = viewModel.altura,
-                    onValueChange = { viewModel.onAlturaChange(it) },
-                    label = { Text("Sua Altura (m)") },
-                    placeholder = { Text("Ex: 1.75") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF4A90E2),
-                        focusedLabelColor = Color(0xFF4A90E2),
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
-                        unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-                        cursorColor = Color(0xFF4A90E2),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White
-                    )
-                )
-            }
-
-            item { Spacer(modifier = Modifier.height(16.dp)) }
-
-            item {
-                Column(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.fillMaxWidth()) {
                     Text(
-                        text = "Data da aferição",
+                        "Data da aferição",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
@@ -178,11 +187,7 @@ fun ImcCalculatorScreen(
                             .fillMaxWidth()
                             .clickable { showDatePicker = true },
                         leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.DateRange,
-                                contentDescription = "Calendário",
-                                tint = Color(0xFF4A90E2)
-                            )
+                            Icon(Icons.Default.DateRange, contentDescription = "Calendário", tint = Color(0xFF4A90E2))
                         },
                         enabled = false,
                         colors = OutlinedTextFieldDefaults.colors(
@@ -195,21 +200,21 @@ fun ImcCalculatorScreen(
                 }
             }
 
-            item { Spacer(modifier = Modifier.height(40.dp)) }
+            item { Spacer(Modifier.height(32.dp)) }
+
             item {
                 val buttonBrush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF1E88E5),
-                        Color(0xFF1565C0)
-                    )
+                    colors = listOf(Color(0xFF1E88E5), Color(0xFF00ACC1))
                 )
-
                 Button(
-                    onClick = { viewModel.calculateAndRegister() },
+                    onClick = {
+                        viewModel.calculateAndRegister()
+                    },
                     enabled = !viewModel.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(55.dp),
+                        .height(55.dp)
+                        .scale(scale),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     contentPadding = PaddingValues()
@@ -221,26 +226,48 @@ fun ImcCalculatorScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         if (viewModel.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(26.dp),
-                                color = Color.White
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(26.dp), color = Color.White)
                         } else {
-                            Text(
-                                "Calcular e Registrar",
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
+                            Text("Calcular e Registrar", fontWeight = FontWeight.Bold, color = Color.White)
                         }
                     }
                 }
             }
 
-            // ### 4. ADICIONA A TABELA DE HISTÓRICO ABAIXO ###
+            item { Spacer(Modifier.height(32.dp)) }
+
             item {
-                Spacer(modifier = Modifier.height(40.dp))
+                AnimatedVisibility(visible = lastImc != null, enter = fadeIn(), exit = fadeOut()) {
+                    lastImc?.let { imc ->
+                        val cor = when {
+                            imc < 18.5 -> Color(0xFF42A5F5)
+                            imc < 25 -> Color(0xFF66BB6A)
+                            imc < 30 -> Color(0xFFFFB300)
+                            else -> Color(0xFFE53935)
+                        }
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = cor.copy(alpha = 0.2f))
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text("Último IMC", color = cor, fontWeight = FontWeight.Bold)
+                                Text(String.format("%.1f - %s", imc, lastStatus ?: ""), color = Color.White, fontSize = MaterialTheme.typography.titleLarge.fontSize)
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(32.dp)) }
+
+            item {
                 Text(
-                    text = "Histórico Recente",
+                    "Histórico Recente",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -254,14 +281,12 @@ fun ImcCalculatorScreen(
                 HistoricoImcComponent(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(300.dp), // Dê uma altura fixa para a tabela
+                        .height(300.dp),
                     viewModel = historicoViewModel
                 )
             }
 
-            item {
-                Spacer(modifier = Modifier.height(16.dp)) // Espaço no final
-            }
+            item { Spacer(Modifier.height(32.dp)) }
         }
     }
 
@@ -269,12 +294,20 @@ fun ImcCalculatorScreen(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(onClick = { showDatePicker = false }) {
-                    Text("OK", color = Color(0xFF4A90E2))
+                Button(
+                    onClick = { showDatePicker = false },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4A90E2)
+                    )
+                ) {
+                    Text("OK")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                OutlinedButton(
+                    onClick = { showDatePicker = false },
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
+                ) {
                     Text("Cancelar", color = Color.White.copy(alpha = 0.7f))
                 }
             },

@@ -27,6 +27,6 @@ O projeto faz parte de uma solução integrada, composta por **aplicativo mobile
 ```bash
 LifeAI-mobile/
 ├── android/          # Aplicativo Android (Kotlin + Jetpack Compose)
-├── back/             # Backend e APIs (Django / Node.js)
+├── back/             # Backend e APIs (Django)
 ├── lifeai-k8s/       # Manifestos Kubernetes e configuração de deploy na AWS
 └── README.md         # Documentação principal
