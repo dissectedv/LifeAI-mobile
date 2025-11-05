@@ -1,6 +1,6 @@
 import os
 import requests
-import json # <-- 1. IMPORTADO PARA PROCESSAR O JSON
+import json
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,7 +8,6 @@ from rest_framework import status
 from collections import defaultdict
 from django.conf import settings
 
-# Histórico em memória para o CHAT
 conversas_em_memoria = defaultdict(list)
 
 # ===================================================================
@@ -60,10 +59,6 @@ def perguntar_ia_gemini(historico_mensagens):
 # FUNÇÃO DE SERVIÇO 2: DIETA (Retorna JSON)
 # ===================================================================
 def gerar_dieta_gemini(prompt_json):
-    """
-    Chama o Gemini com um prompt que já pede JSON.
-    Não usa histórico, pois o prompt do Android já é completo.
-    """
     contents = [
         {"role": "user", "parts": [{"text": prompt_json}]}
     ]
@@ -71,13 +66,19 @@ def gerar_dieta_gemini(prompt_json):
     payload = {
         "contents": contents,
         "generationConfig": {
-            "temperature": 0.2, # Temperatura baixa para manter o formato JSON
+            "temperature": 0.3,
         },
         "systemInstruction": {
             "parts": [{
                 "text": (
-                    "Você é um assistente de nutrição avançado. "
-                    "Sua única tarefa é retornar um objeto JSON válido com base no prompt do usuário. "
+                    "Você é um nutricionista brasileiro experiente. "
+                    "Seu objetivo é criar planos de dieta realistas para o público brasileiro. "
+                    "Considere alimentos comuns e acessíveis no Brasil (como arroz, feijão, frango, ovos, pão, tapioca, banana, mamão). "
+                    "Evite sugerir ingredientes caros ou difíceis de encontrar (como salmão fresco, quinoa, aspargos, mirtilos) nas opções 'acessiveis'. "
+                    "Use esses ingredientes mais caros apenas nas opções 'ideais' (ou 'variadas'). "
+                    "Para 'opcoes_acessiveis', foque no básico (arroz, feijão, frango, ovo, batata). "
+                    "Para 'opcoes_ideais', pode incluir itens como whey protein, iogurte grego, peixes mais caros, etc. "
+                    "Sua única tarefa é retornar um objeto JSON válido. "
                     "NUNCA adicione qualquer texto, explicação ou formatação (como ```json) antes ou depois do JSON. "
                     "Responda apenas com o JSON."
                 )
@@ -97,7 +98,6 @@ def gerar_dieta_gemini(prompt_json):
     dados = resposta.json()
 
     try:
-        # Retorna a STRING JSON pura que a IA gerou
         return dados["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception as e:
         raise Exception(f"Erro ao processar a resposta JSON do Gemini: {str(e)}")
@@ -118,19 +118,10 @@ def chat_ia_view(request):
         return Response({"erro": "sessao_id é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # 1. Adiciona a pergunta do usuário ao histórico
         conversas_em_memoria[sessao_id].append({"role": "user", "content": pergunta})
-        
-        # 2. Pega o histórico completo da conversa
         historico_atual = conversas_em_memoria[sessao_id]
-        
-        # 3. CHAMA A IA (A PARTE QUE FALTAVA)
         resposta = perguntar_ia_gemini(historico_atual)
-        
-        # 4. Adiciona a resposta da IA ao histórico
         conversas_em_memoria[sessao_id].append({"role": "assistant", "content": resposta})
-        
-        # 5. Retorna a resposta de TEXTO
         return Response({"resposta": resposta})
         
     except Exception as e:
@@ -143,33 +134,27 @@ def chat_ia_view(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def gerar_dieta_ia_view(request):
-    # O prompt que vem do Android já pede o formato JSON
     prompt_json = request.data.get("pergunta") 
     
     if not prompt_json:
         return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # 1. Chama o serviço de IA (que retorna uma STRING JSON)
         resposta_string_json = gerar_dieta_gemini(prompt_json)
 
-        # 2. (Opcional, mas seguro) Limpa a string caso a IA adicione ```json
         if resposta_string_json.startswith("```json"):
             resposta_string_json = resposta_string_json[7:]
         if resposta_string_json.endswith("```"):
             resposta_string_json = resposta_string_json[:-3]
         
-        # 3. Converte a string JSON em um objeto Python (dict)
         try:
             dieta_data = json.loads(resposta_string_json.strip())
         except json.JSONDecodeError:
-            # Erro: A IA não retornou um JSON válido
             return Response({
                 "erro": "A IA não retornou um JSON válido.",
                 "resposta_ia_invalida": resposta_string_json
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # 4. Retorna o objeto JSON para o Android
         return Response(dieta_data, status=status.HTTP_200_OK)
 
     except Exception as e:

@@ -15,6 +15,9 @@ class SessionManager(private val context: Context) {
         private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
         private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
         private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
+
+        // --- 1. CHAVE NOVA ADICIONADA ---
+        private val KEY_DIET_JSON = stringPreferencesKey("diet_json")
     }
 
     suspend fun saveTokens(accessToken: String, refreshToken: String) {
@@ -42,11 +45,37 @@ class SessionManager(private val context: Context) {
         preferences[ONBOARDING_COMPLETED_KEY] ?: false
     }
 
+    // --- 2. NOVAS FUNÇÕES ADICIONADAS ---
+
+    /**
+     * Expõe o JSON da dieta salvo. Retorna null se não houver nenhum.
+     */
+    val savedDietJson: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[KEY_DIET_JSON]
+        }
+
+    /**
+     * Salva a string JSON da dieta. Se 'jsonString' for null, remove a chave.
+     */
+    suspend fun saveDietJson(jsonString: String?) {
+        context.dataStore.edit { preferences ->
+            if (jsonString == null) {
+                preferences.remove(KEY_DIET_JSON)
+            } else {
+                preferences[KEY_DIET_JSON] = jsonString
+            }
+        }
+    }
+    // --- FIM DAS ADIÇÕES ---
+
     suspend fun clearTokens() {
         context.dataStore.edit { preferences ->
             preferences.remove(ACCESS_TOKEN_KEY)
             preferences.remove(REFRESH_TOKEN_KEY)
             preferences.remove(ONBOARDING_COMPLETED_KEY)
+            // Também limpa a dieta ao fazer logout
+            preferences.remove(KEY_DIET_JSON)
         }
     }
 }

@@ -41,8 +41,11 @@ class MainActivity : ComponentActivity() {
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
 
-        // --- 1. NOVA FACTORY ADICIONADA ---
-        val dietaViewModelFactory = DietaViewModelFactory(app.authRepository)
+        // --- 1. CORREÇÃO DA NOVA FACTORY ---
+        val dietaViewModelFactory = DietaViewModelFactory(
+            app.authRepository,
+            app.sessionManager // <-- Adicionado o sessionManager que faltava
+        )
 
 
         setContent {
@@ -99,7 +102,7 @@ class MainActivity : ComponentActivity() {
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory,
-                                    // --- 2. NOVA FACTORY PASSADA AQUI ---
+                                    // --- 2. NOVA FACTORY PASSADA AQUI (já estava certo) ---
                                     dietaViewModelFactory = dietaViewModelFactory
                                 )
                             }
