@@ -32,21 +32,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val app = application as MyApplication
-
-        // Factories existentes
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
         val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
-
-        // --- 1. CORREÇÃO DA NOVA FACTORY ---
-        val dietaViewModelFactory = DietaViewModelFactory(
-            app.authRepository,
-            app.sessionManager // <-- Adicionado o sessionManager que faltava
-        )
-
+        val dietaViewModelFactory = DietaViewModelFactory(app.authRepository, app.sessionManager)
 
         setContent {
             LifeAImobileTheme {
@@ -77,24 +69,19 @@ class MainActivity : ComponentActivity() {
                             exitTransition = { fadeOut(animationSpec = tween(500)) }
                         ) {
                             composable("welcome") { WelcomeScreen(navController) }
-
                             composable("createAccount") {
                                 val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 RegisterScreen(navController, authViewModel)
                             }
-
                             composable("disclaimer") { DisclaimerScreen(navController) }
-
                             composable("loginAccount") {
                                 val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 LoginScreen(navController, authViewModel)
                             }
-
                             composable("onboarding") {
                                 val onboardingViewModel: OnboardingViewModel = viewModel(factory = onboardingViewModelFactory)
                                 OnboardingScreen(navController, onboardingViewModel)
                             }
-
                             composable("home") {
                                 val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 MainAppScreen(
@@ -102,17 +89,12 @@ class MainActivity : ComponentActivity() {
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory,
-                                    // --- 2. NOVA FACTORY PASSADA AQUI (já estava certo) ---
                                     dietaViewModelFactory = dietaViewModelFactory
                                 )
                             }
                             composable("imc_calculator") {
-                                val imcViewModel: ImcCalculatorViewModel = viewModel(
-                                    factory = imcCalculatorViewModelFactory
-                                )
-                                val historicoViewModel: HistoricoImcViewModel = viewModel(
-                                    factory = historicoImcViewModelFactory
-                                )
+                                val imcViewModel: ImcCalculatorViewModel = viewModel(factory = imcCalculatorViewModelFactory)
+                                val historicoViewModel: HistoricoImcViewModel = viewModel(factory = historicoImcViewModelFactory)
                                 ImcCalculatorScreen(
                                     navController = navController,
                                     viewModel = imcViewModel,

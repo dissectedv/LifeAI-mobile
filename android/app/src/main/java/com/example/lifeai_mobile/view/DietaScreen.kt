@@ -51,12 +51,8 @@ fun DietaScreen(
     val state by viewModel.state.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
 
-    // Não precisamos mais do gradiente no Box,
-    // pois o Scaffold terá a cor sólida.
-    // val backgroundGradient = Brush.verticalGradient(...)
-
     Scaffold(
-        modifier = modifier, // <-- O modifier com o padding da bottom bar fica aqui
+        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = {
@@ -93,18 +89,13 @@ fun DietaScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D1A26))
             )
         },
-        // --- CORREÇÃO AQUI ---
-        // Definimos a cor de fundo do Scaffold para a cor base da tela.
-        // Isso vai pintar a área "vazada" embaixo da barra de navegação.
         containerColor = Color(0xFF0D1A26)
-        // --- FIM DA CORREÇÃO ---
     ) { innerPadding ->
 
         Box(
-            modifier = Modifier // <-- O modifier principal foi removido daqui
+            modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-            // O background(gradient) foi removido daqui
         ) {
             when (val currentState = state) {
                 is DietaState.Loading -> {
@@ -135,8 +126,6 @@ fun DietaScreen(
         }
     }
 }
-
-// --- COMPOSABLES DE ESTADO ---
 
 @Composable
 private fun EmptyState(onGenerateClick: () -> Unit) {
@@ -261,9 +250,6 @@ private fun ErrorState(message: String, onRetryClick: () -> Unit) {
     }
 }
 
-
-// --- COMPOSABLES DE SUCESSO (Abas e Cards) ---
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlanoDietaTabs(dieta: DietaResponse) {
@@ -274,7 +260,7 @@ fun PlanoDietaTabs(dieta: DietaResponse) {
     Column {
         ScrollableTabRow(
             selectedTabIndex = pagerState.currentPage,
-            containerColor = Color.Transparent, // Fundo da TabRow transparente
+            containerColor = Color.Transparent,
             contentColor = Color(0xFF4A90E2),
             edgePadding = 0.dp,
             indicator = { tabPositions ->
@@ -413,7 +399,6 @@ fun MacroItem(nome: String, valor: Int, cor: Color) {
         )
     }
 }
-
 
 @Composable
 fun RefeicaoCard(refeicao: Refeicao, gradientOverlay: Brush) {

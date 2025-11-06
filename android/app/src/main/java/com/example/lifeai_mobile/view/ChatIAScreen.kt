@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-// import androidx.compose.runtime.LaunchedEffect // <-- REMOVIDO
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,16 +32,12 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.ParagraphStyle
-// Imports de URL REMOVIDOS
-// import java.net.URLDecoder
-// import java.nio.charset.StandardCharsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatIAScreen(
     viewModel: ChatIAViewModel,
     bottomBarPadding: PaddingValues
-    // parâmetro saudacaoInicial REMOVIDO
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val density = LocalDensity.current
@@ -53,8 +48,6 @@ fun ChatIAScreen(
     val finalPaddingDp = with(density) {
         (if (imeBottomPx > 0) imeBottomPx.toFloat() else navBarBottomPx).toDp()
     }
-
-    // LaunchedEffect para saudação FOI REMOVIDO
 
     Column(
         modifier = Modifier
@@ -88,8 +81,6 @@ fun ChatIAScreen(
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            // --- CORREÇÃO BUG 2 (TELA VAZIA) ---
-            // Lógica revertida para a original e simples
             if (uiState.messages.size <= 1) {
                 EmptyChatView(
                     onSuggestionClick = { topic ->
@@ -110,7 +101,6 @@ fun ChatIAScreen(
                     }
                 }
             }
-            // --- FIM DA CORREÇÃO ---
         }
 
         UserInputBar(

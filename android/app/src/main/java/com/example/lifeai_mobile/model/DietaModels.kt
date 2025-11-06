@@ -2,64 +2,36 @@ package com.example.lifeai_mobile.model
 
 import com.google.gson.annotations.SerializedName
 
-/**
- * Este é o objeto de nível superior que o Gemini retornará.
- * Ele contém uma lista de planos, um para cada dia.
- */
 data class DietaResponse(
     @SerializedName("plano_diario")
     val planoDiario: List<PlanoDiario>
 )
 
-/**
- * Representa o plano de um único dia.
- */
 data class PlanoDiario(
     @SerializedName("dia")
-    val dia: String, // Ex: "Segunda"
-
+    val dia: String,
     @SerializedName("resumo_kcal")
-    val resumoKcal: Int, // Ex: 2100
-
+    val resumoKcal: Int,
     @SerializedName("macros")
     val macros: Macros,
-
     @SerializedName("refeicoes")
     val refeicoes: List<Refeicao>
 )
 
-/**
- * Detalhes dos macronutrientes para o dia.
- */
 data class Macros(
     @SerializedName("proteina_g")
     val proteina: Int,
-
     @SerializedName("carbo_g")
     val carbo: Int,
-
     @SerializedName("gordura_g")
     val gordura: Int
 )
 
-/**
- * Representa uma refeição específica (ex: Café da Manhã)
- * com as novas opções.
- */
 data class Refeicao(
-    @SerializedName("titulo") // Ex: "Café da Manhã"
+    @SerializedName("titulo")
     val titulo: String,
-
-    // --- MUDANÇA AQUI ---
-    // Removemos o campo "opcoes"
-    // @SerializedName("opcoes")
-    // val opcoes: List<String>
-
-    // Adicionamos os novos campos
     @SerializedName("opcoes_acessiveis")
     val opcoesAcessiveis: List<String>,
-
     @SerializedName("opcoes_ideais")
     val opcoesIdeais: List<String>
-    // --- FIM DA MUDANÇA ---
 )

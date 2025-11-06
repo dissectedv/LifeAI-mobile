@@ -24,8 +24,6 @@ urlpatterns = [
     path('pontuacoes/', viewsets.PontuacaoCheckListAPIView.as_view(), name='pontuacoes'),
     path('pontuacoes/mensal/', viewsets.DesempenhoMensalAPIView.as_view(), name='pontuacoes-mensal'),
     path("health/", views.health_check, name="health_check"),
-    
-    # Estas são as linhas corretas que você já tem
     path('chat-ia/', api_ia.chat_ia_view, name='chat-ia'),
     path('gerar-dieta-ia/', api_ia.gerar_dieta_ia_view, name='gerar-dieta-ia'),
 ]

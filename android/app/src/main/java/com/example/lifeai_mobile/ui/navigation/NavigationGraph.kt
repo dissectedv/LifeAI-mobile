@@ -37,12 +37,7 @@ fun NavigationGraph(
     bottomBarPadding: PaddingValues
 ) {
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
-
-    // --- CORREÇÃO AQUI ---
-    // 1. Inicialize o ViewModel aqui, fora do NavHost.
-    // Ele agora viverá enquanto o NavigationGraph estiver vivo.
     val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
-    // --- FIM DA CORREÇÃO ---
 
     NavHost(
         navController = navController,
@@ -66,7 +61,6 @@ fun NavigationGraph(
         }
 
         composable(BottomNavItem.ChatIA.route) {
-            // 2. Agora, apenas passe a instância do ViewModel que já existe.
             ChatIAScreen(
                 viewModel = chatViewModel,
                 bottomBarPadding = bottomBarPadding

@@ -18,7 +18,6 @@ class HistoricoImcViewModel(
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // Estado para o loading do botão de exclusão
     private val _isDeleting = MutableStateFlow(false)
     val isDeleting: StateFlow<Boolean> = _isDeleting
 
@@ -40,17 +39,12 @@ class HistoricoImcViewModel(
         viewModelScope.launch {
             _isDeleting.value = true
             try {
-                // 1. Deleta o item no backend
                 repository.deleteImcRegistro(id)
 
-                // 2. Busca a lista ATUALIZADA no backend
                 val novaLista = repository.getHistoricoImc()
 
-                // 3. Atualiza o StateFlow com a nova lista
                 _registrosImc.value = novaLista
 
-                // 4. REMOVEMOS a chamada separada para buscarHistorico()
-                // buscarHistorico() // <-- Removido
 
             } catch (e: Exception) {
                 e.printStackTrace()

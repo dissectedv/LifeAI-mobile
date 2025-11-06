@@ -44,18 +44,13 @@ fun BottomNavigationBar(navController: NavController) {
             .navigationBarsPadding()
             .height(80.dp)
             .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)),
-        containerColor = backgroundColor,
+        containerColor = backgroundColor
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
         items.forEach { item ->
-            // --- CORREÇÃO AQUI ---
-            // Revertendo para a comparação simples.
-            // Como a rota é "chat_ia" (e não "chat_ia?saudacao=..."),
-            // a comparação direta é a correta.
             val isSelected = currentRoute == item.route
-            // --- FIM DA CORREÇÃO ---
 
             val iconSize by animateDpAsState(
                 targetValue = if (isSelected) 32.dp else 24.dp,
@@ -81,9 +76,7 @@ fun BottomNavigationBar(navController: NavController) {
                 onClick = {
                     navController.navigate(item.route) {
                         navController.graph.startDestinationRoute?.let { route ->
-                            popUpTo(route) {
-                                saveState = true
-                            }
+                            popUpTo(route) { saveState = true }
                         }
                         launchSingleTop = true
                         restoreState = true

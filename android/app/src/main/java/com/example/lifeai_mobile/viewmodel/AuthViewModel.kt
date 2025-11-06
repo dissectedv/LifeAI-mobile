@@ -18,10 +18,10 @@ class AuthViewModel(
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
-
     init {
         Log.d("INSTANCE_DEBUG", "AuthViewModel está usando SessionManager: $sessionManager")
     }
+
     private val _registerResponse = MutableStateFlow<RegisterResponse?>(null)
     val registerResponse: StateFlow<RegisterResponse?> = _registerResponse
 
@@ -31,7 +31,6 @@ class AuthViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-
     fun register(username: String, email: String, password: String) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -39,16 +38,10 @@ class AuthViewModel(
                 val response = repository.registerUser(username, email, password)
                 if (response.isSuccessful) {
                     val body = response.body()
-
-                    // --- CORREÇÃO IMPORTANTE AQUI ---
                     if (body != null && body.access != null && body.refresh != null) {
-                        // Salva os tokens imediatamente após o registro
                         sessionManager.saveTokens(body.access, body.refresh)
-                        // Define que o onboarding (obviamente) não foi concluído
                         sessionManager.setOnboardingCompleted(false)
                     }
-                    // --- FIM DA CORREÇÃO ---
-
                     _registerResponse.value = body
                 } else {
                     val errorBody = response.errorBody()?.string()

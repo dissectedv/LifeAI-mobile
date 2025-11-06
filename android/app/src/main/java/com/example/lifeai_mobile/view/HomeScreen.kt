@@ -25,9 +25,6 @@ import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import com.example.lifeai_mobile.viewmodel.ResumoState
-// Imports de URL (não são mais necessários)
-// import java.net.URLEncoder
-// import java.nio.charset.StandardCharsets
 import java.util.Calendar
 import java.util.Locale
 
@@ -162,7 +159,7 @@ private fun ChatGreetingCard(
                 }
             }
         },
-        // --- FIM DA MUDANÇA ---
+
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
@@ -216,8 +213,6 @@ private fun ChatGreetingCard(
     }
 }
 
-
-// --- Funções ResumoImcCard e outras (sem alterações) ---
 
 @Composable
 private fun ResumoImcCard(profile: ImcBaseProfile) {

@@ -1,6 +1,6 @@
-package com.example.lifeai_mobile.viewmodel // 1. PACOTE CORRIGIDO
+package com.example.lifeai_mobile.viewmodel
 
-import com.example.lifeai_mobile.utils.SessionManager // 2. IMPORT CORRIGIDO
+import com.example.lifeai_mobile.utils.SessionManager
 import android.annotation.SuppressLint
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,7 +25,6 @@ data class OnboardingStep(
     val inputType: InputType
 )
 
-// Agora o compilador sabe o que é SessionManager
 class OnboardingViewModel(private val repository: AuthRepository, private val sessionManager: SessionManager) : ViewModel() {
 
     private val steps = listOf(
@@ -195,7 +194,7 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
 
                 val response = repository.imcBase(profileData)
                 if (response.isSuccessful) {
-                    sessionManager.setOnboardingCompleted(true) // Agora encontra a função
+                    sessionManager.setOnboardingCompleted(true)
                     _uiState.value = UiState.Success
                     _navigateToHome.emit(Unit)
                 } else {

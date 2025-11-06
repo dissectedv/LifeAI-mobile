@@ -24,9 +24,8 @@ import com.example.lifeai_mobile.R
 fun WelcomeScreen(navController: NavController) {
     val accentColor = Color(0xFF58C4D3)
 
-    // A cor de fundo foi removida daqui
     Surface(
-        color = Color.Transparent, // <<<<<<<<<<< MUDANÇA AQUI
+        color = Color.Transparent,
         modifier = Modifier
             .fillMaxSize()
             .systemBarsPadding()

@@ -34,8 +34,8 @@ fun CalculatorImcCard(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick), // Torna o card inteiro clicável
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF161B22)) // Cor escura
+            .clickable(onClick = onClick), 
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161B22)) 
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),

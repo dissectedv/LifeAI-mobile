@@ -2,7 +2,7 @@ package com.example.lifeai_mobile.repository
 
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
-import com.example.lifeai_mobile.model.DietaResponse // <-- 1. IMPORT NOVO
+import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
@@ -23,7 +23,6 @@ class AuthRepository(
     private val api: AuthApi,
     private val sessionManager: SessionManager
 ) {
-
     suspend fun registerUser(username: String, email: String, password: String): Response<RegisterResponse> {
         val request = RegisterRequest(username, email, password)
         return api.register(request)
@@ -32,7 +31,6 @@ class AuthRepository(
     suspend fun loginUser(email: String, password: String): Response<LoginResponse> {
         val request = LoginRequest(email, password)
         val response = api.login(request)
-
         if (response.isSuccessful) {
             val body = response.body()
             if (body != null && body.access != null && body.refresh != null) {
@@ -44,11 +42,9 @@ class AuthRepository(
 
     suspend fun refreshToken(): Boolean {
         val currentRefreshToken = sessionManager.refreshToken.firstOrNull() ?: return false
-
         return try {
             val request = RefreshTokenRequest(currentRefreshToken)
             val response = api.refreshToken(request)
-
             if (response.isSuccessful) {
                 val body = response.body()
                 if (body != null) {
@@ -73,8 +69,7 @@ class AuthRepository(
             try {
                 val request = LogoutRequest(currentRefreshToken)
                 api.logout(request)
-            } catch (e: Exception) {
-            }
+            } catch (e: Exception) {}
         }
         sessionManager.clearTokens()
     }
@@ -95,14 +90,9 @@ class AuthRepository(
         return api.postChatMessage(request)
     }
 
-    // --- 2. NOVA FUNÇÃO ADICIONADA ---
-    /**
-     * Chama a API para gerar o plano de dieta JSON.
-     */
     suspend fun postDietaRequest(request: ChatRequest): Response<DietaResponse> {
         return api.postDietaRequest(request)
     }
-    // --- FIM DA ADIÇÃO ---
 
     suspend fun getHistoricoImc(): List<ImcRegistro> {
         return api.getHistoricoImc()

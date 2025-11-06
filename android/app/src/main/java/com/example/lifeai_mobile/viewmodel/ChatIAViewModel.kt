@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -23,7 +22,7 @@ data class ChatUiState(
 
 data class ChatMessage(val text: String, val isUser: Boolean)
 
-class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
+class ChatIAViewModel(private val repository: AuthRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState = _uiState.asStateFlow()
@@ -37,23 +36,19 @@ class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
     fun sendMessage() {
         val userInput = _uiState.value.inputText.trim()
         if (userInput.isBlank()) return
-
         addMessageAndProcessResponse(userInput)
-
         _uiState.update { it.copy(inputText = "") }
     }
 
     fun sendSuggestion(suggestion: String) {
         val userInput = suggestion.trim()
         if (userInput.isBlank()) return
-
         addMessageAndProcessResponse(userInput)
     }
 
     private fun addMessageAndProcessResponse(userInput: String) {
         val userMessage = ChatMessage(userInput, isUser = true)
         val thinkingMessage = ChatMessage("Processando resposta...", isUser = false)
-
         _uiState.update {
             it.copy(messages = it.messages + userMessage + thinkingMessage)
         }
@@ -62,19 +57,15 @@ class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
             val request = ChatRequest(pergunta = userInput, sessaoId = sessaoId)
             try {
                 val response = repository.postChatMessage(request)
-
-                val apiResponse: String
-                if (response.isSuccessful && response.body() != null) {
-                    apiResponse = response.body()?.resposta ?: "A API retornou uma resposta vazia."
+                val apiResponse: String = if (response.isSuccessful && response.body() != null) {
+                    response.body()?.resposta ?: "A API retornou uma resposta vazia."
                 } else {
-                    apiResponse = "Erro ao conectar com a IA: ${response.message()}"
+                    "Erro ao conectar com a IA: ${response.message()}"
                 }
-
                 _uiState.update { currentState ->
                     val updatedMessages = currentState.messages.dropLast(1) + ChatMessage(apiResponse, isUser = false)
                     currentState.copy(messages = updatedMessages)
                 }
-
             } catch (e: Exception) {
                 val errorResponse = "Falha na conexão: ${e.message}"
                 _uiState.update { currentState ->
@@ -85,12 +76,7 @@ class ChatIAViewModel(private val repository: AuthRepository): ViewModel() {
         }
     }
 
-    /**
-     * Chamado pela ChatIAScreen para substituir a saudação padrão
-     * pela saudação vinda da HomeScreen.
-     */
     fun setInitialGreeting(greeting: String) {
-        // Só substitui a mensagem se a conversa ainda estiver no estado inicial
         if (_uiState.value.messages.size == 1 && _uiState.value.messages.first().text == DEFAULT_GREETING) {
             _uiState.update {
                 it.copy(messages = listOf(ChatMessage(greeting, isUser = false)))

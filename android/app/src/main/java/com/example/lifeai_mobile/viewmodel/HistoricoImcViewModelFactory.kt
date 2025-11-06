@@ -10,7 +10,7 @@ class HistoricoImcViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HistoricoImcViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return HistoricoImcViewModel(repository) as T // Assumindo que seu VM recebe o repositório
+            return HistoricoImcViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

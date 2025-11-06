@@ -8,9 +8,6 @@ from core import models
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime
 
-# --- IMPORTAÇÕES DE IA REMOVIDAS DAQUI ---
-# (Não precisamos mais de 'json' ou 'get_chat_response' aqui)
-
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
