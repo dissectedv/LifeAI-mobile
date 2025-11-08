@@ -22,5 +22,5 @@ data:
   EMAIL_HOST: "smtp-relay.brevo.com"
   EMAIL_PORT: "587"
   EMAIL_USE_TLS: "True"
-  EMAIL_HOST_USER: "contatolifeai@gmail.com"
+  EMAIL_HOST_USER: "9b1ae8001@smtp-brevo.com"
   DEFAULT_FROM_EMAIL: "contatolifeai@gmail.com"
