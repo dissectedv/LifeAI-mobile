@@ -12,8 +12,15 @@ data:
 
   # App settings
   FRONT_HOST: "http://localhost:90"
-
-  # IA e Gemini (placeholder apenas para fins acadêmicos)
   GEMINI_API_KEY: "REPLACE_WITH_YOUR_GEMINI_API_KEY"
+  
   LM_API_URL: "http://127.0.0.1:1234/v1/chat/completions"
   LM_API_MODEL: "meta-llama-3-8b-instruct"
+
+  DEBUG: "False"
+  EMAIL_BACKEND: "django.core.mail.backends.smtp.EmailBackend"
+  EMAIL_HOST: "smtp-relay.brevo.com"
+  EMAIL_PORT: "587"
+  EMAIL_USE_TLS: "True"
+  EMAIL_HOST_USER: "contatolifeai@gmail.com"
+  DEFAULT_FROM_EMAIL: "contatolifeai@gmail.com"

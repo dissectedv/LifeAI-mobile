@@ -8,6 +8,10 @@ from core import models
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime
 
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from rest_framework import status
+
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -78,6 +82,32 @@ class LogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response({"message": "Logout realizado com sucesso."}, status=status.HTTP_200_OK)
+
+class SendEmailView(APIView):
+    def post(self, request):
+        subject = request.data.get('subject')
+        message = request.data.get('message')  # texto plano
+        recipient = request.data.get('to')
+        html_content = request.data.get('html')  # opcional: HTML
+
+        if not all([subject, message, recipient]):
+            return Response({'error': 'Campos obrigatórios ausentes'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+
+        try:
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body=message,
+                from_email=from_email,
+                to=[recipient],
+            )
+            if html_content:
+                msg.attach_alternative(html_content, "text/html")
+            msg.send(fail_silently=False)
+            return Response({'success': 'E-mail enviado com sucesso'})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class ImcCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]

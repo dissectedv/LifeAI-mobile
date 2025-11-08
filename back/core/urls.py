@@ -8,6 +8,7 @@ urlpatterns = [
     path('registro/', viewsets.RegisterView.as_view(), name='RegisterView'),
     path('login/', viewsets.LoginView.as_view(), name='LoginView'),
     path('logout/', viewsets.LogoutView.as_view(), name='logout'),
+    path('send-email/', viewsets.SendEmailView.as_view(), name='email'),
     path('imc/', viewsets.ImcCreateAPIView.as_view(), name='criar_imc'),
     path('imc/historico/', viewsets.DesempenhoImc.as_view(), name='desempenho-imc'),
     path('imc/registrosConsultas/', viewsets.RegistrosImc.as_view(), name='registros_imc'),
