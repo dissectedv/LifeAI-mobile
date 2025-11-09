@@ -41,8 +41,18 @@ class AuthViewModel(
                     if (body != null && body.access != null && body.refresh != null) {
                         sessionManager.saveTokens(body.access, body.refresh)
                         sessionManager.setOnboardingCompleted(false)
+
+                        // --- CORREÇÃO AQUI ---
+                        // 1. Chame a função de e-mail DIRETAMENTE.
+                        // Ela vai rodar e terminar ANTES de ir para a próxima linha.
+                        repository.sendWelcomeEmail(email)
+                        // --- FIM DA CORREÇÃO ---
                     }
+
+                    // 2. SÓ DEPOIS que o e-mail foi enviado,
+                    // avise a tela para navegar.
                     _registerResponse.value = body
+
                 } else {
                     val errorBody = response.errorBody()?.string()
                     if (!errorBody.isNullOrBlank()) {

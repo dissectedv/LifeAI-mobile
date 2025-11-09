@@ -5,6 +5,9 @@
     <!-- Permissões necessárias -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- 1. Permissão para enviar notificações (API 33+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".MyApplication"
         android:allowBackup="true"

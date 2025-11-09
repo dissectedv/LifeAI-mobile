@@ -1,5 +1,14 @@
 package com.example.lifeai_mobile.view
 
+// --- IMPORTS NOVOS ---
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+// --- FIM IMPORTS NOVOS ---
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,6 +28,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect // <-- IMPORT NOVO
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext // <-- IMPORT NOVO
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -50,6 +61,38 @@ fun DietaScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
+
+    // --- CÓDIGO PARA PEDIR PERMISSÃO DE NOTIFICAÇÃO ---
+    val context = LocalContext.current
+    // 1. Cria um "lançador" que sabe como pedir permissão
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { isGranted ->
+            if (isGranted) {
+                // Permissão concedida! O usuário receberá notificações.
+            } else {
+                // Permissão negada. O app funciona, mas sem notificações.
+                // Não precisa fazer nada aqui.
+            }
+        }
+    )
+
+    // 2. Roda este bloco UMA VEZ quando a tela carregar
+    LaunchedEffect(Unit) {
+        // 3. Só é necessário pedir permissão no Android 13 (TIRAMISU) ou mais novo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // 4. Checa se a permissão AINDA NÃO foi dada
+            if (ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                // 5. Pede a permissão (isso vai mostrar o pop-up)
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+    // --- FIM DO CÓDIGO DE PERMISSÃO ---
 
     Scaffold(
         modifier = modifier,

@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -38,7 +39,11 @@ class MainActivity : ComponentActivity() {
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
-        val dietaViewModelFactory = DietaViewModelFactory(app.authRepository, app.sessionManager)
+
+        // --- CORREÇÃO AQUI ---
+        // 1. Passamos o 'app' (Application) para a factory
+        val dietaViewModelFactory = DietaViewModelFactory(app, app.authRepository, app.sessionManager)
+        // --- FIM DA CORREÇÃO ---
 
         setContent {
             LifeAImobileTheme {
@@ -46,36 +51,59 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF10161C)
                 ) {
+                    // --- CORREÇÃO DA LÓGICA DE CARREGAMENTO ---
+
+                    // 1. Voltamos a usar "LOADING" como o estado inicial do token.
                     val token by app.sessionManager.authToken.collectAsState(initial = "LOADING")
                     val onboardingCompleted by app.sessionManager.onboardingCompleted.collectAsState(initial = null)
-                    var startDestination by remember { mutableStateOf<String?>(null) }
 
-                    LaunchedEffect(token, onboardingCompleted) {
-                        if (token != "LOADING" && onboardingCompleted != null) {
-                            startDestination = when {
+                    // 2. O estado de carregamento agora é explícito
+                    val isLoading = token == "LOADING" || onboardingCompleted == null
+                    // --- FIM DA CORREÇÃO ---
+
+                    if (!isLoading) {
+                        // 3. O 'startDestination' agora é um 'val', é calculado UMA VEZ.
+                        // (Aqui 'token' será "" ou "abc...", mas nunca "LOADING")
+                        val startDestination = remember(token, onboardingCompleted) {
+                            when {
                                 token.isNullOrBlank() -> "welcome"
-                                !onboardingCompleted!! -> "disclaimer"
+                                !onboardingCompleted!! -> "disclaimer" // sabemos que não é nulo aqui
                                 else -> "home"
                             }
                         }
-                    }
 
-                    if (startDestination != null) {
                         val navController = rememberNavController()
+                        val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
+
+                        // 4. Este LaunchedEffect monitora e NAVEGA (correto)
+                        LaunchedEffect(token, onboardingCompleted) {
+                            val currentRoute = navController.currentBackStackEntry?.destination?.route
+
+                            if (!token.isNullOrBlank() && onboardingCompleted == true && currentRoute != "home") {
+                                // Usuário está logado e completou onboarding, vá para home
+                                navController.navigate("home") {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                }
+                            } else if (token.isNullOrBlank() && (currentRoute != "loginAccount" && currentRoute != "createAccount" && currentRoute != "welcome")) {
+                                // Usuário foi deslogado, vá para welcome
+                                navController.navigate("welcome") {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                }
+                            }
+                        }
+
                         NavHost(
                             navController = navController,
-                            startDestination = startDestination!!,
+                            startDestination = startDestination, // 5. Inicia com o destino calculado
                             enterTransition = { fadeIn(animationSpec = tween(500)) },
                             exitTransition = { fadeOut(animationSpec = tween(500)) }
                         ) {
                             composable("welcome") { WelcomeScreen(navController) }
                             composable("createAccount") {
-                                val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 RegisterScreen(navController, authViewModel)
                             }
                             composable("disclaimer") { DisclaimerScreen(navController) }
                             composable("loginAccount") {
-                                val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 LoginScreen(navController, authViewModel)
                             }
                             composable("onboarding") {
@@ -83,7 +111,6 @@ class MainActivity : ComponentActivity() {
                                 OnboardingScreen(navController, onboardingViewModel)
                             }
                             composable("home") {
-                                val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
                                 MainAppScreen(
                                     mainNavController = navController,
                                     authViewModel = authViewModel,
@@ -103,6 +130,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     } else {
+                        // 6. O app vai ficar aqui (corretamente)
+                        // até o DataStore carregar.
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center

@@ -1,7 +1,16 @@
 package com.example.lifeai_mobile.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.Manifest
+import android.app.Application
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lifeai_mobile.MyApplication
+import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
@@ -24,9 +33,10 @@ sealed class DietaState {
 }
 
 class DietaViewModel(
+    application: Application,
     private val authRepository: AuthRepository,
     private val sessionManager: SessionManager
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow<DietaState>(DietaState.Loading)
     val state: StateFlow<DietaState> = _state
@@ -69,6 +79,9 @@ class DietaViewModel(
                     val jsonString = gson.toJson(dietaResponse)
                     sessionManager.saveDietJson(jsonString)
                     _state.value = DietaState.Success(dietaResponse)
+
+                    sendDietaProntaNotification()
+
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "Erro desconhecido"
                     _state.value = DietaState.Error("Falha ao gerar dieta: $errorBody")
@@ -83,6 +96,32 @@ class DietaViewModel(
         viewModelScope.launch {
             sessionManager.saveDietJson(null)
             gerarPlanoDeDieta()
+        }
+    }
+
+    private fun sendDietaProntaNotification() {
+        val context = getApplication<Application>().applicationContext
+
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("DietaViewModel", "Permissão de notificação NÃO concedida.")
+            return
+        }
+
+        // --- CORREÇÃO DO TEXTO AQUI ---
+        val builder = NotificationCompat.Builder(context, MyApplication.DIETA_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("Sua dieta está pronta!")
+            .setContentText("Volte para a tela de Dieta para conferir o seu novo plano.") // <-- MENSAGEM CORRIGIDA
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+        // --- FIM DA CORREÇÃO ---
+
+        with(NotificationManagerCompat.from(context)) {
+            notify(1, builder.build())
         }
     }
 

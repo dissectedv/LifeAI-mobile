@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.repository
 
+import android.util.Log
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.DietaResponse
@@ -23,7 +24,11 @@ class AuthRepository(
     private val api: AuthApi,
     private val sessionManager: SessionManager
 ) {
-    suspend fun registerUser(username: String, email: String, password: String): Response<RegisterResponse> {
+    suspend fun registerUser(
+        username: String,
+        email: String,
+        password: String
+    ): Response<RegisterResponse> {
         val request = RegisterRequest(username, email, password)
         return api.register(request)
     }
@@ -69,7 +74,8 @@ class AuthRepository(
             try {
                 val request = LogoutRequest(currentRefreshToken)
                 api.logout(request)
-            } catch (e: Exception) {}
+            } catch (e: Exception) {
+            }
         }
         sessionManager.clearTokens()
     }
@@ -102,6 +108,27 @@ class AuthRepository(
         val response = api.deleteImcRegistro(id)
         if (!response.isSuccessful) {
             throw HttpException(response)
+        }
+    }
+
+    suspend fun sendWelcomeEmail(email: String) {
+        try {
+            val body = mapOf(
+                "subject" to "Bem-vindo ao LifeAI!",
+                "message" to "Olá! Seja muito bem-vindo ao LifeAI, sua nova plataforma de bem-estar e inteligência personalizada. Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.",
+                "to" to email
+            )
+            val response = api.sendEmail(body)
+            if (response.isSuccessful) {
+                Log.d("AuthRepository", "E-mail de boas-vindas enviado para $email")
+            } else {
+                Log.e(
+                    "AuthRepository",
+                    "Falha ao enviar e-mail: ${response.code()} ${response.errorBody()?.string()}"
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "Exceção ao enviar e-mail: ${e.message}", e)
         }
     }
 }

@@ -39,6 +39,11 @@ fun NavigationGraph(
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
     val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
 
+    // --- CORREÇÃO AQUI ---
+    // 1. Içamos o DietaViewModel para que ele sobreviva à navegação
+    val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
+    // --- FIM DA CORREÇÃO ---
+
     NavHost(
         navController = navController,
         startDestination = BottomNavItem.Inicio.route
@@ -76,7 +81,7 @@ fun NavigationGraph(
         }
 
         composable("dieta_screen") {
-            val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
+            // 2. Removemos a criação daqui e só passamos o ViewModel
             DietaScreen(
                 navController = navController,
                 viewModel = dietaViewModel,
