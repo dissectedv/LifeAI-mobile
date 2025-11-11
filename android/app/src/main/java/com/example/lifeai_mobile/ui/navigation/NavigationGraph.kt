@@ -17,6 +17,11 @@ import com.example.lifeai_mobile.view.HomeScreen
 import com.example.lifeai_mobile.view.DietaScreen
 import com.example.lifeai_mobile.viewmodel.DietaViewModel
 import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
+// --- IMPORTS NOVOS ---
+import com.example.lifeai_mobile.view.RotinaScreen
+import com.example.lifeai_mobile.viewmodel.RotinaViewModel
+import com.example.lifeai_mobile.viewmodel.RotinaViewModelFactory
+// --- FIM IMPORTS NOVOS ---
 import com.example.lifeai_mobile.view.SaudeScreen
 import com.example.lifeai_mobile.view.UsuarioScreen
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,15 +39,18 @@ fun NavigationGraph(
     resumoViewModelFactory: ResumoViewModelFactory,
     chatViewModelFactory: ChatIAViewModelFactory,
     dietaViewModelFactory: DietaViewModelFactory,
+    // --- ADIÇÃO AQUI (Passo 5.3) ---
+    rotinaViewModelFactory: RotinaViewModelFactory, // 1. Recebe a factory
     bottomBarPadding: PaddingValues
 ) {
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
     val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
-
-    // --- CORREÇÃO AQUI ---
-    // 1. Içamos o DietaViewModel para que ele sobreviva à navegação
     val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
-    // --- FIM DA CORREÇÃO ---
+
+    // --- ADIÇÃO AQUI (Passo 5.3) ---
+    // 2. Cria o ViewModel da Rotina no escopo do NavGraph
+    val rotinaViewModel: RotinaViewModel = viewModel(factory = rotinaViewModelFactory)
+    // --- FIM DA ADIÇÃO ---
 
     NavHost(
         navController = navController,
@@ -81,7 +89,6 @@ fun NavigationGraph(
         }
 
         composable("dieta_screen") {
-            // 2. Removemos a criação daqui e só passamos o ViewModel
             DietaScreen(
                 navController = navController,
                 viewModel = dietaViewModel,
@@ -100,5 +107,15 @@ fun NavigationGraph(
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
+
+        // --- 6. ADICIONAMOS A NOVA ROTA ---
+        composable("rotina_screen") {
+            RotinaScreen(
+                navController = navController,
+                viewModel = rotinaViewModel,
+                modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
+            )
+        }
+        // --- FIM DA ADIÇÃO ---
     }
 }

@@ -39,11 +39,12 @@ class MainActivity : ComponentActivity() {
         val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
-
-        // --- CORREÇÃO AQUI ---
-        // 1. Passamos o 'app' (Application) para a factory
         val dietaViewModelFactory = DietaViewModelFactory(app, app.authRepository, app.sessionManager)
-        // --- FIM DA CORREÇÃO ---
+
+        // --- ADIÇÃO DA NOVA FACTORY ---
+        // 1. Criamos a factory para o RotinaViewModel
+        val rotinaViewModelFactory = RotinaViewModelFactory(app.authRepository)
+        // --- FIM DA ADIÇÃO ---
 
         setContent {
             LifeAImobileTheme {
@@ -116,7 +117,9 @@ class MainActivity : ComponentActivity() {
                                     authViewModel = authViewModel,
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory,
-                                    dietaViewModelFactory = dietaViewModelFactory
+                                    dietaViewModelFactory = dietaViewModelFactory,
+                                    // 2. Passamos a nova factory para o MainAppScreen
+                                    rotinaViewModelFactory = rotinaViewModelFactory
                                 )
                             }
                             composable("imc_calculator") {

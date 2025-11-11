@@ -56,7 +56,6 @@ interface AuthApi {
     @POST("logout/")
     suspend fun logout(@Body request: LogoutRequest): Response<Unit>
 
-    // --- CORREÇÃO: Removido o "api/" do path ---
     @POST("send-email/")
     suspend fun sendEmail(@Body emailData: Map<String, String>): Response<Unit>
 }

@@ -67,7 +67,10 @@ fun SaudeScreen(
                 title = "Planejamento de Rotina",
                 description = "Dicas e organização de tarefas diárias.",
                 icon = Icons.Default.DateRange,
-                onClick = { }
+                // --- CORREÇÃO FINAL AQUI ---
+                // 1. Adicionamos a navegação para a nova tela
+                onClick = { navController.navigate("rotina_screen") }
+                // --- FIM DA CORREÇÃO ---
             )
             SaudeCard(
                 title = "Sugestão de Dieta",
