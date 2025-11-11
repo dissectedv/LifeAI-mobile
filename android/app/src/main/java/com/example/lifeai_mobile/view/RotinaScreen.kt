@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +25,11 @@ import androidx.navigation.NavController
 import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.viewmodel.RotinaUIState
 import com.example.lifeai_mobile.viewmodel.RotinaViewModel
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,7 +191,6 @@ private fun CompromissoList(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(compromissos, key = { it.id }) { compromisso ->
-            // Simplesmente chamamos o Card e passamos a função de deletar
             CompromissoItemCard(
                 compromisso = compromisso,
                 onDelete = { onDelete(compromisso) }
@@ -197,7 +202,7 @@ private fun CompromissoList(
 @Composable
 private fun CompromissoItemCard(
     compromisso: Compromisso,
-    onDelete: () -> Unit // Recebe a função
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -211,7 +216,6 @@ private fun CompromissoItemCard(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Coluna de Textos (Título, Data, Hora)
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -234,71 +238,266 @@ private fun CompromissoItemCard(
                     color = Color(0xFF4A90E2)
                 )
             }
-
-            // --- PLANO C: BOTÃO DE LIXEIRA ---
             Spacer(Modifier.width(12.dp))
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Deletar Compromisso",
-                    tint = Color.Gray // Cor suave
+                    tint = Color.Gray
                 )
             }
         }
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddCompromissoDialog(
     onDismiss: () -> Unit,
     onConfirm: (titulo: String, data: String, horaInicio: String, horaFim: String) -> Unit
 ) {
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
     var titulo by remember { mutableStateOf("") }
-    var data by remember { mutableStateOf("") }
-    var horaInicio by remember { mutableStateOf("") }
-    var horaFim by remember { mutableStateOf("") }
-    val isFormValid = titulo.isNotBlank() && data.isNotBlank() && horaInicio.isNotBlank() && horaFim.isNotBlank()
+    var data by remember { mutableStateOf(LocalDate.now()) }
+    var horaInicio by remember { mutableStateOf(LocalTime.now().plusHours(1)) }
+    var horaFim by remember { mutableStateOf(LocalTime.now().plusHours(2)) }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showStartTimePicker by remember { mutableStateOf(false) }
+    var showEndTimePicker by remember { mutableStateOf(false) }
+
+    // --- CORREÇÃO AQUI: LÓGICA PARA BLOQUEAR DATAS PASSADAS ---
+    // 1. Pega o início do dia de "hoje" em UTC (em milissegundos)
+    val todayMillisUtc = remember {
+        LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+    }
+    // 2. Cria a regra: só datas >= "hoje" são selecionáveis.
+    val selectableDates = remember {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                return utcTimeMillis >= todayMillisUtc
+            }
+        }
+    }
+    // --- FIM DA CORREÇÃO ---
+
+    val datePickerState = rememberDatePickerState(
+        // Começa selecionando "hoje"
+        initialSelectedDateMillis = Instant.now().toEpochMilli(),
+        selectableDates = selectableDates // <-- 3. APLICA A REGRA
+    )
+    val startTimePickerState = rememberTimePickerState(
+        initialHour = horaInicio.hour,
+        initialMinute = horaInicio.minute,
+        is24Hour = true
+    )
+    val endTimePickerState = rememberTimePickerState(
+        initialHour = horaFim.hour,
+        initialMinute = horaFim.minute,
+        is24Hour = true
+    )
+
+    LaunchedEffect(datePickerState.selectedDateMillis) {
+        datePickerState.selectedDateMillis?.let { millis ->
+            data = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
+        }
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF4A90E2))
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDatePicker = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.7f))
+                ) { Text("Cancelar") }
+            },
+            colors = DatePickerDefaults.colors(
+                containerColor = Color(0xFF1B2A3D),
+                titleContentColor = Color.White,
+                headlineContentColor = Color.White,
+                weekdayContentColor = Color.White.copy(alpha = 0.7f),
+                yearContentColor = Color.White,
+                currentYearContentColor = Color.White,
+                selectedYearContainerColor = Color(0xFF4A90E2),
+                selectedYearContentColor = Color.White,
+                dayContentColor = Color.White,
+                selectedDayContainerColor = Color(0xFF4A90E2),
+                selectedDayContentColor = Color.White,
+                todayDateBorderColor = Color(0xFF4A90E2),
+                todayContentColor = Color(0xFF4A90E2)
+            )
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showStartTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showStartTimePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        horaInicio = LocalTime.of(startTimePickerState.hour, startTimePickerState.minute)
+                        showStartTimePicker = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF4A90E2))
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showStartTimePicker = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.7f))
+                ) { Text("Cancelar") }
+            }
+        ) {
+            TimePicker(
+                state = startTimePickerState,
+                colors = TimePickerDefaults.colors(
+                    containerColor = Color(0xFF1B2A3D),
+                    clockDialColor = Color(0xFF2C3E50),
+                    clockDialSelectedContentColor = Color.White,
+                    clockDialUnselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    selectorColor = Color(0xFF4A90E2),
+                    periodSelectorBorderColor = Color(0xFF4A90E2),
+                    periodSelectorSelectedContainerColor = Color(0xFF4A90E2),
+                    periodSelectorSelectedContentColor = Color.White,
+                    periodSelectorUnselectedContainerColor = Color.Transparent,
+                    periodSelectorUnselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    timeSelectorSelectedContainerColor = Color(0xFF4A90E2),
+                    timeSelectorSelectedContentColor = Color.White,
+                    timeSelectorUnselectedContainerColor = Color(0xFF2C3E50),
+                    timeSelectorUnselectedContentColor = Color.White.copy(alpha = 0.7f)
+                )
+            )
+        }
+    }
+
+    if (showEndTimePicker) {
+        TimePickerDialog(
+            onDismissRequest = { showEndTimePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        horaFim = LocalTime.of(endTimePickerState.hour, endTimePickerState.minute)
+                        showEndTimePicker = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF4A90E2))
+                ) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showEndTimePicker = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White.copy(alpha = 0.7f))
+                ) { Text("Cancelar") }
+            }
+        ) {
+            TimePicker(
+                state = endTimePickerState,
+                colors = TimePickerDefaults.colors(
+                    containerColor = Color(0xFF1B2A3D),
+                    clockDialColor = Color(0xFF2C3E50),
+                    clockDialSelectedContentColor = Color.White,
+                    clockDialUnselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    selectorColor = Color(0xFF4A90E2),
+                    periodSelectorBorderColor = Color(0xFF4A90E2),
+                    periodSelectorSelectedContainerColor = Color(0xFF4A90E2),
+                    periodSelectorSelectedContentColor = Color.White,
+                    periodSelectorUnselectedContainerColor = Color.Transparent,
+                    periodSelectorUnselectedContentColor = Color.White.copy(alpha = 0.7f),
+                    timeSelectorSelectedContainerColor = Color(0xFF4A90E2),
+                    timeSelectorSelectedContentColor = Color.White,
+                    timeSelectorUnselectedContainerColor = Color(0xFF2C3E50),
+                    timeSelectorUnselectedContentColor = Color.White.copy(alpha = 0.7f)
+                )
+            )
+        }
+    }
+
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Novo Compromisso", color = Color.White) },
+        title = { Text("Novo Compromisso", fontWeight = FontWeight.Bold, color = Color.White) },
         text = {
-            Column {
-                TextField(
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
                     value = titulo,
                     onValueChange = { titulo = it },
-                    label = { Text("Título") },
-                    singleLine = true
-                )
-                Spacer(Modifier.height(8.dp))
-                TextField(
-                    value = data,
-                    onValueChange = { data = it },
-                    label = { Text("Data (YYYY-MM-DD)") },
-                    singleLine = true
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(Modifier.fillMaxWidth()) {
-                    TextField(
-                        value = horaInicio,
-                        onValueChange = { horaInicio = it },
-                        label = { Text("Início (HH:MM)") },
-                        modifier = Modifier.weight(1f)
+                    label = { Text("Título do Compromisso") },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color(0xFF4A90E2),
+                        cursorColor = Color(0xFF4A90E2),
+                        focusedLabelColor = Color(0xFF4A90E2),
+                        unfocusedLabelColor = Color.Gray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White
                     )
-                    Spacer(Modifier.width(8.dp))
-                    TextField(
-                        value = horaFim,
-                        onValueChange = { horaFim = it },
-                        label = { Text("Fim (HH:MM)") },
-                        modifier = Modifier.weight(1f)
-                    )
+                )
+
+                Text("Data", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+                OutlinedButton(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                ) {
+                    Text(data.format(dateFormatter))
+                }
+
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Início", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            onClick = { showStartTimePicker = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                        ) {
+                            Text(horaInicio.format(timeFormatter))
+                        }
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("Fim", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            onClick = { showEndTimePicker = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f))
+                        ) {
+                            Text(horaFim.format(timeFormatter))
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(titulo, data, horaInicio, horaFim) },
-                enabled = isFormValid,
+                onClick = {
+                    onConfirm(
+                        titulo,
+                        data.toString(), // "YYYY-MM-DD"
+                        horaInicio.format(timeFormatter), // "HH:MM"
+                        horaFim.format(timeFormatter) // "HH:MM"
+                    )
+                },
+                enabled = titulo.isNotBlank() && horaFim.isAfter(horaInicio),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C9A7))
             ) {
                 Text("Salvar")
@@ -309,6 +508,29 @@ private fun AddCompromissoDialog(
                 Text("Cancelar", color = Color(0xFF4A90E2))
             }
         },
+        containerColor = Color(0xFF1B2A3D)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TimePickerDialog(
+    title: String = "Selecione a Hora",
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    dismissButton: @Composable () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(title, style = MaterialTheme.typography.titleMedium, color = Color.White) },
+        text = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                content()
+            }
+        },
+        confirmButton = confirmButton,
+        dismissButton = dismissButton,
         containerColor = Color(0xFF1B2A3D)
     )
 }
