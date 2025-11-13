@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import imc, imc_user_base, atividade, checklist, pontuacao_check
+from .models import imc, imc_user_base, compromisso, pontuacao_compromisso, CompromissoAtividade
 from datetime import date
 
 class ImcSerializer(serializers.ModelSerializer):
@@ -38,33 +38,31 @@ class ImcBaseRecSerializer(serializers.ModelSerializer):
 
 class AtividadeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = atividade
+        model = CompromissoAtividade
         fields = ['id', 'descricao', 'done']
 
-class ChecklistSerializer(serializers.ModelSerializer):
-    atividades = AtividadeSerializer(many=True, write_only=True)
-    tarefas = AtividadeSerializer(source='atividade_set', many=True, read_only=True)
-
+class CompromissoSerializer(serializers.ModelSerializer):
     class Meta:
-        model = checklist
-        fields = ['data', 'atividades', 'tarefas']
-        read_only_fields = ['id', 'created_at']
+        model = compromisso
+        fields = ['id', 'titulo', 'data', 'hora_inicio', 'hora_fim', 'concluido']
 
     def create(self, validated_data):
-        atividades_data = validated_data.pop('atividades')
-        usuario = self.context['request'].user
-
-        checklist_instance = checklist.objects.create(id_usuario=usuario, **validated_data)
-
-        for atividade_data in atividades_data:
-            atividade.objects.create(checklist=checklist_instance, **atividade_data)
-
-        return checklist_instance
-
-class PontuacaoCheckSerializer(serializers.ModelSerializer):
-    data_checklist = serializers.DateField(source='checklist.data', format='%Y-%m-%d')
-    checklist_id = serializers.IntegerField(source='checklist.id', read_only=True)
+        validated_data['id_usuario'] = self.context['request'].user
+        return super().create(validated_data)
+    
+class PontuacaoCompromissoSerializer(serializers.ModelSerializer):
+    
+    data_compromisso = serializers.DateField(source='compromisso.data', format='%Y-%m-%d')
+    compromisso_id = serializers.IntegerField(source='compromisso.id', read_only=True)
 
     class Meta:
-        model = pontuacao_check
-        fields = ['id', 'checklist_id', 'qtd_total_atv', 'qtd_atv_done', 'porcentagem', 'criado_em', 'data_checklist']
+        model = pontuacao_compromisso
+        fields = [
+            'id',
+            'compromisso_id',
+            'qtd_total_atv',
+            'qtd_atv_done',
+            'porcentagem',
+            'criado_em',
+            'data_compromisso'
+        ]

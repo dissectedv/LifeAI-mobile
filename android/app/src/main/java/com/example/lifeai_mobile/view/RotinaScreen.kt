@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.view
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -40,7 +41,7 @@ fun RotinaScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
-
+    Log.d("RotinaScreen", "Recompondo a tela. Estado: $state")
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -190,7 +191,7 @@ private fun CompromissoList(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(compromissos, key = { it.id }) { compromisso ->
+        items(compromissos, key = { it.id!! }) { compromisso ->
             CompromissoItemCard(
                 compromisso = compromisso,
                 onDelete = { onDelete(compromisso) }
@@ -282,6 +283,7 @@ private fun AddCompromissoDialog(
             }
         }
     }
+
     // --- FIM DA CORREÇÃO ---
 
     val datePickerState = rememberDatePickerState(

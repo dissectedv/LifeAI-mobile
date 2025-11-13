@@ -2,6 +2,7 @@ package com.example.lifeai_mobile.repository
 
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
+import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
@@ -58,4 +59,14 @@ interface AuthApi {
 
     @POST("send-email/")
     suspend fun sendEmail(@Body emailData: Map<String, String>): Response<Unit>
+
+    @GET("compromissos/")
+    suspend fun getCompromissos(): Response<List<Compromisso>>
+
+    @POST("compromissos/")
+    suspend fun createCompromisso(@Body compromisso: Compromisso): Response<Compromisso>
+
+    @DELETE("compromissos/{id}/")
+    suspend fun deleteCompromisso(@Path("id") id: Int): Response<Unit>
+
 }

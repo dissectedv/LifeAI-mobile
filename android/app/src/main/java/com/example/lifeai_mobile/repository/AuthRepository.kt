@@ -3,6 +3,7 @@ package com.example.lifeai_mobile.repository
 import android.util.Log
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
+import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
@@ -130,5 +131,17 @@ class AuthRepository(
         } catch (e: Exception) {
             Log.e("AuthRepository", "Exceção ao enviar e-mail: ${e.message}", e)
         }
+    }
+
+    suspend fun getCompromissos(): Response<List<Compromisso>> {
+        return api.getCompromissos()
+    }
+
+    suspend fun createCompromisso(compromisso: Compromisso): Response<Compromisso> {
+        return api.createCompromisso(compromisso)
+    }
+
+    suspend fun deleteCompromisso(id: Int): Response<Unit> {
+        return api.deleteCompromisso(id)
     }
 }

@@ -12,12 +12,10 @@ porque estamos usando uma lista em memória para a demo.
 */
 
 data class Compromisso(
-    // Para a demo, vamos usar um ID aleatório (UUID)
-    // para que a LazyColumn (a lista) consiga diferenciar os itens.
-    val id: String = UUID.randomUUID().toString(),
+    val id: Int? = null,
     val titulo: String,
-    val data: String, // "YYYY-MM-DD"
-    val hora_inicio: String, // "HH:MM"
-    val hora_fim: String, // "HH:MM"
+    val data: String,          // formato: "YYYY-MM-DD"
+    val hora_inicio: String,   // formato: "HH:MM"
+    val hora_fim: String,      // formato: "HH:MM"
     val concluido: Boolean = false
 )

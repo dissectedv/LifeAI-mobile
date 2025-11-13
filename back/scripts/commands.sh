@@ -11,7 +11,6 @@ echo "✅ Postgres Database Started Successfully ($DB_HOST:$DB_PORT)"
 
 # Roda migrations e coletar static
 python manage.py collectstatic --noinput
-python manage.py makemigrations --noinput
 python manage.py migrate --noinput
 
 # Roda servidor Django

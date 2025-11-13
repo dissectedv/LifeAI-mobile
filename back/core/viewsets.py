@@ -202,92 +202,84 @@ class ImcDeleteAPIView(APIView):
         registro.delete()
         return Response({"message": "Registro excluído com sucesso."}, status=status.HTTP_204_NO_CONTENT)
     
-class ChecklistCreateAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request):
-        serializer = serializers.ChecklistSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer = serializer.save()
-            return Response({'message': 'Checklist criado com sucesso.'}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def buscar_checklist_por_data(request):
-        data = request.GET.get('data')
-        if not data:
-            return Response({'erro': 'Data não fornecida'}, status=400)
-
-        checklist = get_object_or_404(Checklist, id_usuario=request.user, data=data)
-        return Response({'id': checklist.id})
-    
-class AtividadesPorDataAPIView(APIView):
+class CompromissosListCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        data = request.GET.get('data')
-        if not data:
-            return Response({'erro': 'Parâmetro data é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+        compromissos = models.compromisso.objects.filter(id_usuario=request.user).order_by('-data', 'hora_inicio')
+        serializer = serializers.CompromissoSerializer(compromissos, many=True)
+        return Response(serializer.data)
 
-        try:
-            data_convertida = datetime.strptime(data, '%Y-%m-%d').date()
-        except ValueError:
-            return Response({'erro': 'Formato de data inválido. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            checklist_obj = models.checklist.objects.get(id_usuario=request.user, data=data_convertida)
-        except models.checklist.DoesNotExist:
-            return Response({'mensagem': 'Checklist não encontrado'}, status=status.HTTP_4404_NOT_FOUND)
-
-        atividades = models.atividade.objects.filter(checklist=checklist_obj).order_by('id')
-        serializer = serializers.AtividadeSerializer(atividades, many=True)
-
-        return Response({
-            'id': checklist_obj.id,
-            'data': checklist_obj.data.isoformat(),
-            'atividades': serializer.data
-        }, status=status.HTTP_200_OK)
-
-class AtualizarAtividadesAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def put(self, request, checklist_id):
-        try:
-            checklist = models.checklist.objects.get(id=checklist_id, id_usuario=request.user)
-        except models.checklist.DoesNotExist:
-            return Response({'erro': 'Checklist não encontrado'}, status=status.HTTP_404_NOT_FOUND)
-
-        atividades_data = request.data.get('atividades', [])
-
-        for atv in atividades_data:
-            try:
-                atividade = models.atividade.objects.get(id=atv['id'], checklist=checklist)
-                atividade.done = atv['done']
-                atividade.save()
-            except models.atividade.DoesNotExist:
-                continue
-
-        return Response({'mensagem': 'Atividades atualizadas com sucesso.'}, status=status.HTTP_200_OK)
+    def post(self, request):
+        serializer = serializers.CompromissoSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
-class GerarPontuacaoAPIView(APIView):
+class CompromissoRetrieveUpdateDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request, checklist_id):
+    def get_object(self, pk, user):
         try:
-            check = models.checklist.objects.get(id=checklist_id, id_usuario=request.user)
-        except models.checklist.DoesNotExist:
-            return Response({'erro': 'Checklist não encontrado'}, status=status.HTTP_4404_NOT_FOUND)
+            return models.compromisso.objects.get(id=pk, id_usuario=user)
+        except models.compromisso.DoesNotExist:
+            return None
 
-        atividades = models.atividade.objects.filter(checklist=check).order_by('id')
+    def get(self, request, pk):
+        compromisso = self.get_object(pk, request.user)
+        if not compromisso:
+            return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.CompromissoSerializer(compromisso)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        compromisso = self.get_object(pk, request.user)
+        if not compromisso:
+            return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.CompromissoSerializer(compromisso, data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        compromisso = self.get_object(pk, request.user)
+        if not compromisso:
+            return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = serializers.CompromissoSerializer(compromisso, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        compromisso = self.get_object(pk, request.user)
+        if not compromisso:
+            return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+        compromisso.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+class GerarPontuacaoCompromissoAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, compromisso_id):
+        try:
+            comp = models.compromisso.objects.get(id=compromisso_id, id_usuario=request.user)
+        except models.compromisso.DoesNotExist:
+            return Response({'erro': 'Compromisso não encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
+        atividades = models.atividade.objects.filter(compromisso=comp)
         total = atividades.count()
         feitas = atividades.filter(done=True).count()
 
         if total == 0:
-            return Response({'erro': 'Checklist sem atividades'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'erro': 'Compromisso sem atividades'}, status=status.HTTP_400_BAD_REQUEST)
 
         porcentagem = (feitas / total) * 100
 
-        pontuacao, _ = models.pontuacao_check.objects.update_or_create(
-            checklist=check,
+        pontuacao, _ = models.pontuacao_compromisso.objects.update_or_create(
+            compromisso=comp,
             defaults={
                 'qtd_total_atv': total,
                 'qtd_atv_done': feitas,
@@ -296,21 +288,12 @@ class GerarPontuacaoAPIView(APIView):
         )
 
         return Response({
-            'checklist_id': check.id,
+            'compromisso_id': comp.id,
             'qtd_total_atv': total,
             'qtd_atv_done': feitas,
             'porcentagem': round(pontuacao.porcentagem, 2)
         })
     
-class PontuacaoCheckListAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        pontuacoes = models.pontuacao_check.objects.filter(checklist__id_usuario=request.user).order_by('checklist__data')
-
-        serializer = serializers.PontuacaoCheckSerializer(pontuacoes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
 class DesempenhoMensalAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -327,18 +310,18 @@ class DesempenhoMensalAPIView(APIView):
         except ValueError:
             return Response({"erro": "Ano e mês devem ser números."}, status=400)
 
-        pontuacoes = models.pontuacao_check.objects.filter(
-            checklist__id_usuario=request.user,
-            checklist__data__year=ano,
-            checklist__data__month=mes
+        pontuacoes = models.pontuacao_compromisso.objects.filter(
+            compromisso__id_usuario=request.user,
+            compromisso__data__year=ano,
+            compromisso__data__month=mes
         ).values(
-            'checklist__data',
+            'compromisso__data',
             'porcentagem'
         )
 
         resultado = []
         for p in pontuacoes:
-            data_str = p['checklist__data'].strftime('%Y-%m-%d')
+            data_str = p['compromisso__data'].strftime('%Y-%m-%d')
             porcentagem = p['porcentagem']
             if porcentagem < 33:
                 emoji = '🧊'

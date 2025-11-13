@@ -38,24 +38,12 @@ class imc_user_base(models.Model):
         db_table = 'imc_user_base'
         ordering = ['id']
 
-class checklist(models.Model):
-    data = models.DateField(db_column='data', null=False)
-    created_at = models.DateTimeField(db_column='created_at', auto_now_add=True)
-    id_usuario = models.ForeignKey(User, db_column='id_usuario', on_delete=models.CASCADE)
-    class Meta:
-        db_table = 'checklist'
-        unique_together = ('id_usuario', 'data')
-        ordering = ['-data']
-
-    def __str__(self):
-        return f"Checklist de {self.id_usuario.username} - {self.data}"
-
-class atividade(models.Model):
+class CompromissoAtividade(models.Model):
     descricao = models.TextField(db_column='descricao')
     done = models.BooleanField(db_column='done', default=False)
-    checklist = models.ForeignKey(checklist, db_column='id_checklist', on_delete=models.CASCADE)
+    compromisso = models.ForeignKey('compromisso', db_column='id_compromisso', on_delete=models.CASCADE, related_name='atividades')
     class Meta:
-        db_table = 'atividade'
+        db_table = 'compromisso_atividade'
         ordering = ['id']
 
     def __str__(self):
@@ -63,17 +51,32 @@ class atividade(models.Model):
         return f"{status} {self.descricao}"
 
 
-class pontuacao_check(models.Model):
-    checklist = models.OneToOneField('checklist', on_delete=models.CASCADE, related_name='pontuacao')
-    qtd_total_atv = models.PositiveIntegerField(db_column='qtd_total_atv', default=False)
-    qtd_atv_done = models.PositiveIntegerField(db_column='qtd_atv_done', default=False)
-    porcentagem = models.FloatField(db_column='porcentagem', default=False)
-
+class pontuacao_compromisso(models.Model):
+    compromisso = models.OneToOneField('compromisso', on_delete=models.CASCADE, related_name='pontuacao')
+    qtd_total_atv = models.PositiveIntegerField(db_column='qtd_total_atv', default=0)
+    qtd_atv_done = models.PositiveIntegerField(db_column='qtd_atv_done', default=0)
+    porcentagem = models.FloatField(db_column='porcentagem', default=0)
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'pontuacao_check'
+        db_table = 'pontuacao_compromisso'
         ordering = ['id']
 
     def __str__(self):
-        return f"Pontuação - Checklist #{self.checklist.id}: {self.porcentagem:.2f}%"
+        return f"Pontuação - Compromisso #{self.compromisso.id}: {self.porcentagem:.2f}%"
+
+class compromisso(models.Model):
+    titulo = models.CharField(db_column='titulo', max_length=200, null=False)
+    data = models.DateField(db_column='data', null=False)
+    hora_inicio = models.TimeField(db_column='hora_inicio', null=False)
+    hora_fim = models.TimeField(db_column='hora_fim', null=False)
+    concluido = models.BooleanField(db_column='concluido', default=False)
+    id_usuario = models.ForeignKey(User, db_column='id_usuario', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'compromisso'
+        unique_together = (('id_usuario', 'data', 'hora_inicio'),)
+        ordering = ['-data', 'hora_inicio']
+
+    def __str__(self):
+        return f"{self.titulo} - {self.data} ({self.hora_inicio} às {self.hora_fim})"

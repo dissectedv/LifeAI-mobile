@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 // Define os estados da tela: Carregando, Sucesso (com dados) ou Erro
+
+private const val TAG = "RotinaViewModel"
 sealed class RotinaUIState {
     object Loading : RotinaUIState()
     data class Success(val compromissos: List<Compromisso>) : RotinaUIState()
@@ -25,95 +27,65 @@ class RotinaViewModel(
     private val _uiState = MutableStateFlow<RotinaUIState>(RotinaUIState.Loading)
     val uiState: StateFlow<RotinaUIState> = _uiState.asStateFlow()
 
-    // --- NOSSA LISTA EM MEMÓRIA (PARA A DEMO) ---
-    private val compromissosEmMemoria = mutableListOf<Compromisso>()
-    // ------------------------------------------
-
     init {
-        // Carrega os compromissos (da memória) assim que o ViewModel é criado
         carregarCompromissos()
     }
 
     fun carregarCompromissos() {
+        Log.d(TAG, "Iniciando carregarCompromissos()...")
         viewModelScope.launch {
+
             _uiState.value = RotinaUIState.Loading
-
-            // --- LÓGICA DA DEMO ---
-            // Simplesmente atualiza a tela com a nossa lista em memória
-            _uiState.value = RotinaUIState.Success(compromissosEmMemoria.toList())
-            // --- FIM DA LÓGICA DA DEMO ---
-
-            /*
-            // TODO (Backend): Quando o back estiver pronto, substituir a lógica acima por isso:
             try {
                 val response = authRepository.getCompromissos()
                 if (response.isSuccessful && response.body() != null) {
                     _uiState.value = RotinaUIState.Success(response.body()!!)
                 } else {
-                    _uiState.value = RotinaUIState.Error("Falha ao carregar compromissos: ${response.message()}")
+                    _uiState.value = RotinaUIState.Error("Falha ao carregar: ${response.message()}")
                 }
             } catch (e: Exception) {
                 _uiState.value = RotinaUIState.Error("Erro de rede: ${e.message}")
             }
-            */
         }
     }
 
     fun adicionarCompromisso(titulo: String, data: String, horaInicio: String, horaFim: String) {
+        Log.d(TAG, "Iniciando adicionarCompromisso(): $titulo")
         viewModelScope.launch {
-            val novoCompromisso = Compromisso(
+            val novo = Compromisso(
                 titulo = titulo,
-                data = data, // Formato "YYYY-MM-DD"
-                hora_inicio = horaInicio, // Formato "HH:MM"
-                hora_fim = horaFim, // Formato "HH:MM"
-                concluido = false
+                data = data,
+                hora_inicio = horaInicio,
+                hora_fim = horaFim
             )
 
-            // --- LÓGICA DA DEMO ---
-            // Adiciona na lista em memória e atualiza a tela
-            compromissosEmMemoria.add(novoCompromisso)
-            _uiState.value = RotinaUIState.Success(compromissosEmMemoria.toList())
-            // --- FIM DA LÓGICA DA DEMO ---
-
-            /*
-            // TODO (Backend): Quando o back estiver pronto, substituir a lógica acima por isso:
             try {
-                val response = authRepository.createCompromisso(novoCompromisso)
+                val response = authRepository.createCompromisso(novo)
                 if (response.isSuccessful) {
-                    carregarCompromissos() // Recarrega do servidor
+                    carregarCompromissos()
                 } else {
-                    Log.e("RotinaViewModel", "Falha ao criar compromisso: ${response.message()}")
+                    Log.e("RotinaViewModel", "Erro ao criar: ${response.message()}")
                 }
             } catch (e: Exception) {
-                Log.e("RotinaViewModel", "Exceção ao criar compromisso: ${e.message}")
+                Log.e(TAG, "Erro ao adicionar compromisso: ${e.message}", e)
             }
-            */
         }
     }
 
     fun deletarCompromisso(compromisso: Compromisso) {
+        Log.d(TAG, "Iniciando deletarCompromisso(): ${compromisso.id}")
         viewModelScope.launch {
-
-            // --- LÓGICA DA DEMO ---
-            // Remove da lista em memória pelo ID e atualiza a tela
-            compromissosEmMemoria.remove(compromisso)
-            _uiState.value = RotinaUIState.Success(compromissosEmMemoria.toList())
-            // --- FIM DA LÓGICA DA DEMO ---
-
-            /*
-            // TODO (Backend): Quando o back estiver pronto, substituir a lógica acima por isso:
-            // (Note que o 'id' aqui será um Int do banco, não um UUID)
             try {
-                val response = authRepository.deleteCompromisso(compromisso.id.toIntOrNull() ?: 0)
+                val id = compromisso.id ?: return@launch
+                val response = authRepository.deleteCompromisso(id)
                 if (response.isSuccessful) {
-                    carregarCompromissos() // Recarrega do servidor
+                    carregarCompromissos()
                 } else {
-                    Log.e("RotinaViewModel", "Falha ao deletar compromisso: ${response.message()}")
+                    Log.e("RotinaViewModel", "Erro ao deletar: ${response.message()}")
                 }
             } catch (e: Exception) {
-                Log.e("RotinaViewModel", "Exceção ao deletar compromisso: ${e.message}")
+                Log.e("RotinaViewModel", "Exceção ao deletar: ${e.message}")
             }
-            */
         }
     }
 }
