@@ -140,10 +140,18 @@ def chat_ia_view(request):
         return Response({"resposta": resposta})
 
     except RetryError as e:
+        if conversas_em_memoria[sessao_id]:
+            conversas_em_memoria[sessao_id].pop()
         return Response({"erro": "A IA está sobrecarregada no momento. Tente novamente em alguns segundos."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    
     except requests.exceptions.HTTPError as e:
+        if conversas_em_memoria[sessao_id]:
+            conversas_em_memoria[sessao_id].pop()
         return Response({"erro": f"Erro da API: {e.response.status_code}", "detalhe": e.response.text}, status=e.response.status_code)
+    
     except Exception as e:
+        if conversas_em_memoria[sessao_id]:
+            conversas_em_memoria[sessao_id].pop()
         return Response({"erro": f"Erro ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
