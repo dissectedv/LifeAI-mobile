@@ -1,5 +1,9 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,9 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -23,10 +25,9 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
-import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import com.example.lifeai_mobile.viewmodel.ResumoState
-import java.util.Calendar
-import java.util.Locale
+import com.example.lifeai_mobile.viewmodel.ResumoViewModel
+import java.util.*
 
 @Composable
 fun HomeScreen(
@@ -35,6 +36,11 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val state by resumoViewModel.state.collectAsState()
+
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
 
     Column(
         modifier = modifier
@@ -59,61 +65,82 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ImcHistoricoCard()
 
-            when (val currentState = state) {
-                is ResumoState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                    ChatGreetingCard(profile = null, navController = navController, isLoading = true)
-                }
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn(animationSpec = tween(1000, delayMillis = 100)) +
+                        slideInVertically(initialOffsetY = { 50 })
+            ) {
+                ImcHistoricoCard()
+            }
 
-                is ResumoState.Error -> {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Erro ao carregar resumo: ${currentState.message}",
-                                color = MaterialTheme.colorScheme.onErrorContainer
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) +
+                        slideInVertically(initialOffsetY = { 50 })
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    when (val currentState = state) {
+                        is ResumoState.Loading -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                            ChatGreetingCard(profile = null, navController = navController, isLoading = true)
+                        }
+
+                        is ResumoState.Error -> {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Erro ao carregar resumo: ${currentState.message}",
+                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                        }
+
+                        is ResumoState.Success -> {
+                            ResumoImcCard(profile = currentState.profile)
+                            ChatGreetingCard(
+                                profile = currentState.profile,
+                                navController = navController,
+                                isLoading = false
                             )
                         }
                     }
                 }
+            }
 
-                is ResumoState.Success -> {
-                    ResumoImcCard(profile = currentState.profile)
-                    ChatGreetingCard(
-                        profile = currentState.profile,
-                        navController = navController,
-                        isLoading = false
-                    )
+            AnimatedVisibility(
+                visible = isVisible,
+                enter = fadeIn(animationSpec = tween(1000, delayMillis = 300)) +
+                        slideInVertically(initialOffsetY = { 50 })
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    PassosCard(modifier = Modifier.weight(1f))
+                    AtividadesCard(modifier = Modifier.weight(1f))
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                PassosCard(modifier = Modifier.weight(1f))
-                AtividadesCard(modifier = Modifier.weight(1f))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }
@@ -138,19 +165,15 @@ private fun ChatGreetingCard(
     val userName = profile?.nome?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Usuário"
     val greetingMessage = "$greeting, $userName!"
     val subMessage = "Como você está se sentindo hoje?"
-    // O fullMessage não é mais necessário
 
     val gradient = Brush.horizontalGradient(
         listOf(Color(0xFF007BFF), Color(0xFF6C63FF))
     )
 
     Card(
-        // --- MUDANÇA AQUI ---
         onClick = {
             if (!isLoading) {
-                // Simplesmente navega para a rota da aba de chat
                 navController.navigate(BottomNavItem.ChatIA.route) {
-                    // Lógica padrão da barra de navegação
                     popUpTo(navController.graph.startDestinationId) {
                         saveState = true
                     }

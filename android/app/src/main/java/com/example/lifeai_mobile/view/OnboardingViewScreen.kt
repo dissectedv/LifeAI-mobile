@@ -47,7 +47,7 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
     val textColorSecondary = Color(0xFF8B949E)
 
     Scaffold(
-        modifier = Modifier.systemBarsPadding(),
+        modifier = Modifier.systemBarsPadding(), // Só o padding do sistema
         containerColor = Color.Transparent,
         topBar = {
             CenterAlignedTopAppBar(
@@ -84,139 +84,160 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
                 )
             )
         }
+        // --- 1. 'bottomBar' REMOVIDO DAQUI ---
     ) { innerPadding ->
-        Column(
+
+        // --- 2. CORREÇÃO: Usando um Box para controlar o layout ---
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 28.dp)
-                .imePadding(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(innerPadding) // Padding do TopBar
         ) {
-            Spacer(modifier = Modifier.weight(0.3f))
-
-            Text(
-                text = currentStep.questionText,
-                color = textColorPrimary,
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                lineHeight = 36.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(60.dp))
-
-            when (currentStep.inputType) {
-                InputType.TEXT -> {
-                    if (currentStep.progressText == "1/6") {
-                        CustomTextField(
-                            value = onboardingViewModel.name,
-                            onValueChange = { onboardingViewModel.onNameChange(it) },
-                            isError = onboardingViewModel.nameError != null,
-                            errorMessage = onboardingViewModel.nameError
-                        )
-                    } else {
-                        CustomTextField(
-                            value = onboardingViewModel.objective,
-                            onValueChange = { onboardingViewModel.onObjectiveChange(it) },
-                            isError = onboardingViewModel.objectiveError != null,
-                            errorMessage = onboardingViewModel.objectiveError
-                        )
-                    }
-                }
-                InputType.GENDER -> GenderSelector(
-                    selectedValue = onboardingViewModel.gender,
-                    onValueSelect = { onboardingViewModel.gender = it },
-                    accentColor = accentColor
-                )
-                InputType.NUMBER -> {
-                    when (currentStep.progressText) {
-                        "3/6" -> CustomTextField(
-                            value = onboardingViewModel.age,
-                            onValueChange = { onboardingViewModel.onAgeChange(it) },
-                            keyboardType = KeyboardType.Number,
-                            isError = onboardingViewModel.ageError != null,
-                            errorMessage = onboardingViewModel.ageError
-                        )
-                        "4/6" -> CustomTextField(
-                            value = onboardingViewModel.height,
-                            onValueChange = { onboardingViewModel.onHeightChange(it) },
-                            keyboardType = KeyboardType.Number,
-                            isError = onboardingViewModel.heightError != null,
-                            errorMessage = onboardingViewModel.heightError
-                        )
-                        "5/6" -> CustomTextField(
-                            value = onboardingViewModel.weight,
-                            onValueChange = { onboardingViewModel.onWeightChange(it) },
-                            keyboardType = KeyboardType.Number,
-                            isError = onboardingViewModel.weightError != null,
-                            errorMessage = onboardingViewModel.weightError
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(80.dp))
-
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+            // --- 3. ITEM 1: A Coluna que sobe com o teclado ---
+            Column(
+                modifier = Modifier
+                    .fillMaxSize() // Ocupa todo o espaço
+                    .padding(horizontal = 28.dp)
+                    .imePadding(), // <-- O imePadding SÓ se aplica a esta Coluna
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // MUDANÇA: Mostrar o loading ou o botão, dependendo do estado da UI
-                when (uiState) {
-                    is OnboardingViewModel.UiState.Loading -> {
-                        CircularProgressIndicator(color = accentColor)
-                    }
-                    else -> {
-                        OutlinedButton(
-                            onClick = { onboardingViewModel.onNext() },
-                            enabled = isButtonEnabled,
-                            modifier = Modifier
-                                .fillMaxWidth(0.6f)
-                                .height(56.dp),
-                            shape = RoundedCornerShape(28.dp),
-                            border = BorderStroke(1.5.dp, if (isButtonEnabled) accentColor else textColorSecondary),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = if (isButtonEnabled) textColorPrimary else textColorSecondary,
-                                disabledContentColor = textColorSecondary
+                Spacer(modifier = Modifier.weight(0.3f))
+
+                Text(
+                    text = currentStep.questionText,
+                    color = textColorPrimary,
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 36.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(60.dp))
+
+                // [O seu 'when (currentStep.inputType)' ... ]
+                when (currentStep.inputType) {
+                    InputType.TEXT -> {
+                        if (currentStep.progressText == "1/6") {
+                            CustomTextField(
+                                value = onboardingViewModel.name,
+                                onValueChange = { onboardingViewModel.onNameChange(it) },
+                                isError = onboardingViewModel.nameError != null,
+                                errorMessage = onboardingViewModel.nameError
                             )
-                        ) {
-                            Text(
-                                text = if (currentStep.progressText == "6/6") "Vamos começar!" else "Próximo",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold
+                        } else {
+                            CustomTextField(
+                                value = onboardingViewModel.objective,
+                                onValueChange = { onboardingViewModel.onObjectiveChange(it) },
+                                isError = onboardingViewModel.objectiveError != null,
+                                errorMessage = onboardingViewModel.objectiveError
+                            )
+                        }
+                    }
+                    InputType.GENDER -> GenderSelector(
+                        selectedValue = onboardingViewModel.gender,
+                        onValueSelect = { onboardingViewModel.gender = it },
+                        accentColor = accentColor
+                    )
+                    InputType.NUMBER -> {
+                        when (currentStep.progressText) {
+                            "3/6" -> CustomTextField(
+                                value = onboardingViewModel.age,
+                                onValueChange = { onboardingViewModel.onAgeChange(it) },
+                                keyboardType = KeyboardType.Number,
+                                isError = onboardingViewModel.ageError != null,
+                                errorMessage = onboardingViewModel.ageError
+                            )
+                            "4/6" -> CustomTextField(
+                                value = onboardingViewModel.height,
+                                onValueChange = { onboardingViewModel.onHeightChange(it) },
+                                keyboardType = KeyboardType.Number,
+                                isError = onboardingViewModel.heightError != null,
+                                errorMessage = onboardingViewModel.heightError
+                            )
+                            "5/6" -> CustomTextField(
+                                value = onboardingViewModel.weight,
+                                onValueChange = { onboardingViewModel.onWeightChange(it) },
+                                keyboardType = KeyboardType.Number,
+                                isError = onboardingViewModel.weightError != null,
+                                errorMessage = onboardingViewModel.weightError
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(80.dp))
+
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    // [O seu 'when (uiState)' com o Botão 'Próximo'...]
+                    when (uiState) {
+                        is OnboardingViewModel.UiState.Loading -> {
+                            CircularProgressIndicator(color = accentColor)
+                        }
+                        else -> {
+                            OutlinedButton(
+                                onClick = { onboardingViewModel.onNext() },
+                                enabled = isButtonEnabled,
+                                modifier = Modifier
+                                    .fillMaxWidth(0.6f)
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(28.dp),
+                                border = BorderStroke(1.5.dp, if (isButtonEnabled) accentColor else textColorSecondary),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = if (isButtonEnabled) textColorPrimary else textColorSecondary,
+                                    disabledContentColor = textColorSecondary
+                                )
+                            ) {
+                                Text(
+                                    text = if (currentStep.progressText == "6/6") "Vamos começar!" else "Próximo",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                if (uiState is OnboardingViewModel.UiState.Error) {
+                    val errorMessage = (uiState as OnboardingViewModel.UiState.Error).message
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = errorMessage,
+                        color = MaterialTheme.colorScheme.error,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                }
+
+                // O Spacer flexível empurra tudo para cima, mas
+                // o "texto de aviso" não está mais aqui
+                Spacer(modifier = Modifier.weight(1f))
             }
 
-            if (uiState is OnboardingViewModel.UiState.Error) {
-                val errorMessage = (uiState as OnboardingViewModel.UiState.Error).message
-                Spacer(modifier = Modifier.height(16.dp))
+            // --- 4. ITEM 2: O Texto de Aviso Fixo ---
+            // Ele fica na Box "pai", alinhado embaixo
+            // Ele NÃO tem imePadding, então o teclado vai cobri-lo
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter) // <-- A MÁGICA
+                    .padding(horizontal = 28.dp)
+                    .padding(bottom = 24.dp)
+            ) {
                 Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
+                    text = "Usamos essa informação para oferecer recomendações de saúde mais adequadas.",
+                    color = textColorSecondary,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    fontSize = 12.sp,
                 )
             }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Text(
-                text = "Usamos essa informação para oferecer recomendações de saúde mais adequadas.",
-                color = textColorSecondary,
-                textAlign = TextAlign.Center,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
+
+// ... (O resto do seu código: CustomTextField, GenderSelector, etc. continua igual) ...
 
 @Composable
 private fun CustomTextField(
