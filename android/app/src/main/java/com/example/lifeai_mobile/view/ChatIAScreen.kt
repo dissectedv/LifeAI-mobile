@@ -245,9 +245,23 @@ fun MarkdownText(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun ChatBubble(message: ChatMessage) {
+    val userBubbleShape = RoundedCornerShape(
+        topStart = 18.dp,
+        topEnd = 18.dp,
+        bottomStart = 18.dp,
+        bottomEnd = 4.dp
+    )
+    val aiBubbleShape = RoundedCornerShape(
+        topStart = 18.dp,
+        topEnd = 18.dp,
+        bottomStart = 4.dp,
+        bottomEnd = 18.dp
+    )
+
     val bubbleColor = if (message.isUser) Color(0xFF2E8BC0) else Color(0xFF1B263B)
     val horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start
     val contentAlignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
+    val shape = if (message.isUser) userBubbleShape else aiBubbleShape
 
     Row(
         modifier = Modifier
@@ -257,12 +271,20 @@ fun ChatBubble(message: ChatMessage) {
     ) {
         Box(
             modifier = Modifier
-                .background(bubbleColor, RoundedCornerShape(18.dp))
+                .background(bubbleColor, shape)
                 .padding(horizontal = 14.dp, vertical = 10.dp)
                 .widthIn(max = 280.dp),
             contentAlignment = contentAlignment
         ) {
-            MarkdownText(text = message.text)
+            if (message.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = Color.White,
+                    strokeWidth = 2.dp
+                )
+            } else {
+                MarkdownText(text = message.text)
+            }
         }
     }
 }

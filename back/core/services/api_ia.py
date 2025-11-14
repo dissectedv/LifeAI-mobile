@@ -8,13 +8,36 @@ from rest_framework import status
 from collections import defaultdict
 from django.conf import settings
 
+import requests.exceptions
+from tenacity import (
+    RetryError,
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception
+)
+
 conversas_em_memoria = defaultdict(list)
 
+def is_retryable_server_error(exception):
+    if isinstance(exception, requests.exceptions.HTTPError):
+        is_server_error = 500 <= exception.response.status_code < 600
+        if is_server_error:
+            print(f"Erro {exception.response.status_code} da API do Google. Tentando novamente...")
+            return True
+    return False
+
+@retry(
+    retry=retry_if_exception(is_retryable_server_error),
+    wait=wait_exponential(multiplier=1, min=1, max=10), 
+    stop=stop_after_attempt(3) 
+)
 def perguntar_ia_gemini(historico_mensagens):
     contents = []
     for msg in historico_mensagens:
         role = "model" if msg["role"] == "assistant" else msg["role"]
         contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+    
     payload = {
         "contents": contents,
         "generationConfig": {"temperature": 0.5},
@@ -32,21 +55,32 @@ def perguntar_ia_gemini(historico_mensagens):
             }]
         }
     }
+    
     if not settings.GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY não configurada no settings.py")
+    
     url_base = settings.LM_API_URL
     url_completa = f"{url_base}:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
-    resposta = requests.post(url_completa, json=payload, headers=headers)
-    resposta.raise_for_status()
+    
+    resposta = requests.post(url_completa, json=payload, headers=headers, timeout=30)
+    
+    resposta.raise_for_status() 
+    
     dados = resposta.json()
     try:
         return dados["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception as e:
         return f"Erro ao processar a resposta do Gemini: {str(e)}"
 
+@retry(
+    retry=retry_if_exception(is_retryable_server_error),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    stop=stop_after_attempt(3)
+)
 def gerar_dieta_gemini(prompt_json):
     contents = [{"role": "user", "parts": [{"text": prompt_json}]}]
+    
     payload = {
         "contents": contents,
         "generationConfig": {"temperature": 0.3},
@@ -67,13 +101,18 @@ def gerar_dieta_gemini(prompt_json):
             }]
         }
     }
+    
     if not settings.GEMINI_API_KEY:
         raise Exception("GEMINI_API_KEY não configurada no settings.py")
+    
     url_base = settings.LM_API_URL
     url_completa = f"{url_base}:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
-    resposta = requests.post(url_completa, json=payload, headers=headers)
+    
+    resposta = requests.post(url_completa, json=payload, headers=headers, timeout=45)
+    
     resposta.raise_for_status()
+    
     dados = resposta.json()
     try:
         return dados["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -85,16 +124,25 @@ def gerar_dieta_gemini(prompt_json):
 def chat_ia_view(request):
     pergunta = request.data.get("pergunta")
     sessao_id = request.data.get("sessao_id")
+    
     if not pergunta:
         return Response({"erro": "Pergunta é obrigatória."}, status=status.HTTP_400_BAD_REQUEST)
     if not sessao_id:
         return Response({"erro": "sessao_id é obrigatório."}, status=status.HTTP_400_BAD_REQUEST)
+        
     try:
         conversas_em_memoria[sessao_id].append({"role": "user", "content": pergunta})
         historico_atual = conversas_em_memoria[sessao_id]
+        
         resposta = perguntar_ia_gemini(historico_atual)
+        
         conversas_em_memoria[sessao_id].append({"role": "assistant", "content": resposta})
         return Response({"resposta": resposta})
+
+    except RetryError as e:
+        return Response({"erro": "A IA está sobrecarregada no momento. Tente novamente em alguns segundos."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except requests.exceptions.HTTPError as e:
+        return Response({"erro": f"Erro da API: {e.response.status_code}", "detalhe": e.response.text}, status=e.response.status_code)
     except Exception as e:
         return Response({"erro": f"Erro ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -104,16 +152,25 @@ def gerar_dieta_ia_view(request):
     prompt_json = request.data.get("pergunta")
     if not prompt_json:
         return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
+        
     try:
         resposta_string_json = gerar_dieta_gemini(prompt_json)
+        
         if resposta_string_json.startswith("```json"):
             resposta_string_json = resposta_string_json[7:]
         if resposta_string_json.endswith("```"):
             resposta_string_json = resposta_string_json[:-3]
+            
         try:
             dieta_data = json.loads(resposta_string_json.strip())
         except json.JSONDecodeError:
             return Response({"erro": "A IA não retornou um JSON válido.", "resposta_ia_invalida": resposta_string_json}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
         return Response(dieta_data, status=status.HTTP_200_OK)
+
+    except RetryError as e:
+        return Response({"erro": "A IA está sobrecarregada no momento. Tente novamente em alguns segundos."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except requests.exceptions.HTTPError as e:
+        return Response({"erro": f"Erro da API: {e.response.status_code}", "detalhe": e.response.text}, status=e.response.status_code)
     except Exception as e:
         return Response({"erro": f"Erro interno ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
