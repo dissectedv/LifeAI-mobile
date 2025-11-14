@@ -19,16 +19,21 @@ from tenacity import (
 
 conversas_em_memoria = defaultdict(list)
 
-def is_retryable_server_error(exception):
+def is_retryable_error(exception):
     if isinstance(exception, requests.exceptions.HTTPError):
         is_server_error = 500 <= exception.response.status_code < 600
         if is_server_error:
-            print(f"Erro {exception.response.status_code} da API do Google. Tentando novamente...")
+            print(f"Erro {exception.response.status_code} da API. Tentando novamente...")
             return True
+    
+    if isinstance(exception, requests.exceptions.ReadTimeout):
+        print("API demorou para responder (Timeout). Tentando novamente...")
+        return True
+        
     return False
 
 @retry(
-    retry=retry_if_exception(is_retryable_server_error),
+    retry=retry_if_exception(is_retryable_error),
     wait=wait_exponential(multiplier=1, min=1, max=10), 
     stop=stop_after_attempt(3) 
 )
@@ -74,7 +79,7 @@ def perguntar_ia_gemini(historico_mensagens):
         return f"Erro ao processar a resposta do Gemini: {str(e)}"
 
 @retry(
-    retry=retry_if_exception(is_retryable_server_error),
+    retry=retry_if_exception(is_retryable_error),
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3)
 )
@@ -109,7 +114,7 @@ def gerar_dieta_gemini(prompt_json):
     url_completa = f"{url_base}:generateContent?key={settings.GEMINI_API_KEY}"
     headers = {"Content-Type": "application/json"}
     
-    resposta = requests.post(url_completa, json=payload, headers=headers, timeout=45)
+    resposta = requests.post(url_completa, json=payload, headers=headers, timeout=120)
     
     resposta.raise_for_status()
     

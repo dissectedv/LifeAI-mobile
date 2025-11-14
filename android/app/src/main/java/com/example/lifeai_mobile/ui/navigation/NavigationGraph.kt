@@ -108,7 +108,6 @@ fun NavigationGraph(
             )
         }
 
-        // --- 6. ADICIONAMOS A NOVA ROTA ---
         composable("rotina_screen") {
             RotinaScreen(
                 navController = navController,
@@ -116,6 +115,5 @@ fun NavigationGraph(
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )
         }
-        // --- FIM DA ADIÇÃO ---
     }
 }

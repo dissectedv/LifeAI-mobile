@@ -4,10 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.lifeai_mobile.repository.AuthRepository
 
-/**
- * Factory para criar o RotinaViewModel.
- * Ela passa o AuthRepository para o ViewModel.
- */
 class RotinaViewModelFactory(
     private val repository: AuthRepository
 ) : ViewModelProvider.Factory {

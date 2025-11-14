@@ -20,7 +20,6 @@ sealed class RotinaUIState {
 }
 
 class RotinaViewModel(
-    // A gente recebe o repositório, mas não vamos usar ele ainda
     private val authRepository: AuthRepository
 ) : ViewModel() {
 

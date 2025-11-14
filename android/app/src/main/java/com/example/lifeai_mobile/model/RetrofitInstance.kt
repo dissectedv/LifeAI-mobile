@@ -23,12 +23,9 @@ class RetrofitInstance(sessionManager: SessionManager) {
         .authenticator(authenticator)
         .addInterceptor(AuthInterceptor(sessionManager))
         .addInterceptor(loggingInterceptor)
-        // --- CORREÇÃO AQUI ---
-        // Aumentamos os tempos de espera para 2 minutos
         .connectTimeout(120, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
         .writeTimeout(120, TimeUnit.SECONDS)
-        // --- FIM DA CORREÇÃO ---
         .build()
 
     val api: AuthApi by lazy {
@@ -37,8 +34,6 @@ class RetrofitInstance(sessionManager: SessionManager) {
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            // --- CORREÇÃO FINAL DE SINTAXE ---
-            .create(AuthApi::class.java) // <-- Adicionado os dois pontos ::
-        // --- FIM DA CORREÇÃO ---
+            .create(AuthApi::class.java)
     }
 }
