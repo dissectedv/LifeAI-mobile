@@ -86,9 +86,9 @@ class LogoutView(APIView):
 class SendEmailView(APIView):
     def post(self, request):
         subject = request.data.get('subject')
-        message = request.data.get('message')  # texto plano
+        message = request.data.get('message')
         recipient = request.data.get('to')
-        html_content = request.data.get('html')  # opcional: HTML
+        html_content = request.data.get('html')
 
         if not all([subject, message, recipient]):
             return Response({'error': 'Campos obrigatórios ausentes'}, status=status.HTTP_400_BAD_REQUEST)
@@ -200,7 +200,7 @@ class ImcDeleteAPIView(APIView):
         except serializers.imc.DoesNotExist:
             return Response({"error": "Registro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         registro.delete()
-        return Response({"message": "Registro excluído com sucesso."}, status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)
     
 class CompromissosListCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -229,7 +229,7 @@ class CompromissoRetrieveUpdateDeleteAPIView(APIView):
     def get(self, request, pk):
         compromisso = self.get_object(pk, request.user)
         if not compromisso:
-            return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_44_NOT_FOUND)
         serializer = serializers.CompromissoSerializer(compromisso)
         return Response(serializer.data)
 

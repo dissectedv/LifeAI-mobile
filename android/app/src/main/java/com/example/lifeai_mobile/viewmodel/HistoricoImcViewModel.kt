@@ -6,32 +6,38 @@ import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
+sealed class ImcHistoryState {
+    object Loading : ImcHistoryState()
+    data class Success(val historico: List<ImcRegistro>) : ImcHistoryState()
+    data class Error(val message: String) : ImcHistoryState()
+}
 
 class HistoricoImcViewModel(
     private val repository: AuthRepository
 ) : ViewModel() {
 
-    private val _registrosImc = MutableStateFlow<List<ImcRegistro>>(emptyList())
-    val registrosImc: StateFlow<List<ImcRegistro>> = _registrosImc
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    private val _state = MutableStateFlow<ImcHistoryState>(ImcHistoryState.Loading)
+    val state: StateFlow<ImcHistoryState> = _state.asStateFlow()
 
     private val _isDeleting = MutableStateFlow(false)
     val isDeleting: StateFlow<Boolean> = _isDeleting
 
+    init {
+        buscarHistorico()
+    }
+
     fun buscarHistorico() {
         viewModelScope.launch {
-            _isLoading.value = true
+            _state.value = ImcHistoryState.Loading
             try {
                 val resposta = repository.getHistoricoImc()
-                _registrosImc.value = resposta
+                _state.value = ImcHistoryState.Success(resposta)
             } catch (e: Exception) {
                 e.printStackTrace()
-                // TODO: Lidar com erro de busca
-            } finally {
-                _isLoading.value = false
+                _state.value = ImcHistoryState.Error(e.message ?: "Falha ao buscar histórico")
             }
         }
     }
@@ -40,15 +46,12 @@ class HistoricoImcViewModel(
             _isDeleting.value = true
             try {
                 repository.deleteImcRegistro(id)
-
                 val novaLista = repository.getHistoricoImc()
-
-                _registrosImc.value = novaLista
-
+                _state.value = ImcHistoryState.Success(novaLista)
 
             } catch (e: Exception) {
                 e.printStackTrace()
-                // TODO: Lidar com erro de exclusão
+                _state.value = ImcHistoryState.Error(e.message ?: "Falha ao deletar registro")
             } finally {
                 _isDeleting.value = false
             }

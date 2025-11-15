@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.viewmodel.HistoricoImcViewModel
+import com.example.lifeai_mobile.viewmodel.ImcHistoryState
 import java.util.Locale
 
 @Composable
@@ -29,24 +30,11 @@ fun HistoricoImcComponent(
     modifier: Modifier = Modifier,
     viewModel: HistoricoImcViewModel
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.buscarHistorico()
-    }
-
-    val registros by viewModel.registrosImc.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
+    val state by viewModel.state.collectAsState()
     val isDeleting by viewModel.isDeleting.collectAsState()
 
     var showDialog by remember { mutableStateOf(false) }
     var registroParaDeletar by remember { mutableStateOf<ImcRegistro?>(null) }
-    var wasDeleting by remember { mutableStateOf(false) }
-
-    LaunchedEffect(isDeleting) {
-        if (wasDeleting && !isDeleting) {
-            viewModel.buscarHistorico()
-        }
-        wasDeleting = isDeleting
-    }
 
     Column(
         modifier = modifier
@@ -70,69 +58,84 @@ fun HistoricoImcComponent(
 
         HorizontalDivider(color = Color(0xFF0D1B2A), thickness = 2.dp)
 
-        if (isLoading) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = Color(0xFF2E8BC0))
-            }
-        } else if (registros.isEmpty()) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 32.dp), contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Icon(
-                        Icons.Filled.Info,
-                        contentDescription = null,
-                        tint = Color.Gray.copy(alpha = 0.5f),
-                        modifier = Modifier.size(40.dp)
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text("Nenhum registro encontrado.", color = Color.Gray, fontSize = 14.sp)
+        when (val currentState = state) {
+            is ImcHistoryState.Loading -> {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFF2E8BC0))
                 }
             }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(registros, key = { it.id }) { registro ->
-                    val backgroundColor = if (registro.id % 2 == 0) Color(0xFF0D1B2A) else Color(0xFF132238)
-                    Row(
-                        modifier = Modifier
+            is ImcHistoryState.Error -> {
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(currentState.message, color = Color.Red, fontSize = 14.sp)
+                }
+            }
+            is ImcHistoryState.Success -> {
+                if (currentState.historico.isEmpty()) {
+                    Box(
+                        Modifier
                             .fillMaxWidth()
-                            .background(backgroundColor)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(vertical = 32.dp), contentAlignment = Alignment.Center
                     ) {
-                        HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1f))
-                        HistoricoRowItem(
-                            String.format(Locale.getDefault(), "%.1f kg", registro.peso),
-                            Modifier.weight(1.2f),
-                            TextAlign.Center
-                        )
-                        HistoricoRowItem(
-                            String.format(Locale.getDefault(), "%.2f m", registro.altura),
-                            Modifier.weight(1.2f),
-                            TextAlign.Center
-                        )
-
-                        HistoricoImcChipItem(
-                            imcValue = registro.imcRes,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        RegistroOpcoesMenu(
-                            modifier = Modifier.weight(0.5f),
-                            onExcluirClick = {
-                                registroParaDeletar = registro
-                                showDialog = true
-                            }
-                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                            Icon(
+                                Icons.Filled.Info,
+                                contentDescription = null,
+                                tint = Color.Gray.copy(alpha = 0.5f),
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text("Nenhum registro encontrado.", color = Color.Gray, fontSize = 14.sp)
+                        }
                     }
-                    HorizontalDivider(color = Color(0xFF0D1B2A))
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        items(currentState.historico, key = { it.id }) { registro ->
+                            val backgroundColor = if (registro.id % 2 == 0) Color(0xFF0D1B2A) else Color(0xFF132238)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(backgroundColor)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1f))
+                                HistoricoRowItem(
+                                    String.format(Locale.getDefault(), "%.1f kg", registro.peso),
+                                    Modifier.weight(1.2f),
+                                    TextAlign.Center
+                                )
+                                HistoricoRowItem(
+                                    String.format(Locale.getDefault(), "%.2f m", registro.altura),
+                                    Modifier.weight(1.2f),
+                                    TextAlign.Center
+                                )
+
+                                HistoricoImcChipItem(
+                                    imcValue = registro.imcRes,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                RegistroOpcoesMenu(
+                                    modifier = Modifier.weight(0.5f),
+                                    onExcluirClick = {
+                                        registroParaDeletar = registro
+                                        showDialog = true
+                                    }
+                                )
+                            }
+                            HorizontalDivider(color = Color(0xFF0D1B2A))
+                        }
+                    }
                 }
             }
         }

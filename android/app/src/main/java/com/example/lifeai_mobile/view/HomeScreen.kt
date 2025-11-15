@@ -347,6 +347,11 @@ private fun motivationalPhrase(imc: Float): String {
 private fun calculateIdealRangeProgress(imc: Float): Float {
     val minNormalImc = 18.5f
     val maxNormalImc = 24.9f
+
+    if (imc < minNormalImc) {
+        return 0.15f
+    }
+
     val range = maxNormalImc - minNormalImc
     val progressInBuffer = imc - minNormalImc
     return (progressInBuffer / range).coerceIn(0f, 1f)

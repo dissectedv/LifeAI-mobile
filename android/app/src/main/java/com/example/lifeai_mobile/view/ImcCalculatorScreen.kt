@@ -33,6 +33,7 @@ import java.util.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import com.example.lifeai_mobile.viewmodel.ImcHistoryState
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -58,6 +59,8 @@ fun ImcCalculatorScreen(
     var lastImc by remember { mutableStateOf<Float?>(null) }
     var lastStatus by remember { mutableStateOf<String?>(null) }
 
+    val historicoState by historicoViewModel.state.collectAsState()
+
     LaunchedEffect(key1 = true) {
         viewModel.eventFlow.collect { event ->
             when (event) {
@@ -69,6 +72,20 @@ fun ImcCalculatorScreen(
                 }
                 is UiEvent.NavigateBack -> {
                     historicoViewModel.buscarHistorico()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(historicoState) {
+        if (historicoState is ImcHistoryState.Success) {
+            val historico = (historicoState as ImcHistoryState.Success).historico
+            if (historico.isNotEmpty()) {
+                val ultimaAltura = historico.first().altura
+                if (viewModel.altura.isBlank() && ultimaAltura > 0) {
+                    var alturaMetros = ultimaAltura
+                    if (alturaMetros > 3) alturaMetros /= 100f
+                    viewModel.onAlturaChange(String.format(Locale.US, "%.2f", alturaMetros))
                 }
             }
         }

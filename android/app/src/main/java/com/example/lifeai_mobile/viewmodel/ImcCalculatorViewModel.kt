@@ -39,11 +39,24 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
 
     private fun loadInitialData() {
         viewModelScope.launch(Dispatchers.IO) {
-            val response = repository.getImcBaseDashboard()
-            if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                val profile = response.body()!!.first()
-                idade = profile.idade.toString()
-                sexo = profile.sexo
+            try {
+                val response = repository.getImcBaseDashboard()
+                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
+                    val profile = response.body()!!.first()
+                    idade = profile.idade.toString()
+                    sexo = profile.sexo
+
+                    if (profile.altura > 0) {
+                        var alturaMetros = profile.altura
+                        if (alturaMetros > 3) {
+                            alturaMetros /= 100f
+                        }
+                        val alturaFormatada = String.format(Locale.US, "%.2f", alturaMetros)
+                        onAlturaChange(alturaFormatada)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("IMC_CALC_VM", "Falha ao carregar dados iniciais", e)
             }
         }
     }
