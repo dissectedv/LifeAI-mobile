@@ -57,7 +57,7 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
 
     if user_profile:
         profile_context = (
-            "\n\n--- CONTEXTO DO PACIENTE (NÃO REVELE ISSO) ---\n"
+            "\n\n--- CONTEXTO DO PACIENTE ---\n"
             f"Nome: {user_profile.get('nome')}\n"
             f"Idade: {user_profile.get('idade')}\n"
             f"Peso: {user_profile.get('peso')} kg\n"
@@ -65,7 +65,8 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
             f"Sexo: {user_profile.get('sexo')}\n"
             f"Objetivo: {user_profile.get('objetivo')}\n"
             f"IMC Atual: {user_profile.get('classificacao_imc')}\n"
-            "Use este contexto para dar conselhos mais personalizados sobre dieta, exercícios e bem-estar. "
+            "Use este contexto para dar conselhos mais personalizados. "
+            "Você pode mencionar esses dados se for útil para a conversa (ex: 'Vejo que seu objetivo é ganhar força...')."
             "Seja proativo; por exemplo, se o objetivo é 'emagrecer', foque nisso ao dar conselhos de exercício ou dieta."
         )
         system_prompt_text += profile_context
