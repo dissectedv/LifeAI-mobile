@@ -349,14 +349,6 @@ def _send_welcome_email_html(user):
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
     to_email = [user.email]
 
-    text_content = f"""
-        Olá, {user.username}!
-        Seja muito bem-vindo ao LifeAI, sua nova plataforma de bem-estar e inteligência personalizada.
-        Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.
-        Atenciosamente,
-        Equipe LifeAI
-    """
-
     html_content = f"""
     <html lang="pt-BR">
     <head>
@@ -426,7 +418,13 @@ def _send_welcome_email_html(user):
     </body>
     </html>
     """
-    
-    msg = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body="",  # vazio → sem texto puro
+        from_email=from_email,
+        to=to_email
+    )
+
     msg.attach_alternative(html_content, "text/html")
     msg.send(fail_silently=False)
