@@ -35,3 +35,4 @@ tzdata==2025.2
 urllib3==2.4.0
 uvicorn==0.15.0
 tenacity==8.5.0
+sib_api_v3_sdk
