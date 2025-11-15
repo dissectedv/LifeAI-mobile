@@ -354,7 +354,7 @@ def _send_welcome_email_html(user):
     api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
     
     subject = "Bem-vindo ao LifeAI!"
-    from_email = {"email": settings.DEFAULT_FROM_EMAIL, "name": "Equipe LifeAI"}
+    from_email = {"email": settings.EMAIL_HOST_USER, "name": "Equipe LifeAI"}
     to_email = [{"email": user.email, "name": user.username}]
 
     html_content = f"""
