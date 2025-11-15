@@ -9,10 +9,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime
 
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
 from rest_framework import status
-
-import sib_api_v3_sdk
-from sib_api_v3_sdk.rest import ApiException
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -100,30 +98,20 @@ class SendEmailView(APIView):
 
         if not all([subject, message, recipient]):
             return Response({'error': 'Campos obrigatórios ausentes'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = settings.BREVO_API_KEY
-        
-        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-        
-        from_email = {"email": settings.EMAIL_HOST_USER, "name": "Equipe LifeAI"}
-        to_email = [{"email": recipient}]
 
-        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-            to=to_email,
-            sender=from_email,
-            subject=subject,
-            html_content=html_content,
-            text_content=message
-        )
+        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
 
         try:
-            api_response = api_instance.send_transac_email(send_smtp_email)
-            print(f"E-mail enviado via API Brevo para {recipient}, Message ID: {api_response.message_id}")
+            msg = EmailMultiAlternatives(
+                subject=subject,
+                body=message,
+                from_email=from_email,
+                to=[recipient],
+            )
+            if html_content:
+                msg.attach_alternative(html_content, "text/html")
+            msg.send(fail_silently=False)
             return Response({'success': 'E-mail enviado com sucesso'})
-        except ApiException as e:
-            print(f"ALERTA: Exceção ao chamar a API do Brevo: {e}\n")
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -357,14 +345,17 @@ class DesempenhoMensalAPIView(APIView):
         return Response(resultado)
 
 def _send_welcome_email_html(user):
-    configuration = sib_api_v3_sdk.Configuration()
-    configuration.api_key['api-key'] = settings.BREVO_API_KEY
-    
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-    
     subject = "Bem-vindo ao LifeAI!"
-    from_email = {"email": settings.EMAIL_HOST_USER, "name": "Equipe LifeAI"}
-    to_email = [{"email": user.email, "name": user.username}]
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+    to_email = [user.email]
+
+    text_content = f"""
+        Olá, {user.username}!
+        Seja muito bem-vindo ao LifeAI, sua nova plataforma de bem-estar e inteligência personalizada.
+        Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.
+        Atenciosamente,
+        Equipe LifeAI
+    """
 
     html_content = f"""
     <html lang="pt-BR">
@@ -435,17 +426,7 @@ def _send_welcome_email_html(user):
     </body>
     </html>
     """
-
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=to_email,
-        sender=from_email,
-        subject=subject,
-        html_content=html_content
-    )
-
-    try:
-        api_response = api_instance.send_transac_email(send_smtp_email)
-        print(f"E-mail de boas-vindas enviado para {user.email}, Message ID: {api_response.message_id}")
-    except ApiException as e:
-        print(f"ALERTA: Exceção ao chamar a API do Brevo: {e}\n")
-        raise e
+    
+    msg = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send(fail_silently=False)

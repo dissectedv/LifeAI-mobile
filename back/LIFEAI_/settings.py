@@ -53,9 +53,6 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', 'contatolifeai@gmail.com')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 
-# Chave da API v3 que você pegou do painel do Brevo
-BREVO_API_KEY = os.getenv('BREVO_API_KEY')
-
 # ======== DATABASE ========
 DATABASES = {
     'default': {
