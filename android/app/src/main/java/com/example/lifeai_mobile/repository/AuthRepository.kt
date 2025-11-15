@@ -112,27 +112,6 @@ class AuthRepository(
         }
     }
 
-    suspend fun sendWelcomeEmail(email: String) {
-        try {
-            val body = mapOf(
-                "subject" to "Bem-vindo ao LifeAI!",
-                "message" to "Olá! Seja muito bem-vindo ao LifeAI, sua nova plataforma de bem-estar e inteligência personalizada. Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.",
-                "to" to email
-            )
-            val response = api.sendEmail(body)
-            if (response.isSuccessful) {
-                Log.d("AuthRepository", "E-mail de boas-vindas enviado para $email")
-            } else {
-                Log.e(
-                    "AuthRepository",
-                    "Falha ao enviar e-mail: ${response.code()} ${response.errorBody()?.string()}"
-                )
-            }
-        } catch (e: Exception) {
-            Log.e("AuthRepository", "Exceção ao enviar e-mail: ${e.message}", e)
-        }
-    }
-
     suspend fun getCompromissos(): Response<List<Compromisso>> {
         return api.getCompromissos()
     }
