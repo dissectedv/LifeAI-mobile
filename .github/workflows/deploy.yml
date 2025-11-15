@@ -67,6 +67,9 @@ jobs:
             echo "Waiting for rollout to complete..."
             kubectl rollout status deployment/django-deployment -n ${{ env.NAMESPACE }} --timeout=300s
 
+            echo "Cleaning old images..."
+            sudo k3s crictl rmi --prune || true
+
             echo "Checking active pods..."
             kubectl get pods -n ${{ env.NAMESPACE }} -o wide
           EOF

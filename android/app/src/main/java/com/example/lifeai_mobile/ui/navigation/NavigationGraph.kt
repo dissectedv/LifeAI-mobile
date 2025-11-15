@@ -39,18 +39,13 @@ fun NavigationGraph(
     resumoViewModelFactory: ResumoViewModelFactory,
     chatViewModelFactory: ChatIAViewModelFactory,
     dietaViewModelFactory: DietaViewModelFactory,
-    // --- ADIÇÃO AQUI (Passo 5.3) ---
-    rotinaViewModelFactory: RotinaViewModelFactory, // 1. Recebe a factory
+    rotinaViewModelFactory: RotinaViewModelFactory,
     bottomBarPadding: PaddingValues
 ) {
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
     val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
     val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
-
-    // --- ADIÇÃO AQUI (Passo 5.3) ---
-    // 2. Cria o ViewModel da Rotina no escopo do NavGraph
     val rotinaViewModel: RotinaViewModel = viewModel(factory = rotinaViewModelFactory)
-    // --- FIM DA ADIÇÃO ---
 
     NavHost(
         navController = navController,

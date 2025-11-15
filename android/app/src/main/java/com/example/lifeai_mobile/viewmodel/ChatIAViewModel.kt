@@ -116,16 +116,4 @@ class ChatIAViewModel(private val repository: AuthRepository) : ViewModel() {
             }
         }
     }
-
-    fun stopMessageGeneration() {
-        chatJob?.cancel()
-    }
-
-    fun setInitialGreeting(greeting: String) {
-        if (_uiState.value.messages.size == 1 && _uiState.value.messages.first().text == DEFAULT_GREETING_TEXT) {
-            _uiState.update {
-                it.copy(messages = listOf(ChatMessage(greeting, isUser = false)))
-            }
-        }
-    }
 }

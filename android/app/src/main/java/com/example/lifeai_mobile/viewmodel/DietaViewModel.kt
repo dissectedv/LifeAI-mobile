@@ -110,15 +110,12 @@ class DietaViewModel(
             Log.w("DietaViewModel", "Permissão de notificação NÃO concedida.")
             return
         }
-
-        // --- CORREÇÃO DO TEXTO AQUI ---
         val builder = NotificationCompat.Builder(context, MyApplication.DIETA_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Sua dieta está pronta!")
             .setContentText("Volte para a tela de Dieta para conferir o seu novo plano.") // <-- MENSAGEM CORRIGIDA
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
-        // --- FIM DA CORREÇÃO ---
 
         with(NotificationManagerCompat.from(context)) {
             notify(1, builder.build())

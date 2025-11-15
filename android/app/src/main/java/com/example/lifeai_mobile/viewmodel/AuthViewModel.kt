@@ -99,9 +99,6 @@ class AuthViewModel(
         _registerResponse.value = null
     }
 
-    fun resetLoginState() {
-        _loginResponse.value = null
-    }
 
     fun clearErrorMessage() {
         _errorMessage.value = null

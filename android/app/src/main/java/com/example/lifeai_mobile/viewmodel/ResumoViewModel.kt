@@ -41,40 +41,4 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
             }
         }
     }
-
-    fun obterMensagemIMC(imc: Float): String {
-        return when {
-            imc < 18.5f -> "🌱 Abaixo do ideal."
-            imc < 25f -> "🏆 Equilíbrio ideal!"
-            imc < 30f -> "🎯 Leve sobrepeso."
-            else -> "🚀 Acima do ideal."
-        }
-    }
-
-    fun calcularPosicao(imc: Float): Float {
-        val min = 15.0f
-        val max = 40.0f
-        val clamped = imc.coerceIn(min, max)
-        return ((clamped - min) / (max - min))
-    }
-
-    fun calcularScore(imc: Float): Int {
-        return when {
-            imc < 18.5 -> 4
-            imc < 25 -> 10
-            imc < 30 -> 6
-            imc < 35 -> 4
-            imc < 40 -> 2
-            else -> 1
-        }
-    }
-
-    fun getScoreDescription(score: Int): String {
-        return when {
-            score >= 8 -> "Excelente"
-            score >= 6 -> "Bom"
-            score >= 4 -> "Regular"
-            else -> "Baixo"
-        }
-    }
 }
