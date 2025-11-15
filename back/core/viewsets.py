@@ -9,7 +9,6 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import datetime
 
 from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
 from rest_framework import status
 
 import sib_api_v3_sdk
@@ -101,20 +100,30 @@ class SendEmailView(APIView):
 
         if not all([subject, message, recipient]):
             return Response({'error': 'Campos obrigatórios ausentes'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = settings.BREVO_API_KEY
+        
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        
+        from_email = {"email": settings.EMAIL_HOST_USER, "name": "Equipe LifeAI"}
+        to_email = [{"email": recipient}]
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=to_email,
+            sender=from_email,
+            subject=subject,
+            html_content=html_content,
+            text_content=message
+        )
 
         try:
-            msg = EmailMultiAlternatives(
-                subject=subject,
-                body=message,
-                from_email=from_email,
-                to=[recipient],
-            )
-            if html_content:
-                msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=False)
+            api_response = api_instance.send_transac_email(send_smtp_email)
+            print(f"E-mail enviado via API Brevo para {recipient}, Message ID: {api_response.message_id}")
             return Response({'success': 'E-mail enviado com sucesso'})
+        except ApiException as e:
+            print(f"ALERTA: Exceção ao chamar a API do Brevo: {e}\n")
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
