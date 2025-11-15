@@ -421,10 +421,10 @@ def _send_welcome_email_html(user):
 
     msg = EmailMultiAlternatives(
         subject=subject,
-        body="",  # vazio → sem texto puro
+        body=html_content,
         from_email=from_email,
         to=to_email
     )
 
-    msg.attach_alternative(html_content, "text/html")
+    msg.content_subtype = "html"
     msg.send(fail_silently=False)
