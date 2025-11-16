@@ -80,3 +80,16 @@ class compromisso(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.data} ({self.hora_inicio} às {self.hora_fim})"
+
+class ComposicaoCorporal(models.Model):
+    data_consulta = models.DateField(db_column='data_consulta', auto_now_add=True)
+    gordura_percentual = models.FloatField(db_column='gordura_percentual', null=True, blank=True)
+    musculo_percentual = models.FloatField(db_column='musculo_percentual', null=True, blank=True)
+    agua_percentual = models.FloatField(db_column='agua_percentual', null=True, blank=True)
+    gordura_visceral = models.IntegerField(db_column='gordura_visceral', null=True, blank=True)
+    estimado = models.BooleanField(db_column='estimado', default=False)
+    id_usuario = models.ForeignKey(User, db_column='id_usuario', on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = 'composicao_corporal'
+        ordering = ['-data_consulta']

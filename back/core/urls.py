@@ -13,6 +13,7 @@ urlpatterns = [
     path('imc/historico/', viewsets.DesempenhoImc.as_view(), name='desempenho-imc'),
     path('imc/registrosConsultas/', viewsets.RegistrosImc.as_view(), name='registros_imc'),
     path('imc/<int:pk>/', viewsets.ImcDeleteAPIView.as_view(), name='deletar_imc'),
+    path('composicao-corporal/', viewsets.ComposicaoCorporalListCreateAPIView.as_view(), name='composicao-corporal-list-create'),
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('imc_base_perfil/', viewsets.ImcBaseAPIView.as_view(), name='imc_base_perfil'),

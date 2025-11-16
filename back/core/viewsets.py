@@ -159,7 +159,7 @@ class DesempenhoImc(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        registros = serializers.imc.objects.filter(id_usuario=request.user).order_by('-id')
+        registros = models.imc.objects.filter(id_usuario=request.user).order_by('-id')
         serializer = serializers.DesempenhoImcGrafico(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -167,7 +167,7 @@ class RegistrosImc(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        registros = serializers.imc.objects.filter(id_usuario=request.user).order_by('-data_consulta')
+        registros = models.imc.objects.filter(id_usuario=request.user).order_by('-data_consulta')
         serializer = serializers.ImcSerializer(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -185,7 +185,7 @@ class ImcBaseDashAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        registros = serializers.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id')
+        registros = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id')
         serializer = serializers.ImcBaseSerializer(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -193,7 +193,7 @@ class ImcBaseRecAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        registros = serializers.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id')
+        registros = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id')
         serializer = serializers.ImcBaseRecSerializer(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -202,8 +202,8 @@ class ImcDeleteAPIView(APIView):
 
     def delete(self, request, pk):
         try:
-            registro = serializers.imc.objects.get(id=pk, id_usuario=request.user)
-        except serializers.imc.DoesNotExist:
+            registro = models.imc.objects.get(id=pk, id_usuario=request.user)
+        except models.imc.DoesNotExist:
             return Response({"error": "Registro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
         registro.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -349,6 +349,14 @@ def _send_welcome_email_html(user):
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
     to_email = [user.email]
 
+    text_content = f"""
+        Olá, {user.username}!
+        Seja muito bem-vindo ao LifeAI, sua nova plataforma de bem-estar e inteligência personalizada.
+        Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.
+        Atenciosamente,
+        Equipe LifeAI
+    """
+
     html_content = f"""
     <html lang="pt-BR">
     <head>
@@ -418,13 +426,22 @@ def _send_welcome_email_html(user):
     </body>
     </html>
     """
-
-    msg = EmailMultiAlternatives(
-        subject=subject,
-        body=html_content,
-        from_email=from_email,
-        to=to_email
-    )
-
-    msg.content_subtype = "html"
+    
+    msg = EmailMultiAlternatives(subject, text_content, from_email, to_email)
+    msg.attach_alternative(html_content, "text/html")
     msg.send(fail_silently=False)
+
+class ComposicaoCorporalListCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        registros = models.ComposicaoCorporal.objects.filter(id_usuario=request.user).order_by('-data_consulta')
+        serializer = serializers.ComposicaoCorporalSerializer(registros, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = serializers.ComposicaoCorporalSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

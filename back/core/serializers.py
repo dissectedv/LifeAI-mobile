@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import imc, imc_user_base, compromisso, pontuacao_compromisso, CompromissoAtividade
+from .models import imc, imc_user_base, compromisso, pontuacao_compromisso, CompromissoAtividade, ComposicaoCorporal
 from datetime import date
 
 class ImcSerializer(serializers.ModelSerializer):
@@ -66,3 +66,30 @@ class PontuacaoCompromissoSerializer(serializers.ModelSerializer):
             'criado_em',
             'data_compromisso'
         ]
+
+class ComposicaoCorporalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComposicaoCorporal
+        fields = [
+            'id', 
+            'data_consulta', 
+            'gordura_percentual', 
+            'musculo_percentual', 
+            'agua_percentual', 
+            'gordura_visceral', 
+            'estimado'
+        ]
+        read_only_fields = ['data_consulta']
+
+    def validate(self, data):
+        user = self.context['request'].user
+        today = date.today()
+        
+        if not self.instance: 
+            if ComposicaoCorporal.objects.filter(id_usuario=user, data_consulta=today).exists():
+                raise serializers.ValidationError("Você já possui um registro de composição corporal para hoje.")
+        return data
+
+    def create(self, validated_data):
+        validated_data['id_usuario'] = self.context['request'].user
+        return super().create(validated_data)

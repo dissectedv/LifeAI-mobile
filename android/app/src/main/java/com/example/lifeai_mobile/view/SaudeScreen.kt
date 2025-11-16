@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Scale
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -67,10 +68,7 @@ fun SaudeScreen(
                 title = "Planejamento de Rotina",
                 description = "Dicas e organização de tarefas diárias.",
                 icon = Icons.Default.DateRange,
-                // --- CORREÇÃO FINAL AQUI ---
-                // 1. Adicionamos a navegação para a nova tela
                 onClick = { navController.navigate("rotina_screen") }
-                // --- FIM DA CORREÇÃO ---
             )
             SaudeCard(
                 title = "Sugestão de Dieta",
@@ -85,6 +83,12 @@ fun SaudeScreen(
                 description = "Calcule seu IMC e acompanhe sua evolução.",
                 icon = Icons.Default.MonitorHeart,
                 onClick = { mainNavController.navigate("imc_calculator") }
+            )
+            SaudeCard(
+                title = "Composição Corporal",
+                description = "Analise sua bioimpedância ou estime sua gordura corporal.",
+                icon = Icons.Filled.Scale,
+                onClick = { mainNavController.navigate("composicao_corporal_screen") }
             )
         }
     }

@@ -3,6 +3,8 @@ package com.example.lifeai_mobile.repository
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.Compromisso
+import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
+import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
@@ -69,4 +71,9 @@ interface AuthApi {
     @DELETE("compromissos/{id}/")
     suspend fun deleteCompromisso(@Path("id") id: Int): Response<Unit>
 
+    @GET("composicao-corporal/")
+    suspend fun getHistoricoComposicao(): Response<List<ComposicaoCorporalRegistro>>
+
+    @POST("composicao-corporal/")
+    suspend fun createComposicaoRecord(@Body request: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro>
 }

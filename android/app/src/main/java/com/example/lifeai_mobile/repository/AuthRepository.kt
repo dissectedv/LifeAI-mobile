@@ -4,6 +4,8 @@ import android.util.Log
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.ChatResponse
 import com.example.lifeai_mobile.model.Compromisso
+import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
+import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRecordRequest
@@ -122,5 +124,13 @@ class AuthRepository(
 
     suspend fun deleteCompromisso(id: Int): Response<Unit> {
         return api.deleteCompromisso(id)
+    }
+
+    suspend fun getHistoricoComposicao(): Response<List<ComposicaoCorporalRegistro>> {
+        return api.getHistoricoComposicao()
+    }
+
+    suspend fun createComposicaoRecord(record: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro> {
+        return api.createComposicaoRecord(record)
     }
 }

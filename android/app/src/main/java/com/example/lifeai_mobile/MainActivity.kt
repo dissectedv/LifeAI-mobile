@@ -40,11 +40,8 @@ class MainActivity : ComponentActivity() {
         val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
         val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
         val dietaViewModelFactory = DietaViewModelFactory(app, app.authRepository, app.sessionManager)
-
-        // --- ADIÇÃO DA NOVA FACTORY ---
-        // 1. Criamos a factory para o RotinaViewModel
         val rotinaViewModelFactory = RotinaViewModelFactory(app.authRepository)
-        // --- FIM DA ADIÇÃO ---
+        val composicaoCorporalViewModelFactory = ComposicaoCorporalViewModelFactory(app.authRepository)
 
         setContent {
             LifeAImobileTheme {
@@ -52,23 +49,16 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF10161C)
                 ) {
-                    // --- CORREÇÃO DA LÓGICA DE CARREGAMENTO ---
-
-                    // 1. Voltamos a usar "LOADING" como o estado inicial do token.
                     val token by app.sessionManager.authToken.collectAsState(initial = "LOADING")
                     val onboardingCompleted by app.sessionManager.onboardingCompleted.collectAsState(initial = null)
 
-                    // 2. O estado de carregamento agora é explícito
                     val isLoading = token == "LOADING" || onboardingCompleted == null
-                    // --- FIM DA CORREÇÃO ---
 
                     if (!isLoading) {
-                        // 3. O 'startDestination' agora é um 'val', é calculado UMA VEZ.
-                        // (Aqui 'token' será "" ou "abc...", mas nunca "LOADING")
                         val startDestination = remember(token, onboardingCompleted) {
                             when {
                                 token.isNullOrBlank() -> "welcome"
-                                !onboardingCompleted!! -> "disclaimer" // sabemos que não é nulo aqui
+                                !onboardingCompleted!! -> "disclaimer"
                                 else -> "home"
                             }
                         }
@@ -76,17 +66,14 @@ class MainActivity : ComponentActivity() {
                         val navController = rememberNavController()
                         val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
 
-                        // 4. Este LaunchedEffect monitora e NAVEGA (correto)
                         LaunchedEffect(token, onboardingCompleted) {
                             val currentRoute = navController.currentBackStackEntry?.destination?.route
 
                             if (!token.isNullOrBlank() && onboardingCompleted == true && currentRoute != "home") {
-                                // Usuário está logado e completou onboarding, vá para home
                                 navController.navigate("home") {
                                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                 }
                             } else if (token.isNullOrBlank() && (currentRoute != "loginAccount" && currentRoute != "createAccount" && currentRoute != "welcome")) {
-                                // Usuário foi deslogado, vá para welcome
                                 navController.navigate("welcome") {
                                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                 }
@@ -95,7 +82,7 @@ class MainActivity : ComponentActivity() {
 
                         NavHost(
                             navController = navController,
-                            startDestination = startDestination, // 5. Inicia com o destino calculado
+                            startDestination = startDestination,
                             enterTransition = { fadeIn(animationSpec = tween(500)) },
                             exitTransition = { fadeOut(animationSpec = tween(500)) }
                         ) {
@@ -118,7 +105,6 @@ class MainActivity : ComponentActivity() {
                                     resumoViewModelFactory = resumoViewModelFactory,
                                     chatViewModelFactory = chatViewModelFactory,
                                     dietaViewModelFactory = dietaViewModelFactory,
-                                    // 2. Passamos a nova factory para o MainAppScreen
                                     rotinaViewModelFactory = rotinaViewModelFactory
                                 )
                             }
@@ -131,10 +117,16 @@ class MainActivity : ComponentActivity() {
                                     historicoViewModel = historicoViewModel
                                 )
                             }
+                            composable("composicao_corporal_screen") {
+                                val composicaoViewModel: ComposicaoCorporalViewModel = viewModel(factory = composicaoCorporalViewModelFactory)
+
+                                ComposicaoCorporalScreen(
+                                    navController = navController,
+                                    viewModel = composicaoViewModel
+                                )
+                            }
                         }
                     } else {
-                        // 6. O app vai ficar aqui (corretamente)
-                        // até o DataStore carregar.
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
