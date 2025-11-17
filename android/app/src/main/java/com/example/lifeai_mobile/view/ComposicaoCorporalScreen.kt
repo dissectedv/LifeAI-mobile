@@ -2,25 +2,18 @@ package com.example.lifeai_mobile.view
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Straighten
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -45,19 +38,35 @@ fun ComposicaoCorporalScreen(
     val scope = rememberCoroutineScope()
     val sheetStateManual = rememberModalBottomSheetState()
     val sheetStateEstimador = rememberModalBottomSheetState()
+
+    // Controle dos sheets
     var showSheetManual by remember { mutableStateOf(false) }
     var showSheetEstimador by remember { mutableStateOf(false) }
+    var showInfo by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Composição Corporal",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Composição Corporal",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = { showInfo = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Sobre Composição Corporal",
+                                tint = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -83,17 +92,12 @@ fun ComposicaoCorporalScreen(
         },
         containerColor = Color(0xFF0D1A26)
     ) { innerPadding ->
-
         when (val currentState = state) {
             is ComposicaoCorporalState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
             }
-
             is ComposicaoCorporalState.Error -> {
                 Box(
                     modifier = Modifier
@@ -109,7 +113,6 @@ fun ComposicaoCorporalScreen(
                     )
                 }
             }
-
             is ComposicaoCorporalState.Empty -> {
                 EmptyState(
                     modifier = Modifier
@@ -120,7 +123,6 @@ fun ComposicaoCorporalScreen(
                     onEstimarClick = { showSheetEstimador = true }
                 )
             }
-
             is ComposicaoCorporalState.Success -> {
                 SuccessState(
                     modifier = Modifier
@@ -132,6 +134,7 @@ fun ComposicaoCorporalScreen(
         }
     }
 
+    // Sheet Manual
     if (showSheetManual) {
         ModalBottomSheet(
             onDismissRequest = { showSheetManual = false },
@@ -142,16 +145,17 @@ fun ComposicaoCorporalScreen(
                 viewModel = viewModel,
                 onSave = {
                     viewModel.salvarRegistroManual()
-                    scope.launch { sheetStateManual.hide() }.invokeOnCompletion {
-                        if (!sheetStateManual.isVisible) {
-                            showSheetManual = false
-                        }
+                    scope.launch {
+                        sheetStateManual.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetStateManual.isVisible) showSheetManual = false
                     }
                 }
             )
         }
     }
 
+    // Sheet Estimador
     if (showSheetEstimador) {
         ModalBottomSheet(
             onDismissRequest = { showSheetEstimador = false },
@@ -162,17 +166,28 @@ fun ComposicaoCorporalScreen(
                 viewModel = viewModel,
                 onSave = {
                     viewModel.salvarRegistroEstimado()
-                    scope.launch { sheetStateEstimador.hide() }.invokeOnCompletion {
-                        if (!sheetStateEstimador.isVisible) {
-                            showSheetEstimador = false
-                        }
+                    scope.launch {
+                        sheetStateEstimador.hide()
+                    }.invokeOnCompletion {
+                        if (!sheetStateEstimador.isVisible) showSheetEstimador = false
                     }
                 }
             )
         }
     }
+
+    // BottomSheet de Informações
+    if (showInfo) {
+        ModalBottomSheet(
+            onDismissRequest = { showInfo = false },
+            containerColor = Color(0xFF1B2A3D)
+        ) {
+            InfoComposicaoCorporalSheet(onClose = { showInfo = false })
+        }
+    }
 }
 
+// Estado vazio
 @Composable
 private fun EmptyState(
     modifier: Modifier = Modifier,
@@ -190,40 +205,33 @@ private fun EmptyState(
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(64.dp)
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(Modifier.height(16.dp))
         Text(
-            text = "Primeiro Registro",
+            "Primeiro Registro",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
         Text(
-            text = "Adicione seu primeiro registro para começar a acompanhar sua evolução.",
+            "Adicione seu primeiro registro para começar a acompanhar sua evolução.",
             color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
         Button(
             onClick = onInserirManualClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) {
-            Text("Registrar dados da balança")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        ) { Text("Registrar dados da balança") }
+        Spacer(Modifier.height(16.dp))
         OutlinedButton(
             onClick = onEstimarClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) {
-            Text("Estimar com fita métrica")
-        }
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        ) { Text("Estimar com fita métrica") }
     }
 }
 
+// Estado de sucesso
 @Composable
 private fun SuccessState(
     modifier: Modifier = Modifier,
@@ -239,38 +247,21 @@ private fun SuccessState(
         state.analise?.let { analise ->
             item {
                 Text(
-                    text = "Seus Insights",
+                    "Seus Insights",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
             }
-            item {
-                AnaliseInsightCard(
-                    titulo = "Gordura Corporal",
-                    item = analise.analiseGordura
-                )
-            }
-            item {
-                AnaliseInsightCard(
-                    titulo = "Massa Muscular",
-                    item = analise.analiseMusculo
-                )
-            }
-            item {
-                AnaliseInsightCard(
-                    titulo = "Hidratação",
-                    item = analise.analiseAgua
-                )
-            }
+            item { AnaliseInsightCard("Gordura Corporal", analise.analiseGordura) }
+            item { AnaliseInsightCard("Massa Muscular", analise.analiseMusculo) }
+            item { AnaliseInsightCard("Hidratação", analise.analiseAgua) }
         }
 
         item {
             OutlinedButton(
                 onClick = { showHistory = !showHistory },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
             ) {
                 Text(if (showHistory) "Esconder Histórico" else "Mostrar Histórico")
             }
@@ -280,16 +271,14 @@ private fun SuccessState(
             AnimatedVisibility(visible = showHistory) {
                 Column {
                     Text(
-                        text = "Histórico",
+                        "Histórico",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
                     )
                     HistoricoComposicaoComponent(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp),
+                        modifier = Modifier.fillMaxWidth().height(300.dp),
                         registros = state.historico
                     )
                 }
@@ -298,11 +287,9 @@ private fun SuccessState(
     }
 }
 
+// Card de insight
 @Composable
-private fun AnaliseInsightCard(
-    titulo: String,
-    item: AnaliseItem
-) {
+private fun AnaliseInsightCard(titulo: String, item: AnaliseItem) {
     if (item.valor.isBlank()) return
 
     val statusColor = when (item.status) {
@@ -313,8 +300,7 @@ private fun AnaliseInsightCard(
     }
 
     val statusIcon = when (item.status) {
-        AnaliseStatus.OTIMO -> Icons.Default.CheckCircle
-        AnaliseStatus.BOM -> Icons.Default.CheckCircle
+        AnaliseStatus.OTIMO, AnaliseStatus.BOM -> Icons.Default.CheckCircle
         AnaliseStatus.BAIXO -> Icons.Default.Warning
         AnaliseStatus.ALERTA -> Icons.Default.Error
     }
@@ -326,177 +312,83 @@ private fun AnaliseInsightCard(
         border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = statusIcon,
-                contentDescription = item.status.name,
-                tint = statusColor,
-                modifier = Modifier.size(32.dp)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = item.mensagem,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
+            Icon(statusIcon, contentDescription = item.status.name, tint = statusColor, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(titulo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(item.mensagem, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
             }
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Text(
-                text = item.valor,
-                color = statusColor,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 22.sp
-            )
+            Spacer(Modifier.width(16.dp))
+            Text(item.valor, color = statusColor, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, fontSize = 22.sp)
         }
     }
 }
 
+// Sheet Manual
 @Composable
-private fun ManualEntrySheet(
-    viewModel: ComposicaoCorporalViewModel,
-    onSave: () -> Unit
-) {
+private fun ManualEntrySheet(viewModel: ComposicaoCorporalViewModel, onSave: () -> Unit) {
     val gordura by viewModel.gorduraPercentual.collectAsState()
     val musculo by viewModel.musculoPercentual.collectAsState()
     val agua by viewModel.aguaPercentual.collectAsState()
     val visceral by viewModel.gorduraVisceral.collectAsState()
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .padding(bottom = 32.dp),
+        modifier = Modifier.fillMaxWidth().padding(16.dp).padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            "Registro Manual",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
-        FormTextField(
-            value = gordura,
-            onValueChange = viewModel::onGorduraChange,
-            label = "Gordura Corporal (%)"
-        )
-        FormTextField(
-            value = musculo,
-            onValueChange = viewModel::onMusculoChange,
-            label = "Massa Muscular (%)"
-        )
-        FormTextField(
-            value = agua,
-            onValueChange = viewModel::onAguaChange,
-            label = "Água Corporal (%)"
-        )
-        FormTextField(
-            value = visceral,
-            onValueChange = viewModel::onVisceralChange,
-            label = "Gordura Visceral (Nível)"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onSave,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) {
+        Text("Registro Manual", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
+        FormTextField(gordura, viewModel::onGorduraChange, "Gordura Corporal (%)")
+        FormTextField(musculo, viewModel::onMusculoChange, "Massa Muscular (%)")
+        FormTextField(agua, viewModel::onAguaChange, "Água Corporal (%)")
+        FormTextField(visceral, viewModel::onVisceralChange, "Gordura Visceral (Nível)")
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(50.dp)) {
             Text("Salvar Registro")
         }
     }
 }
 
+// Sheet Estimativa
 @Composable
-private fun EstimativaSheetContent(
-    viewModel: ComposicaoCorporalViewModel,
-    onSave: () -> Unit
-) {
+private fun EstimativaSheetContent(viewModel: ComposicaoCorporalViewModel, onSave: () -> Unit) {
     val altura by viewModel.alturaEstimador.collectAsState()
     val pescoco by viewModel.pescocoEstimador.collectAsState()
     val cintura by viewModel.cinturaEstimador.collectAsState()
     val quadril by viewModel.quadrilEstimador.collectAsState()
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-            .padding(bottom = 32.dp),
+        modifier = Modifier.fillMaxWidth().padding(16.dp).padding(bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            "Estimativa com Fita",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
+        Text("Estimativa com Fita", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
         Icon(
-            imageVector = Icons.Default.Straighten,
+            Icons.Default.Straighten,
             contentDescription = "Fita Métrica",
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(48.dp).align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "Use uma fita métrica e insira as medidas em centímetros (cm).",
+            "Use uma fita métrica e insira as medidas em centímetros (cm).",
             color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
         )
-        FormTextField(
-            value = altura,
-            onValueChange = viewModel::onAlturaEstimadorChange,
-            label = "Altura (cm)"
-        )
-        FormTextField(
-            value = pescoco,
-            onValueChange = viewModel::onPescocoEstimadorChange,
-            label = "Pescoço (cm)"
-        )
-        FormTextField(
-            value = cintura,
-            onValueChange = viewModel::onCinturaEstimadorChange,
-            label = "Cintura (cm)"
-        )
-        FormTextField(
-            value = quadril,
-            onValueChange = viewModel::onQuadrilEstimadorChange,
-            label = "Quadril (cm) - Apenas se for mulher"
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onSave,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) {
+        FormTextField(altura, viewModel::onAlturaEstimadorChange, "Altura (cm)")
+        FormTextField(pescoco, viewModel::onPescocoEstimadorChange, "Pescoço (cm)")
+        FormTextField(cintura, viewModel::onCinturaEstimadorChange, "Cintura (cm)")
+        FormTextField(quadril, viewModel::onQuadrilEstimadorChange, "Quadril (cm) - Apenas se for mulher")
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(50.dp)) {
             Text("Calcular e Salvar Estimativa")
         }
     }
 }
 
+// Campo de texto
 @Composable
-private fun FormTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String
-) {
+private fun FormTextField(value: String, onValueChange: (String) -> Unit, label: String) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
@@ -514,4 +406,41 @@ private fun FormTextField(
         ),
         singleLine = true
     )
+}
+
+// BottomSheet de Informações
+@Composable
+fun InfoComposicaoCorporalSheet(onClose: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text(
+            "O que é Composição Corporal?",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Text(
+            "Composição corporal é a análise dos elementos que formam o corpo: gordura, massa muscular, água e gordura visceral. Esta avaliação fornece uma visão mais completa da saúde do que apenas o peso.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.8f)
+        )
+        Text(
+            "Como registrar:",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Text(
+            "Registro manual: use os dados fornecidos pela sua balança inteligente.\n\n" +
+                    "Estimativa com fita métrica: informe altura, pescoço, cintura e quadril (mulheres). O app calcula automaticamente.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.White.copy(alpha = 0.8f)
+        )
+        Spacer(Modifier.height(12.dp))
+        Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+            Text("Entendi")
+        }
+    }
 }
