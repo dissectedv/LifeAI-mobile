@@ -1,6 +1,5 @@
 package com.example.lifeai_mobile.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
@@ -51,16 +50,12 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val hojeStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val agoraStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
-        val compromissosDeHoje = compromissos.filter { it.data == hojeStr }
+        val futuros = compromissos
+            .filter { !it.concluido && (it.data > hojeStr || (it.data == hojeStr && it.hora_inicio > agoraStr)) }
+            .sortedWith(compareBy({ it.data }, { it.hora_inicio }))
 
-        if (compromissosDeHoje.isEmpty()) {
-            return CompromissoState.NenhumAgendado
-        }
-
-        val proximo = compromissosDeHoje.firstOrNull { it.hora_inicio > agoraStr }
-
-        return if (proximo != null) {
-            CompromissoState.Proximo(proximo)
+        return if (futuros.isNotEmpty()) {
+            CompromissoState.Proximo(futuros.first())
         } else {
             CompromissoState.TodosConcluidos
         }
@@ -96,7 +91,6 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 }
 
                 _state.value = ResumoState.Success(profile, ultimoRegistroComposicao, compromissoState)
-
             } catch (e: Exception) {
                 _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
             }

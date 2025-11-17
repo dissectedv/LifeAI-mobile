@@ -1,5 +1,7 @@
 package com.example.lifeai_mobile.view
 
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import androidx.compose.ui.draw.clip
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -623,6 +625,16 @@ private fun ProximoCompromissoCard(
 
             when (state) {
                 is CompromissoState.Proximo -> {
+                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                    val dataHoje = LocalDate.now()
+                    val dataCompromisso = LocalDate.parse(state.compromisso.data, formatter)
+
+                    val labelData = when {
+                        dataCompromisso == dataHoje -> "HOJE"
+                        dataCompromisso == dataHoje.plusDays(1) -> "AMANHÃ"
+                        else -> DateTimeFormatter.ofPattern("dd/MM").format(dataCompromisso)
+                    }
+
                     Column {
                         Text(
                             text = state.compromisso.titulo,
@@ -633,7 +645,7 @@ private fun ProximoCompromissoCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = "HOJE ÀS ${state.compromisso.hora_inicio.substring(0, 5)}",
+                            text = "$labelData ÀS ${state.compromisso.hora_inicio.substring(0, 5)}",
                             color = corDestaque,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
@@ -641,6 +653,7 @@ private fun ProximoCompromissoCard(
                         )
                     }
                 }
+
                 is CompromissoState.NenhumAgendado -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -664,6 +677,7 @@ private fun ProximoCompromissoCard(
                         )
                     }
                 }
+
                 is CompromissoState.TodosConcluidos -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),

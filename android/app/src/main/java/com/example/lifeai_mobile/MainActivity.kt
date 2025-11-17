@@ -28,22 +28,29 @@ import com.example.lifeai_mobile.view.*
 import com.example.lifeai_mobile.viewmodel.*
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashScreen: SplashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // -----------------------------
+        // Application (para repos e sessionManager)
+        // -----------------------------
         val app = application as MyApplication
 
-        val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
-        val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
-        val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
-        val imcCalculatorViewModelFactory = ImcCalculatorViewModelFactory(app.authRepository)
-        val chatViewModelFactory = ChatIAViewModelFactory(app.authRepository)
-        val historicoImcViewModelFactory = HistoricoImcViewModelFactory(app.authRepository)
-        val dietaViewModelFactory = DietaViewModelFactory(app, app.authRepository, app.sessionManager)
-        val rotinaViewModelFactory = RotinaViewModelFactory(app.authRepository)
-        val composicaoCorporalViewModelFactory = ComposicaoCorporalViewModelFactory(app.authRepository)
+        // -----------------------------
+        // Factories
+        // -----------------------------
+        val authVMFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
+        val onboardingVMFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
+        val resumoVMFactory = ResumoViewModelFactory(app.authRepository)
+        val imcVMFactory = ImcCalculatorViewModelFactory(app.authRepository)
+        val chatVMFactory = ChatIAViewModelFactory(app.authRepository)
+        val historicoVMFactory = HistoricoImcViewModelFactory(app.authRepository)
+        val dietaVMFactory = DietaViewModelFactory(app, app.authRepository, app.sessionManager)
+        val rotinaVMFactory = RotinaViewModelFactory(app.authRepository)
+        val corpoVMFactory = ComposicaoCorporalViewModelFactory(app.authRepository)
 
         setContent {
             LifeAImobileTheme {
@@ -51,125 +58,136 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF10161C)
                 ) {
+
+                    // -----------------------------
+                    // Tokens / Estados do SessionManager
+                    // -----------------------------
                     val token by app.sessionManager.authToken.collectAsState(initial = "LOADING")
                     val onboardingCompleted by app.sessionManager.onboardingCompleted.collectAsState(initial = null)
-
                     val isLoading = token == "LOADING" || onboardingCompleted == null
 
-                    if (!isLoading) {
-                        val startDestination = remember(token, onboardingCompleted) {
-                            when {
-                                token.isNullOrBlank() -> "welcome"
-                                !onboardingCompleted!! -> "disclaimer"
-                                else -> "home"
-                            }
-                        }
-
-                        val navController = rememberNavController()
-                        val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
-
-                        LaunchedEffect(token, onboardingCompleted) {
-                            val current = navController.currentBackStackEntry?.destination?.route
-                            if (!token.isNullOrBlank() && onboardingCompleted == true && current != "home") {
-                                navController.navigate("home") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                }
-                            } else if (token.isNullOrBlank() && current !in listOf("loginAccount", "createAccount", "welcome")) {
-                                navController.navigate("welcome") {
-                                    popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                                }
-                            }
-                        }
-
-                        NavHost(
-                            navController = navController,
-                            startDestination = startDestination,
-                            enterTransition = { fadeIn(animationSpec = tween(500)) },
-                            exitTransition = { fadeOut(animationSpec = tween(500)) }
-                        ) {
-                            composable("welcome") {
-                                WelcomeScreen(navController)
-                            }
-
-                            composable("createAccount") {
-                                RegisterScreen(navController, authViewModel)
-                            }
-
-                            composable("disclaimer") {
-                                DisclaimerScreen(navController)
-                            }
-
-                            composable("loginAccount") {
-                                LoginScreen(navController, authViewModel)
-                            }
-
-                            composable("onboarding") {
-                                val onboardingViewModel: OnboardingViewModel = viewModel(factory = onboardingViewModelFactory)
-                                OnboardingScreen(navController, onboardingViewModel)
-                            }
-
-                            composable("home") {
-                                MainAppScreen(
-                                    mainNavController = navController,
-                                    authViewModel = authViewModel,
-                                    resumoViewModelFactory = resumoViewModelFactory,
-                                    chatViewModelFactory = chatViewModelFactory,
-                                    dietaViewModelFactory = dietaViewModelFactory,
-                                    rotinaViewModelFactory = rotinaViewModelFactory
-                                )
-                            }
-
-                            composable("imc_calculator") {
-                                val imcViewModel: ImcCalculatorViewModel = viewModel(factory = imcCalculatorViewModelFactory)
-                                val historicoViewModel: HistoricoImcViewModel = viewModel(factory = historicoImcViewModelFactory)
-                                ImcCalculatorScreen(
-                                    navController = navController,
-                                    viewModel = imcViewModel,
-                                    historicoViewModel = historicoViewModel
-                                )
-                            }
-
-                            composable("composicao_corporal_screen") {
-                                val composicaoViewModel: ComposicaoCorporalViewModel = viewModel(factory = composicaoCorporalViewModelFactory)
-                                ComposicaoCorporalScreen(
-                                    navController = navController,
-                                    viewModel = composicaoViewModel
-                                )
-                            }
-
-                            composable("rotina_screen") {
-                                val rotinaViewModel: RotinaViewModel = viewModel(factory = rotinaViewModelFactory)
-                                RotinaScreen(
-                                    navController = navController,
-                                    viewModel = rotinaViewModel
-                                )
-                            }
-
-                            composable("dieta_screen") {
-                                val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
-                                DietaScreen(
-                                    navController = navController,
-                                    viewModel = dietaViewModel
-                                )
-                            }
-
-                            composable(
-                                route = "atividade_fisica/{imc}",
-                                arguments = listOf(navArgument("imc") { type = NavType.FloatType })
-                            ) { backStackEntry ->
-                                val imcValue = backStackEntry.arguments?.getFloat("imc") ?: 0f
-                                AtividadeFisicaScreen(
-                                    navController = navController,
-                                    imc = imcValue
-                                )
-                            }
-                        }
-                    } else {
+                    // -----------------------------
+                    // Carregamento inicial
+                    // -----------------------------
+                    if (isLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator()
+                        }
+                        return@Surface
+                    }
+
+                    // -----------------------------
+                    // Escolhe rota inicial
+                    // -----------------------------
+                    val startDestination = remember(token, onboardingCompleted) {
+                        when {
+                            token.isNullOrBlank() -> "welcome"
+                            onboardingCompleted == false -> "disclaimer"
+                            else -> "home"
+                        }
+                    }
+
+                    val navController = rememberNavController()
+                    val authViewModel: AuthViewModel = viewModel(factory = authVMFactory)
+
+                    // -----------------------------
+                    // Regras automáticas de navegação
+                    // -----------------------------
+                    LaunchedEffect(token, onboardingCompleted) {
+                        val current = navController.currentBackStackEntry?.destination?.route
+
+                        if (!token.isNullOrBlank() && onboardingCompleted == true && current != "home") {
+                            navController.navigate("home") {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            }
+                        }
+
+                        if (token.isNullOrBlank() &&
+                            current !in listOf("loginAccount", "createAccount", "welcome")
+                        ) {
+                            navController.navigate("welcome") {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                            }
+                        }
+                    }
+
+                    // -----------------------------
+                    // NavHost global
+                    // -----------------------------
+                    NavHost(
+                        navController = navController,
+                        startDestination = startDestination,
+                        enterTransition = { fadeIn(animationSpec = tween(500)) },
+                        exitTransition = { fadeOut(animationSpec = tween(500)) }
+                    ) {
+
+                        composable("welcome") {
+                            WelcomeScreen(navController)
+                        }
+
+                        composable("createAccount") {
+                            RegisterScreen(navController, authViewModel)
+                        }
+
+                        composable("disclaimer") {
+                            DisclaimerScreen(navController)
+                        }
+
+                        composable("loginAccount") {
+                            LoginScreen(navController, authViewModel)
+                        }
+
+                        composable("onboarding") {
+                            val onboardingVM: OnboardingViewModel = viewModel(factory = onboardingVMFactory)
+                            OnboardingScreen(navController, onboardingVM)
+                        }
+
+                        composable("home") {
+                            MainAppScreen(
+                                mainNavController = navController,
+                                authViewModel = authViewModel,
+                                resumoViewModelFactory = resumoVMFactory,
+                                chatViewModelFactory = chatVMFactory,
+                                dietaViewModelFactory = dietaVMFactory,
+                                rotinaViewModelFactory = rotinaVMFactory
+                            )
+                        }
+
+                        composable("imc_calculator") {
+                            val imcVM: ImcCalculatorViewModel = viewModel(factory = imcVMFactory)
+                            val historicoVM: HistoricoImcViewModel = viewModel(factory = historicoVMFactory)
+
+                            ImcCalculatorScreen(
+                                navController = navController,
+                                viewModel = imcVM,
+                                historicoViewModel = historicoVM
+                            )
+                        }
+
+                        composable("composicao_corporal_screen") {
+                            val compVM: ComposicaoCorporalViewModel = viewModel(factory = corpoVMFactory)
+                            ComposicaoCorporalScreen(navController, compVM)
+                        }
+
+                        composable("rotina_screen") {
+                            val rotinaVM: RotinaViewModel = viewModel(factory = rotinaVMFactory)
+                            RotinaScreen(navController, rotinaVM)
+                        }
+
+                        composable("dieta_screen") {
+                            val dietaVM: DietaViewModel = viewModel(factory = dietaVMFactory)
+                            DietaScreen(navController, dietaVM)
+                        }
+
+                        composable(
+                            route = "atividade_fisica/{imc}",
+                            arguments = listOf(navArgument("imc") { type = NavType.FloatType })
+                        ) { entry ->
+                            val imcValue = entry.arguments?.getFloat("imc") ?: 0f
+                            AtividadeFisicaScreen(navController, imcValue)
                         }
                     }
                 }

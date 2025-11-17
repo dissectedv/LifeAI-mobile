@@ -21,25 +21,30 @@ class ImcSerializer(serializers.ModelSerializer):
         validated_data['id_usuario'] = self.context['request'].user
         return super().create(validated_data)
 
+
 class DesempenhoImcGrafico(serializers.ModelSerializer):
     class Meta:
         model = imc
         fields = ['data_consulta', 'imc_res']
+
 
 class ImcBaseSerializer(serializers.ModelSerializer):
     class Meta:
         model = imc_user_base
         exclude = ['id_usuario']
 
+
 class ImcBaseRecSerializer(serializers.ModelSerializer):
     class Meta:
         model = imc_user_base
         fields = ['imc_res', 'objetivo']
 
+
 class AtividadeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CompromissoAtividade
         fields = ['id', 'descricao', 'done']
+
 
 class CompromissoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -49,9 +54,10 @@ class CompromissoSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['id_usuario'] = self.context['request'].user
         return super().create(validated_data)
-    
+
+
 class PontuacaoCompromissoSerializer(serializers.ModelSerializer):
-    
+
     data_compromisso = serializers.DateField(source='compromisso.data', format='%Y-%m-%d')
     compromisso_id = serializers.IntegerField(source='compromisso.id', read_only=True)
 
@@ -71,12 +77,12 @@ class ComposicaoCorporalSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComposicaoCorporal
         fields = [
-            'id', 
-            'data_consulta', 
-            'gordura_percentual', 
-            'musculo_percentual', 
-            'agua_percentual', 
-            'gordura_visceral', 
+            'id',
+            'data_consulta',
+            'gordura_percentual',
+            'musculo_percentual',
+            'agua_percentual',
+            'gordura_visceral',
             'estimado'
         ]
         read_only_fields = ['data_consulta']
@@ -84,12 +90,27 @@ class ComposicaoCorporalSerializer(serializers.ModelSerializer):
     def validate(self, data):
         user = self.context['request'].user
         today = date.today()
-        
-        if not self.instance: 
-            if ComposicaoCorporal.objects.filter(id_usuario=user, data_consulta=today).exists():
-                raise serializers.ValidationError("Você já possui um registro de composição corporal para hoje.")
+
+        registro = ComposicaoCorporal.objects.filter(
+            id_usuario=user,
+            data_consulta=today
+        ).first()
+
+        if registro:
+            self.instance = registro
+
         return data
 
     def create(self, validated_data):
         validated_data['id_usuario'] = self.context['request'].user
+        validated_data['data_consulta'] = date.today()
         return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        instance.gordura_percentual = validated_data.get('gordura_percentual', instance.gordura_percentual)
+        instance.musculo_percentual = validated_data.get('musculo_percentual', instance.musculo_percentual)
+        instance.agua_percentual = validated_data.get('agua_percentual', instance.agua_percentual)
+        instance.gordura_visceral = validated_data.get('gordura_visceral', instance.gordura_visceral)
+        instance.estimado = validated_data.get('estimado', instance.estimado)
+        instance.save()
+        return instance

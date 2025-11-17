@@ -26,19 +26,30 @@ fun NavigationGraph(
     rotinaViewModelFactory: RotinaViewModelFactory,
     bottomBarPadding: PaddingValues
 ) {
+    // -----------------------------
+    // ViewModels
+    // -----------------------------
     val resumoViewModel: ResumoViewModel = viewModel(factory = resumoViewModelFactory)
     val chatViewModel: ChatIAViewModel = viewModel(factory = chatViewModelFactory)
     val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
     val rotinaViewModel: RotinaViewModel = viewModel(factory = rotinaViewModelFactory)
 
+    // -----------------------------
+    // NavHost
+    // -----------------------------
     NavHost(
         navController = navController,
         startDestination = BottomNavItem.Inicio.route
     ) {
+
+        // -----------------------------
+        // Início
+        // -----------------------------
         composable(BottomNavItem.Inicio.route) {
             LaunchedEffect(Unit) {
                 resumoViewModel.atualizarResumo()
             }
+
             HomeScreen(
                 navController = navController,
                 mainNavController = mainNavController,
@@ -47,6 +58,9 @@ fun NavigationGraph(
             )
         }
 
+        // -----------------------------
+        // Saúde
+        // -----------------------------
         composable(BottomNavItem.Saude.route) {
             SaudeScreen(
                 mainNavController = mainNavController,
@@ -56,6 +70,9 @@ fun NavigationGraph(
             )
         }
 
+        // -----------------------------
+        // Chat IA
+        // -----------------------------
         composable(BottomNavItem.ChatIA.route) {
             ChatIAScreen(
                 viewModel = chatViewModel,
@@ -63,6 +80,9 @@ fun NavigationGraph(
             )
         }
 
+        // -----------------------------
+        // Usuário
+        // -----------------------------
         composable(BottomNavItem.Usuario.route) {
             UsuarioScreen(
                 mainNavController = mainNavController,
@@ -71,6 +91,9 @@ fun NavigationGraph(
             )
         }
 
+        // -----------------------------
+        // Dieta
+        // -----------------------------
         composable("dieta_screen") {
             DietaScreen(
                 navController = navController,
@@ -79,11 +102,15 @@ fun NavigationGraph(
             )
         }
 
+        // -----------------------------
+        // Atividade Física
+        // -----------------------------
         composable(
             route = "atividade_fisica/{imc}",
             arguments = listOf(navArgument("imc") { type = NavType.FloatType })
-        ) { backStackEntry ->
-            val imc = backStackEntry.arguments?.getFloat("imc") ?: 0f
+        ) { entry ->
+            val imc = entry.arguments?.getFloat("imc") ?: 0f
+
             AtividadeFisicaScreen(
                 navController = navController,
                 imc = imc,
@@ -91,6 +118,9 @@ fun NavigationGraph(
             )
         }
 
+        // -----------------------------
+        // Rotina
+        // -----------------------------
         composable("rotina_screen") {
             RotinaScreen(
                 navController = navController,
