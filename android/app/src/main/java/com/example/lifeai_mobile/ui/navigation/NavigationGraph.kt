@@ -1,7 +1,10 @@
 package com.example.lifeai_mobile.ui.navigation
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -9,26 +12,8 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.lifeai_mobile.viewmodel.AuthViewModel
-import com.example.lifeai_mobile.view.ChatIAScreen
-import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
-import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
-import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
-import com.example.lifeai_mobile.view.HomeScreen
-import com.example.lifeai_mobile.view.DietaScreen
-import com.example.lifeai_mobile.viewmodel.DietaViewModel
-import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
-import com.example.lifeai_mobile.view.RotinaScreen
-import com.example.lifeai_mobile.viewmodel.RotinaViewModel
-import com.example.lifeai_mobile.viewmodel.RotinaViewModelFactory
-import com.example.lifeai_mobile.view.SaudeScreen
-import com.example.lifeai_mobile.view.UsuarioScreen
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.example.lifeai_mobile.view.AtividadeFisicaScreen
-import com.example.lifeai_mobile.viewmodel.ResumoViewModel
+import com.example.lifeai_mobile.view.*
+import com.example.lifeai_mobile.viewmodel.*
 
 @Composable
 fun NavigationGraph(
@@ -51,11 +36,9 @@ fun NavigationGraph(
         startDestination = BottomNavItem.Inicio.route
     ) {
         composable(BottomNavItem.Inicio.route) {
-
             LaunchedEffect(Unit) {
                 resumoViewModel.atualizarResumo()
             }
-
             HomeScreen(
                 navController = navController,
                 mainNavController = mainNavController,
@@ -92,7 +75,7 @@ fun NavigationGraph(
             DietaScreen(
                 navController = navController,
                 viewModel = dietaViewModel,
-                modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
+                modifier = Modifier
             )
         }
 
@@ -104,7 +87,7 @@ fun NavigationGraph(
             AtividadeFisicaScreen(
                 navController = navController,
                 imc = imc,
-                modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
+                modifier = Modifier
             )
         }
 
@@ -112,7 +95,7 @@ fun NavigationGraph(
             RotinaScreen(
                 navController = navController,
                 viewModel = rotinaViewModel,
-                modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
+                modifier = Modifier
             )
         }
     }

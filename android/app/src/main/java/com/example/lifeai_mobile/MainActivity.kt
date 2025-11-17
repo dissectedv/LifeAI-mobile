@@ -18,10 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.core.splashscreen.SplashScreen
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.lifeai_mobile.ui.theme.LifeAImobileTheme
 import com.example.lifeai_mobile.view.*
 import com.example.lifeai_mobile.viewmodel.*
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val app = application as MyApplication
+
         val authViewModelFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
         val onboardingViewModelFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoViewModelFactory = ResumoViewModelFactory(app.authRepository)
@@ -67,13 +69,12 @@ class MainActivity : ComponentActivity() {
                         val authViewModel: AuthViewModel = viewModel(factory = authViewModelFactory)
 
                         LaunchedEffect(token, onboardingCompleted) {
-                            val currentRoute = navController.currentBackStackEntry?.destination?.route
-
-                            if (!token.isNullOrBlank() && onboardingCompleted == true && currentRoute != "home") {
+                            val current = navController.currentBackStackEntry?.destination?.route
+                            if (!token.isNullOrBlank() && onboardingCompleted == true && current != "home") {
                                 navController.navigate("home") {
                                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                 }
-                            } else if (token.isNullOrBlank() && (currentRoute != "loginAccount" && currentRoute != "createAccount" && currentRoute != "welcome")) {
+                            } else if (token.isNullOrBlank() && current !in listOf("loginAccount", "createAccount", "welcome")) {
                                 navController.navigate("welcome") {
                                     popUpTo(navController.graph.startDestinationId) { inclusive = true }
                                 }
@@ -86,18 +87,27 @@ class MainActivity : ComponentActivity() {
                             enterTransition = { fadeIn(animationSpec = tween(500)) },
                             exitTransition = { fadeOut(animationSpec = tween(500)) }
                         ) {
-                            composable("welcome") { WelcomeScreen(navController) }
+                            composable("welcome") {
+                                WelcomeScreen(navController)
+                            }
+
                             composable("createAccount") {
                                 RegisterScreen(navController, authViewModel)
                             }
-                            composable("disclaimer") { DisclaimerScreen(navController) }
+
+                            composable("disclaimer") {
+                                DisclaimerScreen(navController)
+                            }
+
                             composable("loginAccount") {
                                 LoginScreen(navController, authViewModel)
                             }
+
                             composable("onboarding") {
                                 val onboardingViewModel: OnboardingViewModel = viewModel(factory = onboardingViewModelFactory)
                                 OnboardingScreen(navController, onboardingViewModel)
                             }
+
                             composable("home") {
                                 MainAppScreen(
                                     mainNavController = navController,
@@ -108,6 +118,7 @@ class MainActivity : ComponentActivity() {
                                     rotinaViewModelFactory = rotinaViewModelFactory
                                 )
                             }
+
                             composable("imc_calculator") {
                                 val imcViewModel: ImcCalculatorViewModel = viewModel(factory = imcCalculatorViewModelFactory)
                                 val historicoViewModel: HistoricoImcViewModel = viewModel(factory = historicoImcViewModelFactory)
@@ -117,12 +128,39 @@ class MainActivity : ComponentActivity() {
                                     historicoViewModel = historicoViewModel
                                 )
                             }
+
                             composable("composicao_corporal_screen") {
                                 val composicaoViewModel: ComposicaoCorporalViewModel = viewModel(factory = composicaoCorporalViewModelFactory)
-
                                 ComposicaoCorporalScreen(
                                     navController = navController,
                                     viewModel = composicaoViewModel
+                                )
+                            }
+
+                            composable("rotina_screen") {
+                                val rotinaViewModel: RotinaViewModel = viewModel(factory = rotinaViewModelFactory)
+                                RotinaScreen(
+                                    navController = navController,
+                                    viewModel = rotinaViewModel
+                                )
+                            }
+
+                            composable("dieta_screen") {
+                                val dietaViewModel: DietaViewModel = viewModel(factory = dietaViewModelFactory)
+                                DietaScreen(
+                                    navController = navController,
+                                    viewModel = dietaViewModel
+                                )
+                            }
+
+                            composable(
+                                route = "atividade_fisica/{imc}",
+                                arguments = listOf(navArgument("imc") { type = NavType.FloatType })
+                            ) { backStackEntry ->
+                                val imcValue = backStackEntry.arguments?.getFloat("imc") ?: 0f
+                                AtividadeFisicaScreen(
+                                    navController = navController,
+                                    imc = imcValue
                                 )
                             }
                         }

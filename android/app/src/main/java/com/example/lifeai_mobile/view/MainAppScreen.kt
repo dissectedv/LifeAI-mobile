@@ -1,24 +1,24 @@
 package com.example.lifeai_mobile.view
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.lifeai_mobile.ui.navigation.BottomNavigationBar
+import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.ui.navigation.NavigationGraph
 import com.example.lifeai_mobile.viewmodel.AuthViewModel
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModelFactory
-// 1. Importe a nova factory
 import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
 import com.example.lifeai_mobile.viewmodel.ResumoViewModelFactory
-import com.example.lifeai_mobile.viewmodel.RotinaViewModelFactory // <-- IMPORT NOVO
+import com.example.lifeai_mobile.viewmodel.RotinaViewModelFactory
 
 @Composable
 fun MainAppScreen(
@@ -27,10 +27,22 @@ fun MainAppScreen(
     resumoViewModelFactory: ResumoViewModelFactory,
     chatViewModelFactory: ChatIAViewModelFactory,
     dietaViewModelFactory: DietaViewModelFactory,
-    // 2. Adicione a factory como parâmetro
-    rotinaViewModelFactory: RotinaViewModelFactory // <-- LINHA NOVA
+    rotinaViewModelFactory: RotinaViewModelFactory
 ) {
     val bottomBarNavController = rememberNavController()
+
+    val currentRoute = bottomBarNavController.currentBackStackEntryFlow
+        .collectAsState(initial = bottomBarNavController.currentBackStackEntry)
+        .value?.destination?.route
+
+    val routesWithBottomBar = listOf(
+        BottomNavItem.Inicio.route,
+        BottomNavItem.Saude.route,
+        BottomNavItem.ChatIA.route,
+        BottomNavItem.Usuario.route
+    )
+
+    val showBottomBar = currentRoute in routesWithBottomBar
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -39,25 +51,22 @@ fun MainAppScreen(
         Scaffold(
             containerColor = Color.Transparent,
             bottomBar = {
-                BottomNavigationBar(navController = bottomBarNavController)
+                if (showBottomBar) {
+                    BottomNavigationBar(navController = bottomBarNavController)
+                }
             },
             contentWindowInsets = WindowInsets(0.dp)
         ) { innerPadding ->
-            Box(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                NavigationGraph(
-                    navController = bottomBarNavController,
-                    mainNavController = mainNavController,
-                    authViewModel = authViewModel,
-                    resumoViewModelFactory = resumoViewModelFactory,
-                    chatViewModelFactory = chatViewModelFactory,
-                    dietaViewModelFactory = dietaViewModelFactory,
-                    // 3. Passe a factory para o NavigationGraph
-                    rotinaViewModelFactory = rotinaViewModelFactory, // <-- LINHA NOVA
-                    bottomBarPadding = innerPadding
-                )
-            }
+            NavigationGraph(
+                navController = bottomBarNavController,
+                mainNavController = mainNavController,
+                authViewModel = authViewModel,
+                resumoViewModelFactory = resumoViewModelFactory,
+                chatViewModelFactory = chatViewModelFactory,
+                dietaViewModelFactory = dietaViewModelFactory,
+                rotinaViewModelFactory = rotinaViewModelFactory,
+                bottomBarPadding = innerPadding
+            )
         }
     }
 }
