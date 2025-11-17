@@ -3,16 +3,32 @@ package com.example.lifeai_mobile.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
+import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+sealed class CompromissoState {
+    object NenhumAgendado : CompromissoState()
+    object TodosConcluidos : CompromissoState()
+    data class Proximo(val compromisso: Compromisso) : CompromissoState()
+}
 
 sealed class ResumoState {
     object Loading : ResumoState()
-    data class Success(val profile: ImcBaseProfile) : ResumoState()
+    data class Success(
+        val profile: ImcBaseProfile,
+        val ultimoRegistroComposicao: ComposicaoCorporalRegistro?,
+        val compromissoState: CompromissoState
+    ) : ResumoState()
     data class Error(val message: String) : ResumoState()
 }
 
@@ -22,20 +38,65 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
     val state: StateFlow<ResumoState> = _state
 
     init {
-        fetchProfile()
+        fetchResumoData()
     }
 
-    private fun fetchProfile() {
+    fun atualizarResumo() {
+        fetchResumoData()
+    }
+
+    private fun getCompromissoState(compromissos: List<Compromisso>?): CompromissoState {
+        if (compromissos.isNullOrEmpty()) return CompromissoState.NenhumAgendado
+
+        val hojeStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val agoraStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+        val compromissosDeHoje = compromissos.filter { it.data == hojeStr }
+
+        if (compromissosDeHoje.isEmpty()) {
+            return CompromissoState.NenhumAgendado
+        }
+
+        val proximo = compromissosDeHoje.firstOrNull { it.hora_inicio > agoraStr }
+
+        return if (proximo != null) {
+            CompromissoState.Proximo(proximo)
+        } else {
+            CompromissoState.TodosConcluidos
+        }
+    }
+
+    private fun fetchResumoData() {
         viewModelScope.launch(Dispatchers.IO) {
+            _state.value = ResumoState.Loading
             try {
-                val response = repository.getImcBaseDashboard()
-                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                    val profile = response.body()!!.first()
-                    _state.value = ResumoState.Success(profile)
-                    Log.d("API_RESPONSE", "Dados do perfil recebidos: $profile")
-                } else {
+                val profileJob = async { repository.getImcBaseDashboard() }
+                val composicaoJob = async { repository.getHistoricoComposicao() }
+                val compromissosJob = async { repository.getCompromissos() }
+
+                val profileResponse = profileJob.await()
+                val composicaoResponse = composicaoJob.await()
+                val compromissosResponse = compromissosJob.await()
+
+                if (!profileResponse.isSuccessful || profileResponse.body().isNullOrEmpty()) {
                     _state.value = ResumoState.Error("Perfil não encontrado.")
+                    return@launch
                 }
+
+                val profile = profileResponse.body()!!.first()
+
+                val ultimoRegistroComposicao = if (composicaoResponse.isSuccessful) {
+                    composicaoResponse.body()?.firstOrNull()
+                } else null
+
+                val compromissoState = if (compromissosResponse.isSuccessful) {
+                    getCompromissoState(compromissosResponse.body())
+                } else {
+                    CompromissoState.NenhumAgendado
+                }
+
+                _state.value = ResumoState.Success(profile, ultimoRegistroComposicao, compromissoState)
+
             } catch (e: Exception) {
                 _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
             }

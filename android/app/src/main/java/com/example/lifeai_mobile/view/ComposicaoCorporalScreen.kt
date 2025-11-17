@@ -1,5 +1,7 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,7 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -224,8 +229,11 @@ private fun SuccessState(
     modifier: Modifier = Modifier,
     state: ComposicaoCorporalState.Success
 ) {
+    var showHistory by remember { mutableStateOf(false) }
+
     LazyColumn(
-        modifier = modifier.padding(16.dp),
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         state.analise?.let { analise ->
@@ -258,21 +266,34 @@ private fun SuccessState(
         }
 
         item {
-            Text(
-                text = "Histórico",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-        }
-        item {
-            HistoricoComposicaoComponent(
+            OutlinedButton(
+                onClick = { showHistory = !showHistory },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp),
-                registros = state.historico
-            )
+                    .padding(top = 16.dp)
+            ) {
+                Text(if (showHistory) "Esconder Histórico" else "Mostrar Histórico")
+            }
+        }
+
+        item {
+            AnimatedVisibility(visible = showHistory) {
+                Column {
+                    Text(
+                        text = "Histórico",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        modifier = Modifier.padding(top = 16.dp, bottom = 16.dp)
+                    )
+                    HistoricoComposicaoComponent(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(300.dp),
+                        registros = state.historico
+                    )
+                }
+            }
         }
     }
 }
@@ -291,10 +312,18 @@ private fun AnaliseInsightCard(
         AnaliseStatus.ALERTA -> Color(0xFFFF5252)
     }
 
+    val statusIcon = when (item.status) {
+        AnaliseStatus.OTIMO -> Icons.Default.CheckCircle
+        AnaliseStatus.BOM -> Icons.Default.CheckCircle
+        AnaliseStatus.BAIXO -> Icons.Default.Warning
+        AnaliseStatus.ALERTA -> Icons.Default.Error
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D))
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -302,9 +331,18 @@ private fun AnaliseInsightCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = statusIcon,
+                contentDescription = item.status.name,
+                tint = statusColor,
+                modifier = Modifier.size(32.dp)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     text = titulo,
@@ -318,27 +356,16 @@ private fun AnaliseInsightCard(
                     color = Color.White.copy(alpha = 0.7f)
                 )
             }
+
             Spacer(modifier = Modifier.width(16.dp))
-            Box(contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.size(50.dp),
-                    color = statusColor.copy(alpha = 0.3f),
-                    strokeWidth = 4.dp
-                )
-                CircularProgressIndicator(
-                    progress = { 1f },
-                    modifier = Modifier.size(50.dp),
-                    color = statusColor,
-                    strokeWidth = 4.dp,
-                )
-                Text(
-                    text = item.valor,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-            }
+
+            Text(
+                text = item.valor,
+                color = statusColor,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 22.sp
+            )
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.example.lifeai_mobile.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -17,11 +18,9 @@ import com.example.lifeai_mobile.view.HomeScreen
 import com.example.lifeai_mobile.view.DietaScreen
 import com.example.lifeai_mobile.viewmodel.DietaViewModel
 import com.example.lifeai_mobile.viewmodel.DietaViewModelFactory
-// --- IMPORTS NOVOS ---
 import com.example.lifeai_mobile.view.RotinaScreen
 import com.example.lifeai_mobile.viewmodel.RotinaViewModel
 import com.example.lifeai_mobile.viewmodel.RotinaViewModelFactory
-// --- FIM IMPORTS NOVOS ---
 import com.example.lifeai_mobile.view.SaudeScreen
 import com.example.lifeai_mobile.view.UsuarioScreen
 import androidx.compose.foundation.layout.PaddingValues
@@ -52,8 +51,14 @@ fun NavigationGraph(
         startDestination = BottomNavItem.Inicio.route
     ) {
         composable(BottomNavItem.Inicio.route) {
+
+            LaunchedEffect(Unit) {
+                resumoViewModel.atualizarResumo()
+            }
+
             HomeScreen(
                 navController = navController,
+                mainNavController = mainNavController,
                 resumoViewModel = resumoViewModel,
                 modifier = Modifier.padding(bottom = bottomBarPadding.calculateBottomPadding())
             )

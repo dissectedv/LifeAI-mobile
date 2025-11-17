@@ -40,10 +40,10 @@ fun HistoricoComposicaoComponent(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HistoricoHeaderItem("Data", Modifier.weight(1f))
-            HistoricoHeaderItem("% Gordura", Modifier.weight(1.1f), TextAlign.Center)
-            HistoricoHeaderItem("% Músculo", Modifier.weight(1.1f), TextAlign.Center)
-            HistoricoHeaderItem("% Água", Modifier.weight(1.1f), TextAlign.Center)
+            HistoricoHeaderItem("Data", Modifier.weight(1.3f))
+            HistoricoHeaderItem("Gordura", Modifier.weight(1f), TextAlign.Center)
+            HistoricoHeaderItem("Músculo", Modifier.weight(1f), TextAlign.Center)
+            HistoricoHeaderItem("Água", Modifier.weight(1f), TextAlign.Center)
         }
 
         HorizontalDivider(color = Color(0xFF0D1B2A), thickness = 2.dp)
@@ -73,125 +73,32 @@ fun HistoricoComposicaoComponent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(backgroundColor)
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1f))
+                        HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1.3f))
 
-                        HistoricoChipItem(
-                            value = registro.gorduraPercentual,
-                            color = getCorGordura(registro.gorduraPercentual),
-                            modifier = Modifier.weight(1.1f)
+                        HistoricoRowItem(
+                            formatarPercentual(registro.gorduraPercentual),
+                            Modifier.weight(1f),
+                            TextAlign.Center
                         )
 
-                        HistoricoChipItem(
-                            value = registro.musculoPercentual,
-                            color = getCorMusculo(registro.musculoPercentual),
-                            modifier = Modifier.weight(1.1f)
+                        HistoricoRowItem(
+                            formatarPercentual(registro.musculoPercentual),
+                            Modifier.weight(1f),
+                            TextAlign.Center
                         )
 
-                        HistoricoChipItem(
-                            value = registro.aguaPercentual,
-                            color = getCorAgua(registro.aguaPercentual),
-                            modifier = Modifier.weight(1.1f)
+                        HistoricoRowItem(
+                            formatarPercentual(registro.aguaPercentual),
+                            Modifier.weight(1f),
+                            TextAlign.Center
                         )
                     }
                     HorizontalDivider(color = Color(0xFF0D1B2A))
                 }
             }
-        }
-    }
-}
-
-private fun getStatusColor(status: AnaliseStatus): Color {
-    return when (status) {
-        AnaliseStatus.OTIMO -> Color(0xFF00C853)
-        AnaliseStatus.BOM -> Color(0xFF4A90E2)
-        AnaliseStatus.BAIXO -> Color(0xFFFDD835)
-        AnaliseStatus.ALERTA -> Color(0xFFFF5252)
-    }
-}
-
-private fun getCorGordura(gordura: Float, sexo: String = "Masculino"): Color {
-    val status = if (sexo == "Masculino") {
-        when {
-            gordura < 8 -> AnaliseStatus.BAIXO
-            gordura <= 20 -> AnaliseStatus.OTIMO
-            gordura <= 25 -> AnaliseStatus.BOM
-            else -> AnaliseStatus.ALERTA
-        }
-    } else {
-        when {
-            gordura < 15 -> AnaliseStatus.BAIXO
-            gordura <= 25 -> AnaliseStatus.OTIMO
-            gordura <= 32 -> AnaliseStatus.BOM
-            else -> AnaliseStatus.ALERTA
-        }
-    }
-    return getStatusColor(status)
-}
-
-private fun getCorMusculo(musculo: Float, sexo: String = "Masculino"): Color {
-    val status = if (sexo == "Masculino") {
-        when {
-            musculo < 38 -> AnaliseStatus.BAIXO
-            musculo <= 44 -> AnaliseStatus.BOM
-            else -> AnaliseStatus.OTIMO
-        }
-    } else {
-        when {
-            musculo < 28 -> AnaliseStatus.BAIXO
-            musculo <= 34 -> AnaliseStatus.BOM
-            else -> AnaliseStatus.OTIMO
-        }
-    }
-    return getStatusColor(status)
-}
-
-private fun getCorAgua(agua: Float): Color {
-    val status = when {
-        agua < 45 -> AnaliseStatus.BAIXO
-        agua <= 65 -> AnaliseStatus.BOM
-        else -> AnaliseStatus.OTIMO
-    }
-    return getStatusColor(status)
-}
-
-@Composable
-private fun HistoricoChipItem(
-    value: Float,
-    color: Color,
-    modifier: Modifier = Modifier
-) {
-    if (value <= 0) {
-        HistoricoRowItem(
-            text = "N/A",
-            modifier = modifier,
-            textAlign = TextAlign.Center
-        )
-        return
-    }
-
-    val text = String.format(Locale.getDefault(), "%.1f%%", value)
-
-    Box(
-        modifier = modifier.padding(horizontal = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = color.copy(alpha = 0.15f),
-            border = BorderStroke(1.dp, color.copy(alpha = 0.5f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = text,
-                color = color,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(vertical = 6.dp, horizontal = 8.dp),
-                textAlign = TextAlign.Center
-            )
         }
     }
 }
@@ -238,4 +145,9 @@ private fun formatarData(dataApi: String): String {
     } catch (_: Exception) {
         "N/A"
     }
-}   
+}
+
+private fun formatarPercentual(valor: Float): String {
+    if (valor <= 0) return "N/A"
+    return String.format(Locale.getDefault(), "%.1f%%", valor)
+}

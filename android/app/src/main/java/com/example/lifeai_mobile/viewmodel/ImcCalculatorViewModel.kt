@@ -29,6 +29,7 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     var dataConsulta by mutableStateOf(Date())
 
     var isLoading by mutableStateOf(false)
+    var isHeightFieldLocked by mutableStateOf(true)
 
     private val _eventFlow = MutableSharedFlow<UiEvent>()
     val eventFlow = _eventFlow.asSharedFlow()
@@ -67,6 +68,16 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     fun onDataChange(newDate: Date) {
         val adjustedDate = Date(newDate.time + TimeZone.getDefault().getOffset(newDate.time))
         dataConsulta = adjustedDate
+    }
+
+    fun onUnlockHeightField() {
+        isHeightFieldLocked = false
+    }
+
+    private fun resetFormState() {
+        peso = ""
+        isHeightFieldLocked = true
+        dataConsulta = Date()
     }
 
     fun calculateAndRegister() {
@@ -112,6 +123,7 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 val response = repository.createImcRecord(request)
                 if (response.isSuccessful) {
                     Log.d("IMC_CALC_DEBUG", "Sucesso! Resposta: ${response.body()}")
+                    resetFormState()
                     _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
                     _eventFlow.emit(UiEvent.NavigateBack)
                 } else {

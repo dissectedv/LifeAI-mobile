@@ -1,9 +1,11 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.ui.draw.clip
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -12,6 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,11 +26,18 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
+import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
+import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
+import com.example.lifeai_mobile.viewmodel.CompromissoState
 import com.example.lifeai_mobile.viewmodel.ResumoState
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import java.util.*
@@ -32,6 +45,7 @@ import java.util.*
 @Composable
 fun HomeScreen(
     navController: NavHostController,
+    mainNavController: NavController,
     resumoViewModel: ResumoViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -135,8 +149,28 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    PassosCard(modifier = Modifier.weight(1f))
-                    AtividadesCard(modifier = Modifier.weight(1f))
+                    val (profile, ultimoRegistro, compromissoState) = if (state is ResumoState.Success) {
+                        val successState = (state as ResumoState.Success)
+                        Triple(successState.profile, successState.ultimoRegistroComposicao, successState.compromissoState)
+                    } else {
+                        Triple(null, null, CompromissoState.NenhumAgendado)
+                    }
+
+                    ComposicaoCorporalCard(
+                        modifier = Modifier.weight(1f),
+                        profile = profile,
+                        ultimoRegistro = ultimoRegistro,
+                        onClick = {
+                            mainNavController.navigate("composicao_corporal_screen")
+                        }
+                    )
+                    ProximoCompromissoCard(
+                        modifier = Modifier.weight(1f),
+                        state = compromissoState,
+                        onClick = {
+                            navController.navigate("rotina_screen")
+                        }
+                    )
                 }
             }
 
@@ -162,7 +196,9 @@ private fun ChatGreetingCard(
     isLoading: Boolean
 ) {
     val greeting = getGreeting()
-    val userName = profile?.nome?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() } ?: "Usuário"
+    val userName = profile?.nome
+        ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        ?: "Usuário"
     val greetingMessage = "$greeting, $userName!"
     val subMessage = "Como você está se sentindo hoje?"
 
@@ -182,12 +218,11 @@ private fun ChatGreetingCard(
                 }
             }
         },
-
         modifier = Modifier
             .fillMaxWidth()
             .height(80.dp),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
         enabled = !isLoading
     ) {
         Box(
@@ -257,10 +292,11 @@ private fun ResumoImcCard(profile: ImcBaseProfile) {
     val textMutedColor = Color.White.copy(alpha = 0.7f)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Box(
             modifier = Modifier
@@ -398,7 +434,7 @@ private fun ImcHistoricoCard() {
             .height(220.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Box(
             modifier = Modifier
@@ -412,45 +448,252 @@ private fun ImcHistoricoCard() {
 }
 
 @Composable
-private fun PassosCard(modifier: Modifier = Modifier) {
-    val gradientOverlay = Brush.verticalGradient(
-        listOf(Color(0x334A90E2), Color.Transparent)
-    )
-    Card(
-        modifier = modifier.height(170.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(gradientOverlay),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("Passos", color = Color.White.copy(alpha = 0.7f))
+private fun getAnaliseGordura(gordura: Float, sexo: String): Pair<String, Color> {
+    if (gordura <= 0) return "N/A" to Color.White.copy(alpha = 0.7f)
+
+    return if (sexo == "Masculino") {
+        when {
+            gordura < 8 -> "Muito Baixo" to Color(0xFFFDD835)
+            gordura <= 20 -> "Ideal" to Color(0xFF00C853)
+            gordura <= 25 -> "Saudável" to Color(0xFF4A90E2)
+            else -> "Elevado" to Color(0xFFFF5252)
+        }
+    } else {
+        when {
+            gordura < 15 -> "Muito Baixo" to Color(0xFFFDD835)
+            gordura <= 25 -> "Ideal" to Color(0xFF00C853)
+            gordura <= 32 -> "Saudável" to Color(0xFF4A90E2)
+            else -> "Elevado" to Color(0xFFFF5252)
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AtividadesCard(modifier: Modifier = Modifier) {
-    val gradientOverlay = Brush.verticalGradient(
-        listOf(Color(0x334A90E2), Color.Transparent)
-    )
+private fun ComposicaoCorporalCard(
+    modifier: Modifier = Modifier,
+    profile: ImcBaseProfile?,
+    ultimoRegistro: ComposicaoCorporalRegistro?,
+    onClick: () -> Unit
+) {
+    val hasData = ultimoRegistro != null && profile != null && ultimoRegistro.gorduraPercentual > 0
+
+    val (analise, corDestaque) = if (hasData) {
+        getAnaliseGordura(ultimoRegistro!!.gorduraPercentual, profile!!.sexo)
+    } else {
+        null to Color(0xFF38BDF8)
+    }
+
+    val containerBase = Color(0xFF020617)
+    val corBorda = if (hasData) corDestaque.copy(alpha = 0.4f) else Color(0xFF1E293B)
+
     Card(
-        modifier = modifier.height(170.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+        modifier = modifier
+            .height(170.dp),
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = containerBase),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+        border = BorderStroke(1.dp, corBorda)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientOverlay),
-            contentAlignment = Alignment.Center
+                .background(
+                    if (hasData)
+                        Brush.verticalGradient(listOf(corDestaque.copy(alpha = 0.25f), containerBase))
+                    else
+                        Brush.verticalGradient(listOf(Color(0xFF1E293B), containerBase))
+                )
         ) {
-            Text("Atividades", color = Color.White.copy(alpha = 0.7f))
+            if (hasData) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Gordura Corporal",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Column {
+                        Text(
+                            text = String.format(Locale.US, "%.1f%%", ultimoRegistro!!.gorduraPercentual),
+                            color = corDestaque,
+                            style = MaterialTheme.typography.headlineLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = analise!!.uppercase(Locale.getDefault()),
+                            color = corDestaque,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Analytics,
+                        contentDescription = "Composição Corporal",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        "Composição",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Clique para analisar",
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProximoCompromissoCard(
+    modifier: Modifier = Modifier,
+    state: CompromissoState,
+    onClick: () -> Unit
+) {
+    val gradientOverlay = Brush.verticalGradient(
+        listOf(Color(0x334A90E2), Color.Transparent)
+    )
+
+    val (corDestaque, icon, cardTitle) = when (state) {
+        is CompromissoState.Proximo -> Triple(Color(0xFFFDD835), Icons.Default.Alarm, "Próximo")
+        is CompromissoState.NenhumAgendado -> Triple(MaterialTheme.colorScheme.primary, Icons.Default.DateRange, "Minha Rotina")
+        is CompromissoState.TodosConcluidos -> Triple(Color(0xFF00C853), Icons.Default.CheckCircle, "Parabéns!")
+    }
+
+    Card(
+        modifier = modifier
+            .height(170.dp),
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(gradientOverlay)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = cardTitle,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = "Rotina",
+                    tint = corDestaque.copy(alpha = 0.8f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            when (state) {
+                is CompromissoState.Proximo -> {
+                    Column {
+                        Text(
+                            text = state.compromisso.titulo,
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = "HOJE ÀS ${state.compromisso.hora_inicio.substring(0, 5)}",
+                            color = corDestaque,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+                is CompromissoState.NenhumAgendado -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Nenhum compromisso hoje",
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Clique para planejar",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                is CompromissoState.TodosConcluidos -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = "Concluído",
+                            tint = corDestaque,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "Tarefas concluídas!",
+                            color = corDestaque,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Bom trabalho hoje.",
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }

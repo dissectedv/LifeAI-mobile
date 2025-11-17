@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.viewmodel.HistoricoImcViewModel
 import com.example.lifeai_mobile.viewmodel.ImcHistoryState
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 @Composable
@@ -49,9 +51,9 @@ fun HistoricoImcComponent(
                 .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            HistoricoHeaderItem("Data", Modifier.weight(1f))
-            HistoricoHeaderItem("Peso", Modifier.weight(1.2f), TextAlign.Center)
-            HistoricoHeaderItem("Altura", Modifier.weight(1.2f), TextAlign.Center)
+            HistoricoHeaderItem("Data", Modifier.weight(1.3f))
+            HistoricoHeaderItem("Peso", Modifier.weight(1f), TextAlign.Center)
+            HistoricoHeaderItem("Altura", Modifier.weight(1f), TextAlign.Center)
             HistoricoHeaderItem("IMC", Modifier.weight(1f), TextAlign.Center)
             Spacer(Modifier.weight(0.5f))
         }
@@ -105,26 +107,25 @@ fun HistoricoImcComponent(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(backgroundColor)
-                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1f))
+                                HistoricoRowItem(formatarData(registro.dataConsulta), Modifier.weight(1.3f))
                                 HistoricoRowItem(
                                     String.format(Locale.getDefault(), "%.1f kg", registro.peso),
-                                    Modifier.weight(1.2f),
+                                    Modifier.weight(1f),
                                     TextAlign.Center
                                 )
                                 HistoricoRowItem(
                                     String.format(Locale.getDefault(), "%.2f m", registro.altura),
-                                    Modifier.weight(1.2f),
+                                    Modifier.weight(1f),
                                     TextAlign.Center
                                 )
-
-                                HistoricoImcChipItem(
-                                    imcValue = registro.imcRes,
-                                    modifier = Modifier.weight(1f)
+                                HistoricoRowItem(
+                                    String.format(Locale.getDefault(), "%.1f", registro.imcRes),
+                                    Modifier.weight(1f),
+                                    TextAlign.Center
                                 )
-
                                 RegistroOpcoesMenu(
                                     modifier = Modifier.weight(0.5f),
                                     onExcluirClick = {
@@ -157,46 +158,6 @@ fun HistoricoImcComponent(
                 registroParaDeletar = null
             }
         )
-    }
-}
-
-@Composable
-private fun getCorDoImc(imc: Double): Color {
-    return when {
-        imc < 18.5 -> Color(0xFF42A5F5)
-        imc < 25 -> Color(0xFF66BB6A)
-        imc < 30 -> Color(0xFFFFB300)
-        else -> Color(0xFFE53935)
-    }
-}
-
-@Composable
-private fun HistoricoImcChipItem(
-    imcValue: Double,
-    modifier: Modifier = Modifier
-) {
-    val statusColor = getCorDoImc(imcValue)
-    val imcText = String.format(Locale.getDefault(), "%.1f", imcValue)
-
-    Box(
-        modifier = modifier.padding(horizontal = 4.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Surface(
-            shape = RoundedCornerShape(8.dp),
-            color = statusColor.copy(alpha = 0.15f),
-            border = BorderStroke(1.dp, statusColor.copy(alpha = 0.5f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = imcText,
-                color = statusColor,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(vertical = 6.dp, horizontal = 8.dp),
-                textAlign = TextAlign.Center
-            )
-        }
     }
 }
 
@@ -321,12 +282,13 @@ private fun DeleteConfirmationDialog(
     )
 }
 
-@Composable
 private fun formatarData(dataApi: String): String {
     return try {
-        val partes = dataApi.split("-")
-        "${partes[2]}/${partes[1]}"
+        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val formatter = SimpleDateFormat("dd/MM/yy", Locale.getDefault())
+        val parsedDate = parser.parse(dataApi)
+        formatter.format(parsedDate ?: Date())
     } catch (_: Exception) {
-        dataApi
+        "N/A"
     }
 }
