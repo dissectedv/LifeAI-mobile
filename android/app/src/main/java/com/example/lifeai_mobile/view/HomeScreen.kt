@@ -29,10 +29,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
@@ -425,11 +427,34 @@ private fun DonutChart(
     }
 }
 
+
+
 @Composable
-private fun ImcHistoricoCard() {
-    val gradientOverlay = Brush.verticalGradient(
-        listOf(Color(0x334A90E2), Color.Transparent)
-    )
+fun ImcHistoricoCard() {
+    // contexto Android
+    val context = LocalContext.current
+
+    // SessionManager (DataStore) — criado uma vez e memorizado
+    val sessionManager = remember { com.example.lifeai_mobile.utils.SessionManager(context) }
+
+    // RetrofitInstance usando o SessionManager (sua classe RetrofitInstance fornece .api)
+    val retrofitInstance = remember { com.example.lifeai_mobile.model.RetrofitInstance(sessionManager) }
+
+    // AuthRepository instanciado com AuthApi (retrofitInstance.api) e sessionManager
+    val repository = remember { com.example.lifeai_mobile.repository.AuthRepository(retrofitInstance.api, sessionManager) }
+
+    // Factory do ViewModel
+    val factory = remember { com.example.lifeai_mobile.viewmodel.GraficoImcDesempenhoViewModelFactory(repository) }
+
+    // ViewModel usando a factory (agora o Compose não tenta chamar construtor vazio)
+    val viewModel: com.example.lifeai_mobile.viewmodel.GraficoImcDesempenhoViewModel =
+        viewModel(factory = factory)
+
+    // Estado do ViewModel
+    val state by viewModel.uiState.collectAsState()
+
+    val gradientOverlay = Brush.verticalGradient(listOf(Color(0x334A90E2), Color.Transparent))
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -441,10 +466,32 @@ private fun ImcHistoricoCard() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientOverlay),
-            contentAlignment = Alignment.Center
+                .background(gradientOverlay)
         ) {
-            Text("IMC Histórico", color = Color.White.copy(alpha = 0.7f))
+            when (state) {
+                is com.example.lifeai_mobile.viewmodel.GraficoUIState.Loading -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color.White)
+                    }
+                }
+
+                is com.example.lifeai_mobile.viewmodel.GraficoUIState.Error -> {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Erro ao carregar gráfico", color = Color.White.copy(alpha = 0.7f))
+                    }
+                }
+
+                is com.example.lifeai_mobile.viewmodel.GraficoUIState.Success -> {
+                    val sucesso = state as com.example.lifeai_mobile.viewmodel.GraficoUIState.Success
+
+                    // Chame o seu ImcLineChart (Vico) aqui — assegure que ImcLineChart está no mesmo package ou importado
+                    ImcLineChart(
+                        values = sucesso.valores,
+                        labels = sucesso.labels,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
         }
     }
 }
@@ -656,9 +703,8 @@ private fun ProximoCompromissoCard(
 
                 is CompromissoState.NenhumAgendado -> {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -680,16 +726,10 @@ private fun ProximoCompromissoCard(
 
                 is CompromissoState.TodosConcluidos -> {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = "Concluído",
-                            tint = corDestaque,
-                            modifier = Modifier.size(40.dp)
-                        )
+
                         Spacer(Modifier.height(12.dp))
                         Text(
                             "Tarefas concluídas!",

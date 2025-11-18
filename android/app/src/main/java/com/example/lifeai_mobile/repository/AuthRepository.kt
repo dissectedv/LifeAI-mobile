@@ -8,6 +8,7 @@ import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.ImcGraficoData
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
 import com.example.lifeai_mobile.model.ImcRegistro
@@ -132,5 +133,9 @@ class AuthRepository(
 
     suspend fun createComposicaoRecord(record: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro> {
         return api.createComposicaoRecord(record)
+    }
+
+    suspend fun getImcHistorico(): Response<List<ImcGraficoData>> {
+        return api.getImcHistorico()
     }
 }

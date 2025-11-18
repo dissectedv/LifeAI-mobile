@@ -10,6 +10,7 @@ activityCompose = "1.11.0"
 composeBom = "2024.09.00"
 benchmarkCommon = "1.4.1"
 material3 = "1.4.0"
+playServicesTfliteSupport = "16.4.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -28,6 +29,7 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-benchmark-common = { group = "androidx.benchmark", name = "benchmark-common", version.ref = "benchmarkCommon" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
+play-services-tflite-support = { group = "com.google.android.gms", name = "play-services-tflite-support", version.ref = "playServicesTfliteSupport" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
