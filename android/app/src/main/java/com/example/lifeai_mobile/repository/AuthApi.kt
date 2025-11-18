@@ -7,7 +7,6 @@ import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
-import com.example.lifeai_mobile.model.ImcGraficoData
 import com.example.lifeai_mobile.model.ImcRecordRequest
 import com.example.lifeai_mobile.model.ImcRecordResponse
 import com.example.lifeai_mobile.model.ImcRegistro
@@ -77,7 +76,4 @@ interface AuthApi {
 
     @POST("composicao-corporal/")
     suspend fun createComposicaoRecord(@Body request: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro>
-
-    @GET("imc/historico/")
-    suspend fun getImcHistorico(): Response<List<ImcGraficoData>>
 }

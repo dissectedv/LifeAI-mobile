@@ -29,12 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
@@ -45,6 +43,7 @@ import com.example.lifeai_mobile.viewmodel.CompromissoState
 import com.example.lifeai_mobile.viewmodel.ResumoState
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import java.util.*
+import com.example.lifeai_mobile.viewmodel.GraficoUIState
 
 @Composable
 fun HomeScreen(
@@ -84,55 +83,64 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            AnimatedVisibility(
-                visible = isVisible,
-                enter = fadeIn(animationSpec = tween(1000, delayMillis = 100)) +
-                        slideInVertically(initialOffsetY = { 50 })
-            ) {
-                ImcHistoricoCard()
-            }
+            when (val currentState = state) {
+                is ResumoState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    ChatGreetingCard(profile = null, navController = navController, isLoading = true)
+                }
 
-            AnimatedVisibility(
-                visible = isVisible,
-                enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) +
-                        slideInVertically(initialOffsetY = { 50 })
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    when (val currentState = state) {
-                        is ResumoState.Loading -> {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(180.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                            ChatGreetingCard(profile = null, navController = navController, isLoading = true)
+                is ResumoState.Error -> {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(180.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Erro ao carregar resumo: ${currentState.message}",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                textAlign = TextAlign.Center
+                            )
                         }
+                    }
+                }
 
-                        is ResumoState.Error -> {
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(180.dp),
-                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(16.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "Erro ao carregar resumo: ${currentState.message}",
-                                        color = MaterialTheme.colorScheme.onErrorContainer
-                                    )
-                                }
-                            }
-                        }
+                is ResumoState.Success -> {
+                    AnimatedVisibility(
+                        visible = isVisible,
+                        enter = fadeIn(animationSpec = tween(1000, delayMillis = 100)) +
+                                slideInVertically(initialOffsetY = { 50 })
+                    ) {
+                        ImcHistoricoCard(graficoState = currentState.graficoImcState)
+                    }
 
-                        is ResumoState.Success -> {
+                    AnimatedVisibility(
+                        visible = isVisible,
+                        enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) +
+                                slideInVertically(initialOffsetY = { 50 })
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                             ResumoImcCard(profile = currentState.profile)
                             ChatGreetingCard(
                                 profile = currentState.profile,
@@ -141,43 +149,35 @@ fun HomeScreen(
                             )
                         }
                     }
-                }
-            }
 
-            AnimatedVisibility(
-                visible = isVisible,
-                enter = fadeIn(animationSpec = tween(1000, delayMillis = 300)) +
-                        slideInVertically(initialOffsetY = { 50 })
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    val (profile, ultimoRegistro, compromissoState) = if (state is ResumoState.Success) {
-                        val successState = (state as ResumoState.Success)
-                        Triple(successState.profile, successState.ultimoRegistroComposicao, successState.compromissoState)
-                    } else {
-                        Triple(null, null, CompromissoState.NenhumAgendado)
+                    AnimatedVisibility(
+                        visible = isVisible,
+                        enter = fadeIn(animationSpec = tween(1000, delayMillis = 300)) +
+                                slideInVertically(initialOffsetY = { 50 })
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            ComposicaoCorporalCard(
+                                modifier = Modifier.weight(1f),
+                                profile = currentState.profile,
+                                ultimoRegistro = currentState.ultimoRegistroComposicao,
+                                onClick = {
+                                    mainNavController.navigate("composicao_corporal_screen")
+                                }
+                            )
+                            ProximoCompromissoCard(
+                                modifier = Modifier.weight(1f),
+                                state = currentState.compromissoState,
+                                onClick = {
+                                    navController.navigate("rotina_screen")
+                                }
+                            )
+                        }
                     }
-
-                    ComposicaoCorporalCard(
-                        modifier = Modifier.weight(1f),
-                        profile = profile,
-                        ultimoRegistro = ultimoRegistro,
-                        onClick = {
-                            mainNavController.navigate("composicao_corporal_screen")
-                        }
-                    )
-                    ProximoCompromissoCard(
-                        modifier = Modifier.weight(1f),
-                        state = compromissoState,
-                        onClick = {
-                            navController.navigate("rotina_screen")
-                        }
-                    )
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
         }
     }
@@ -427,34 +427,11 @@ private fun DonutChart(
     }
 }
 
-
-
 @Composable
-fun ImcHistoricoCard() {
-    // contexto Android
-    val context = LocalContext.current
-
-    // SessionManager (DataStore) — criado uma vez e memorizado
-    val sessionManager = remember { com.example.lifeai_mobile.utils.SessionManager(context) }
-
-    // RetrofitInstance usando o SessionManager (sua classe RetrofitInstance fornece .api)
-    val retrofitInstance = remember { com.example.lifeai_mobile.model.RetrofitInstance(sessionManager) }
-
-    // AuthRepository instanciado com AuthApi (retrofitInstance.api) e sessionManager
-    val repository = remember { com.example.lifeai_mobile.repository.AuthRepository(retrofitInstance.api, sessionManager) }
-
-    // Factory do ViewModel
-    val factory = remember { com.example.lifeai_mobile.viewmodel.GraficoImcDesempenhoViewModelFactory(repository) }
-
-    // ViewModel usando a factory (agora o Compose não tenta chamar construtor vazio)
-    val viewModel: com.example.lifeai_mobile.viewmodel.GraficoImcDesempenhoViewModel =
-        viewModel(factory = factory)
-
-    // Estado do ViewModel
-    val state by viewModel.uiState.collectAsState()
-
-    val gradientOverlay = Brush.verticalGradient(listOf(Color(0x334A90E2), Color.Transparent))
-
+private fun ImcHistoricoCard(graficoState: GraficoUIState) {
+    val gradientOverlay = Brush.verticalGradient(
+        listOf(Color(0x334A90E2), Color.Transparent)
+    )
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -466,28 +443,20 @@ fun ImcHistoricoCard() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(gradientOverlay)
+                .background(gradientOverlay),
+            contentAlignment = Alignment.Center
         ) {
-            when (state) {
-                is com.example.lifeai_mobile.viewmodel.GraficoUIState.Loading -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color.White)
-                    }
+            when (graficoState) {
+                is GraficoUIState.Loading -> {
+                    CircularProgressIndicator(color = Color.White)
                 }
-
-                is com.example.lifeai_mobile.viewmodel.GraficoUIState.Error -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Erro ao carregar gráfico", color = Color.White.copy(alpha = 0.7f))
-                    }
+                is GraficoUIState.Error -> {
+                    Text(graficoState.message, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
                 }
-
-                is com.example.lifeai_mobile.viewmodel.GraficoUIState.Success -> {
-                    val sucesso = state as com.example.lifeai_mobile.viewmodel.GraficoUIState.Success
-
-                    // Chame o seu ImcLineChart (Vico) aqui — assegure que ImcLineChart está no mesmo package ou importado
+                is GraficoUIState.Success -> {
                     ImcLineChart(
-                        values = sucesso.valores,
-                        labels = sucesso.labels,
+                        values = graficoState.valores,
+                        labels = graficoState.labels,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -528,7 +497,8 @@ private fun ComposicaoCorporalCard(
     val hasData = ultimoRegistro != null && profile != null && ultimoRegistro.gorduraPercentual > 0
 
     val (analise, corDestaque) = if (hasData) {
-        getAnaliseGordura(ultimoRegistro!!.gorduraPercentual, profile!!.sexo)
+        // 4. CORREÇÃO: Removidos `!!` desnecessários
+        getAnaliseGordura(ultimoRegistro.gorduraPercentual, profile.sexo)
     } else {
         null to Color(0xFF38BDF8)
     }
@@ -571,12 +541,14 @@ private fun ComposicaoCorporalCard(
 
                     Column {
                         Text(
-                            text = String.format(Locale.US, "%.1f%%", ultimoRegistro!!.gorduraPercentual),
+                            // 4. CORREÇÃO: Removido `!!`
+                            text = String.format(Locale.US, "%.1f%%", ultimoRegistro.gorduraPercentual),
                             color = corDestaque,
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
+                            // 4. CORREÇÃO: Removido `!!`
                             text = analise!!.uppercase(Locale.getDefault()),
                             color = corDestaque,
                             style = MaterialTheme.typography.labelMedium,
@@ -665,6 +637,7 @@ private fun ProximoCompromissoCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = "Rotina",
+                    // 2. CORREÇÃO: Erro de digitação 'corDestaLeste' -> 'corDestaque'
                     tint = corDestaque.copy(alpha = 0.8f),
                     modifier = Modifier.size(24.dp)
                 )
@@ -676,9 +649,10 @@ private fun ProximoCompromissoCard(
                     val dataHoje = LocalDate.now()
                     val dataCompromisso = LocalDate.parse(state.compromisso.data, formatter)
 
-                    val labelData = when {
-                        dataCompromisso == dataHoje -> "HOJE"
-                        dataCompromisso == dataHoje.plusDays(1) -> "AMANHÃ"
+                    // 5. CORREÇÃO: Sugestão do IDE para 'when'
+                    val labelData = when (dataCompromisso) {
+                        dataHoje -> "HOJE"
+                        dataHoje.plusDays(1) -> "AMANHÃ"
                         else -> DateTimeFormatter.ofPattern("dd/MM").format(dataCompromisso)
                     }
 
@@ -729,7 +703,7 @@ private fun ProximoCompromissoCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-
+                        // Ícone duplicado foi removido na correção anterior (correto)
                         Spacer(Modifier.height(12.dp))
                         Text(
                             "Tarefas concluídas!",

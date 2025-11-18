@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -14,6 +15,15 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+sealed class GraficoUIState {
+    object Loading : GraficoUIState()
+    data class Success(
+        val valores: List<Float>,
+        val labels: List<String>
+    ) : GraficoUIState()
+    data class Error(val message: String) : GraficoUIState()
+}
 
 sealed class CompromissoState {
     object NenhumAgendado : CompromissoState()
@@ -26,7 +36,8 @@ sealed class ResumoState {
     data class Success(
         val profile: ImcBaseProfile,
         val ultimoRegistroComposicao: ComposicaoCorporalRegistro?,
-        val compromissoState: CompromissoState
+        val compromissoState: CompromissoState,
+        val graficoImcState: GraficoUIState
     ) : ResumoState()
     data class Error(val message: String) : ResumoState()
 }
@@ -68,10 +79,12 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 val profileJob = async { repository.getImcBaseDashboard() }
                 val composicaoJob = async { repository.getHistoricoComposicao() }
                 val compromissosJob = async { repository.getCompromissos() }
+                val graficoImcJob = async { repository.getHistoricoImc() }
 
                 val profileResponse = profileJob.await()
                 val composicaoResponse = composicaoJob.await()
                 val compromissosResponse = compromissosJob.await()
+                val graficoImcResponse: List<ImcRegistro> = graficoImcJob.await()
 
                 if (!profileResponse.isSuccessful || profileResponse.body().isNullOrEmpty()) {
                     _state.value = ResumoState.Error("Perfil não encontrado.")
@@ -90,7 +103,27 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                     CompromissoState.NenhumAgendado
                 }
 
-                _state.value = ResumoState.Success(profile, ultimoRegistroComposicao, compromissoState)
+
+                val lista = graficoImcResponse
+                val graficoImcState: GraficoUIState = if (lista.isEmpty()) {
+                    GraficoUIState.Error("Nenhum histórico de IMC.")
+                } else {
+                    // --- CORREÇÃO AQUI ---
+                    // Usando os nomes corretos do seu model ImcRegistro
+                    val valores = lista.map { it.imcRes.toFloat() }
+                    val labels = lista.map {
+                        it.dataConsulta.split("-").lastOrNull() ?: ""
+                    }
+                    GraficoUIState.Success(valores, labels)
+                }
+
+                _state.value = ResumoState.Success(
+                    profile = profile,
+                    ultimoRegistroComposicao = ultimoRegistroComposicao,
+                    compromissoState = compromissoState,
+                    graficoImcState = graficoImcState
+                )
+
             } catch (e: Exception) {
                 _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
             }

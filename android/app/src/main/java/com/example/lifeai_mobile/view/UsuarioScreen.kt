@@ -54,7 +54,14 @@ fun UsuarioScreen(
             modifier = Modifier.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            UsuarioCard("Seja Premium!", Icons.Default.VerifiedUser, titleColor = Color(0xFFFFC107)) {}
+            UsuarioCard(
+                title = "Seja Premium!",
+                icon = Icons.Default.WorkspacePremium,
+                titleColor = Color(0xFFFFC107),
+                onClick = {
+                    mainNavController.navigate("premium")
+                }
+            )
             UsuarioCard("Configurações", Icons.Default.Settings) {}
             UsuarioCard("Avalie-nos", Icons.Default.StarRate) {}
             UsuarioCard("Sobre o App", Icons.Default.Info) {
@@ -71,6 +78,7 @@ fun UsuarioScreen(
         }
     }
 
+    // --- DIALOG DE LOGOUT (Sem alteração) ---
     if (showLogoutDialog) {
         Box(
             modifier = Modifier
@@ -109,19 +117,14 @@ fun UsuarioScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
-                            // --- MUDANÇA PRINCIPAL AQUI ---
                             onClick = {
                                 showLogoutDialog = false
-                                // 1. Chama o logout
                                 authViewModel.logout {
-                                    // 2. A navegação agora SÓ acontece
-                                    //    DEPOIS que o logout terminar
                                     mainNavController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }
                             },
-                            // --- FIM DA MUDANÇA ---
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(50.dp),
@@ -147,6 +150,7 @@ fun UsuarioScreen(
         }
     }
 
+    // --- DIALOG "SOBRE" (Sem alteração) ---
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
@@ -176,8 +180,11 @@ fun UsuarioScreen(
             }
         )
     }
+
+    // --- LÓGICA DO PREMIUM FOI REMOVIDA DAQUI ---
 }
 
+// --- UsuarioCard (Sem alteração, mas com OptIn) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UsuarioCard(

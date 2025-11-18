@@ -113,9 +113,11 @@ class ComposicaoCorporalViewModel(
                         _state.value = ComposicaoCorporalState.Empty
                     } else {
                         val ultimoRegistro = historico.first()
+                        val penultimoRegistro = historico.getOrNull(1)
+
                         _state.value = ComposicaoCorporalState.Success(
                             ultimoRegistro = ultimoRegistro,
-                            analise = gerarAnalise(ultimoRegistro),
+                            analise = gerarAnalise(ultimoRegistro, penultimoRegistro),
                             historico = historico
                         )
                     }
@@ -229,65 +231,115 @@ class ComposicaoCorporalViewModel(
         }
     }
 
-    private fun gerarAnalise(registro: ComposicaoCorporalRegistro): AnaliseComposicao {
+    private fun gerarAnalise(
+        registro: ComposicaoCorporalRegistro,
+        registroAnterior: ComposicaoCorporalRegistro?
+    ): AnaliseComposicao {
         val sexo = perfilUsuario?.sexo ?: "Masculino"
         return AnaliseComposicao(
-            analiseGordura = getAnaliseGorduraCorporal(registro.gorduraPercentual, sexo),
-            analiseMusculo = getAnaliseMusculo(registro.musculoPercentual, sexo),
-            analiseAgua = getAnaliseAgua(registro.aguaPercentual)
+            analiseGordura = getAnaliseGorduraCorporal(
+                registro.gorduraPercentual,
+                registroAnterior?.gorduraPercentual,
+                sexo
+            ),
+            analiseMusculo = getAnaliseMusculo(
+                registro.musculoPercentual,
+                registroAnterior?.musculoPercentual,
+                sexo
+            ),
+            analiseAgua = getAnaliseAgua(
+                registro.aguaPercentual,
+                registroAnterior?.aguaPercentual
+            )
         )
     }
 
-    private fun getAnaliseGorduraCorporal(gordura: Float, sexo: String): AnaliseItem {
-        if (gordura <= 0) return AnaliseItem("N/A", AnaliseStatus.BOM, "Não registrado")
+    private fun getAnaliseGorduraCorporal(gorduraAtual: Float, gorduraAnterior: Float?, sexo: String): AnaliseItem {
+        if (gorduraAtual <= 0) return AnaliseItem("N/A", AnaliseStatus.BOM, "Não registrado")
 
-        val (status, mensagem) = if (sexo == "Masculino") {
+        val (status, mensagemBase) = if (sexo == "Masculino") {
             when {
-                gordura < 8 -> AnaliseStatus.BAIXO to "Nível de gordura muito baixo. Essencial para saúde."
-                gordura <= 20 -> AnaliseStatus.OTIMO to "Excelente! Nível ideal para atletas."
-                gordura <= 25 -> AnaliseStatus.BOM to "Nível saudável e sustentável."
-                gordura <= 30 -> AnaliseStatus.ALERTA to "Nível acima do ideal. Fique atento."
+                gorduraAtual < 8 -> AnaliseStatus.BAIXO to "Nível de gordura muito baixo. Essencial para saúde."
+                gorduraAtual <= 20 -> AnaliseStatus.OTIMO to "Excelente! Nível ideal para atletas."
+                gorduraAtual <= 25 -> AnaliseStatus.BOM to "Nível saudável e sustentável."
+                gorduraAtual <= 30 -> AnaliseStatus.ALERTA to "Nível acima do ideal. Fique atento."
                 else -> AnaliseStatus.ALERTA to "Nível elevado. Risco aumentado para saúde."
             }
         } else {
             when {
-                gordura < 15 -> AnaliseStatus.BAIXO to "Nível de gordura muito baixo. Essencial para saúde."
-                gordura <= 25 -> AnaliseStatus.OTIMO to "Excelente! Nível ideal."
-                gordura <= 32 -> AnaliseStatus.BOM to "Nível saudável e sustentável."
-                gordura <= 38 -> AnaliseStatus.ALERTA to "Nível acima do ideal. Fique atenta."
+                gorduraAtual < 15 -> AnaliseStatus.BAIXO to "Nível de gordura muito baixo. Essencial para saúde."
+                gorduraAtual <= 25 -> AnaliseStatus.OTIMO to "Excelente! Nível ideal."
+                gorduraAtual <= 32 -> AnaliseStatus.BOM to "Nível saudável e sustentável."
+                gorduraAtual <= 38 -> AnaliseStatus.ALERTA to "Nível acima do ideal. Fique atenta."
                 else -> AnaliseStatus.ALERTA to "Nível elevado. Risco aumentado para saúde."
             }
         }
-        return AnaliseItem(String.format("%.1f%%", gordura), status, mensagem)
+
+        val mensagemFinal = if (gorduraAnterior != null && gorduraAnterior > 0) {
+            val diferenca = gorduraAtual - gorduraAnterior
+            when {
+                diferenca < -0.1 -> "$mensagemBase Você reduziu ${String.format(Locale.US, "%.1f", -diferenca)}%."
+                diferenca > 0.1 -> "$mensagemBase Você aumentou ${String.format(Locale.US, "%.1f", diferenca)}%."
+                else -> "$mensagemBase Você se manteve estável."
+            }
+        } else {
+            mensagemBase
+        }
+
+        return AnaliseItem(String.format(Locale.US, "%.1f%%", gorduraAtual), status, mensagemFinal)
     }
 
-    private fun getAnaliseMusculo(musculo: Float, sexo: String): AnaliseItem {
-        if (musculo <= 0) return AnaliseItem("N/A", AnaliseStatus.BOM, "Não registrado")
+    private fun getAnaliseMusculo(musculoAtual: Float, musculoAnterior: Float?, sexo: String): AnaliseItem {
+        if (musculoAtual <= 0) return AnaliseItem("N/A", AnaliseStatus.BOM, "Não registrado")
 
-        val (status, mensagem) = if (sexo == "Masculino") {
+        val (status, mensagemBase) = if (sexo == "Masculino") {
             when {
-                musculo < 38 -> AnaliseStatus.BAIXO to "Abaixo da média. Foque em treinos de força."
-                musculo <= 44 -> AnaliseStatus.BOM to "Dentro da média saudável."
+                musculoAtual < 38 -> AnaliseStatus.BAIXO to "Abaixo da média. Foque em treinos de força."
+                musculoAtual <= 44 -> AnaliseStatus.BOM to "Dentro da média saudável."
                 else -> AnaliseStatus.OTIMO to "Excelente! Nível de massa muscular acima da média."
             }
         } else {
             when {
-                musculo < 28 -> AnaliseStatus.BAIXO to "Abaixo da média. Foque em treinos de força."
-                musculo <= 34 -> AnaliseStatus.BOM to "Dentro da média saudável."
+                musculoAtual < 28 -> AnaliseStatus.BAIXO to "Abaixo da média. Foque em treinos de força."
+                musculoAtual <= 34 -> AnaliseStatus.BOM to "Dentro da média saudável."
                 else -> AnaliseStatus.OTIMO to "Excelente! Nível de massa muscular acima da média."
             }
         }
-        return AnaliseItem(String.format("%.1f%%", musculo), status, mensagem)
+
+        val mensagemFinal = if (musculoAnterior != null && musculoAnterior > 0) {
+            val diferenca = musculoAtual - musculoAnterior
+            when {
+                diferenca > 0.1 -> "$mensagemBase Você ganhou ${String.format(Locale.US, "%.1f", diferenca)}%!"
+                diferenca < -0.1 -> "$mensagemBase Você perdeu ${String.format(Locale.US, "%.1f", -diferenca)}%."
+                else -> "$mensagemBase Você se manteve estável."
+            }
+        } else {
+            mensagemBase
+        }
+
+        return AnaliseItem(String.format(Locale.US, "%.1f%%", musculoAtual), status, mensagemFinal)
     }
 
-    private fun getAnaliseAgua(agua: Float): AnaliseItem {
-        if (agua <= 0) return AnaliseItem("N/A", AnaliseStatus.BOM, "Não registrado")
+    private fun getAnaliseAgua(aguaAtual: Float, aguaAnterior: Float?): AnaliseItem {
+        if (aguaAtual <= 0) return AnaliseItem("N/A", AnaliseStatus.BOM, "Não registrado")
 
-        val (status, mensagem) = when {
-            agua < 45 -> AnaliseStatus.BAIXO to "Nível de hidratação baixo. Beba mais água."
-            agua <= 65 -> AnaliseStatus.BOM to "Nível de hidratação ideal."
+        val (status, mensagemBase) = when {
+            aguaAtual < 45 -> AnaliseStatus.BAIXO to "Nível de hidratação baixo. Beba mais água."
+            aguaAtual <= 65 -> AnaliseStatus.BOM to "Nível de hidratação ideal."
             else -> AnaliseStatus.OTIMO to "Nível de hidratação excelente."
         }
-        return AnaliseItem(String.format("%.1f%%", agua), status, mensagem)
+
+        val mensagemFinal = if (aguaAnterior != null && aguaAnterior > 0) {
+            val diferenca = aguaAtual - aguaAnterior
+            when {
+                diferenca > 0.1 -> "$mensagemBase Seu nível subiu ${String.format(Locale.US, "%.1f", diferenca)}%."
+                diferenca < -0.1 -> "$mensagemBase Seu nível caiu ${String.format(Locale.US, "%.1f", -diferenca)}%."
+                else -> "$mensagemBase Você se manteve estável."
+            }
+        } else {
+            mensagemBase
+        }
+
+        return AnaliseItem(String.format(Locale.US, "%.1f%%", aguaAtual), status, mensagemFinal)
     }
 }

@@ -189,6 +189,10 @@ class MainActivity : ComponentActivity() {
                             val imcValue = entry.arguments?.getFloat("imc") ?: 0f
                             AtividadeFisicaScreen(navController, imcValue)
                         }
+
+                        composable("premium") {
+                            PremiumScreen(navController = navController)
+                        }
                     }
                 }
             }
