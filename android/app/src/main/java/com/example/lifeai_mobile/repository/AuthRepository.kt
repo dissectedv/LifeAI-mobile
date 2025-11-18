@@ -103,7 +103,7 @@ class AuthRepository(
         return api.postDietaRequest(request)
     }
 
-    suspend fun getHistoricoImc(): List<ImcRegistro> {
+    suspend fun getHistoricoImc(): Response<List<ImcRegistro>> {
         return api.getHistoricoImc()
     }
 

@@ -84,7 +84,7 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 val profileResponse = profileJob.await()
                 val composicaoResponse = composicaoJob.await()
                 val compromissosResponse = compromissosJob.await()
-                val graficoImcResponse: List<ImcRegistro> = graficoImcJob.await()
+                val graficoImcResponse = graficoImcJob.await()
 
                 if (!profileResponse.isSuccessful || profileResponse.body().isNullOrEmpty()) {
                     _state.value = ResumoState.Error("Perfil não encontrado.")
@@ -103,18 +103,21 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                     CompromissoState.NenhumAgendado
                 }
 
-
-                val lista = graficoImcResponse
-                val graficoImcState: GraficoUIState = if (lista.isEmpty()) {
-                    GraficoUIState.Error("Nenhum histórico de IMC.")
-                } else {
-                    // --- CORREÇÃO AQUI ---
-                    // Usando os nomes corretos do seu model ImcRegistro
-                    val valores = lista.map { it.imcRes.toFloat() }
-                    val labels = lista.map {
-                        it.dataConsulta.split("-").lastOrNull() ?: ""
+                val graficoImcState: GraficoUIState = if (graficoImcResponse.isSuccessful) {
+                    val lista = graficoImcResponse.body() ?: emptyList()
+                    if (lista.isEmpty()) {
+                        GraficoUIState.Error("Nenhum histórico de IMC.")
+                    } else {
+                        val listaInvertida = lista.reversed()
+                        val valores = listaInvertida.map { it.imcRes.toFloat() }
+                        val labels = listaInvertida.map {
+                            val partes = it.dataConsulta.split("-")
+                            if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""
+                        }
+                        GraficoUIState.Success(valores, labels)
                     }
-                    GraficoUIState.Success(valores, labels)
+                } else {
+                    GraficoUIState.Error("Erro HTTP ${graficoImcResponse.code()}")
                 }
 
                 _state.value = ResumoState.Success(

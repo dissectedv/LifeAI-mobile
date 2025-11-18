@@ -43,6 +43,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import com.example.lifeai_mobile.viewmodel.ImcHistoryState
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -62,10 +63,15 @@ fun ImcCalculatorScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
+    // --- CORREÇÃO FINAL AQUI ---
+    // A lógica de LEITURA deve ser consistente com a lógica de ESCRITA (DatePicker).
+    // Se o DatePicker salva em UTC, a formatação deve LER em UTC.
     val formattedDate by remember {
         derivedStateOf {
             val millis = viewModel.dataConsulta.time
-            val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+            val localDate = Instant.ofEpochMilli(millis)
+                .atZone(ZoneId.of("UTC")) // <-- CORRIGIDO PARA UTC
+                .toLocalDate()
             localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         }
     }
@@ -254,15 +260,37 @@ fun ImcCalculatorScreen(
         }
     }
 
+    // Lógica do DatePicker (consistente com UTC, igual ao RotinaScreen)
     if (showDatePicker) {
+        val todayMillisUtc = remember {
+            LocalDate.now()
+                .atStartOfDay(ZoneId.of("UTC"))
+                .toInstant()
+                .toEpochMilli()
+        }
+
+        val selectableDates = remember {
+            object : SelectableDates {
+                override fun isSelectableDate(millis: Long): Boolean {
+                    return millis <= todayMillisUtc
+                }
+            }
+        }
+
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = viewModel.dataConsulta.time
+            initialSelectedDateMillis = viewModel.dataConsulta.time,
+            selectableDates = selectableDates
         )
 
         LaunchedEffect(datePickerState.selectedDateMillis) {
             datePickerState.selectedDateMillis?.let { millis ->
-                val localDate = Instant.ofEpochMilli(millis).atZone(ZoneId.of("UTC")).toLocalDate()
-                val date = Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant())
+                val localDate = Instant.ofEpochMilli(millis)
+                    .atZone(ZoneId.of("UTC"))
+                    .toLocalDate()
+
+                val date = Date.from(
+                    localDate.atStartOfDay(ZoneId.of("UTC")).toInstant()
+                )
                 viewModel.onDataChange(date)
             }
         }
@@ -293,7 +321,14 @@ fun ImcCalculatorScreen(
                 headlineContentColor = Color.White,
                 weekdayContentColor = Color.White.copy(alpha = 0.7f),
                 yearContentColor = Color.White,
-                selectedYearContentColor = Color(0xFF4A90E2)
+                selectedYearContentColor = Color(0xFF4A90E2),
+                currentYearContentColor = Color.White,
+                selectedYearContainerColor = Color(0xFF4A90E2),
+                dayContentColor = Color.White,
+                selectedDayContainerColor = Color(0xFF4A90E2),
+                selectedDayContentColor = Color.White,
+                todayDateBorderColor = Color(0xFF4A90E2),
+                todayContentColor = Color(0xFF4A90E2)
             )
         ) {
             DatePicker(state = datePickerState)
@@ -414,7 +449,7 @@ private fun ImcEntrySheet(
                     modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                 )
                 OutlinedTextField(
-                    value = formattedDate,
+                    value = formattedDate, // Esta variável agora lê consistentemente em UTC
                     onValueChange = {},
                     readOnly = true,
                     modifier = Modifier

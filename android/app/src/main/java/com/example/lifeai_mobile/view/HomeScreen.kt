@@ -1,8 +1,8 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.animation.animateContentSize
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import androidx.compose.ui.draw.clip
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CheckCircle
@@ -28,7 +29,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
-import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.viewmodel.CompromissoState
@@ -132,7 +131,13 @@ fun HomeScreen(
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 100)) +
                                 slideInVertically(initialOffsetY = { 50 })
                     ) {
-                        ImcHistoricoCard(graficoState = currentState.graficoImcState)
+                        ImcHistoricoCard(
+                            graficoState = currentState.graficoImcState,
+                            profile = currentState.profile,
+                            onClick = {
+                                mainNavController.navigate("imc_calculator")
+                            }
+                        )
                     }
 
                     AnimatedVisibility(
@@ -427,41 +432,134 @@ private fun DonutChart(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ImcHistoricoCard(graficoState: GraficoUIState) {
+private fun ImcHistoricoCard(
+    graficoState: GraficoUIState,
+    profile: ImcBaseProfile?,
+    onClick: () -> Unit
+) {
     val gradientOverlay = Brush.verticalGradient(
         listOf(Color(0x334A90E2), Color.Transparent)
     )
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(220.dp),
+            .animateContentSize(animationSpec = tween(400)),
+        onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
-        Box(
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(gradientOverlay),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .background(gradientOverlay)
         ) {
             when (graficoState) {
                 is GraficoUIState.Loading -> {
-                    CircularProgressIndicator(color = Color.White)
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(220.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(color = Color.White)
+                    }
                 }
                 is GraficoUIState.Error -> {
-                    Text(graficoState.message, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
+                    EmptyChartState(
+                        message = "Registre seu IMC para ver seu progresso aqui."
+                    )
                 }
                 is GraficoUIState.Success -> {
-                    ImcLineChart(
-                        values = graficoState.valores,
-                        labels = graficoState.labels,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (graficoState.valores.size < 3) {
+                        EmptyChartState(
+                            message = "Registre mais ${3 - graficoState.valores.size} vez(es) para ver o gráfico."
+                        )
+                    } else {
+                        val variacao = graficoState.valores.last() - graficoState.valores.first()
+                        val corVariacao = if (variacao > 0) Color(0xFFFF5252) else Color(0xFF00C853)
+                        val simbolo = if (variacao > 0) "+" else ""
+
+                        val corStatusImc = when {
+                            (profile?.imcResultado ?: 0.0) < 18.5 -> Color(0xFF4A90E2)
+                            (profile?.imcResultado ?: 0.0) <= 24.9 -> Color(0xFF00C853)
+                            (profile?.imcResultado ?: 0.0) <= 29.9 -> Color(0xFFFDD835)
+                            else -> Color(0xFFFF5252)
+                        }
+
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                                .padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(
+                                    text = "Evolução do IMC",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Variação: $simbolo${String.format(Locale.US, "%.1f", variacao)}",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = corVariacao
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            ImcLineChart(
+                                values = graficoState.valores,
+                                labels = graficoState.labels,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun EmptyChartState(
+    title: String = "Evolução do IMC",
+    message: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ShowChart,
+            contentDescription = "Gráfico",
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
     }
 }
 
@@ -497,7 +595,6 @@ private fun ComposicaoCorporalCard(
     val hasData = ultimoRegistro != null && profile != null && ultimoRegistro.gorduraPercentual > 0
 
     val (analise, corDestaque) = if (hasData) {
-        // 4. CORREÇÃO: Removidos `!!` desnecessários
         getAnaliseGordura(ultimoRegistro.gorduraPercentual, profile.sexo)
     } else {
         null to Color(0xFF38BDF8)
@@ -541,14 +638,12 @@ private fun ComposicaoCorporalCard(
 
                     Column {
                         Text(
-                            // 4. CORREÇÃO: Removido `!!`
                             text = String.format(Locale.US, "%.1f%%", ultimoRegistro.gorduraPercentual),
                             color = corDestaque,
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            // 4. CORREÇÃO: Removido `!!`
                             text = analise!!.uppercase(Locale.getDefault()),
                             color = corDestaque,
                             style = MaterialTheme.typography.labelMedium,
@@ -637,7 +732,6 @@ private fun ProximoCompromissoCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = "Rotina",
-                    // 2. CORREÇÃO: Erro de digitação 'corDestaLeste' -> 'corDestaque'
                     tint = corDestaque.copy(alpha = 0.8f),
                     modifier = Modifier.size(24.dp)
                 )
@@ -649,7 +743,6 @@ private fun ProximoCompromissoCard(
                     val dataHoje = LocalDate.now()
                     val dataCompromisso = LocalDate.parse(state.compromisso.data, formatter)
 
-                    // 5. CORREÇÃO: Sugestão do IDE para 'when'
                     val labelData = when (dataCompromisso) {
                         dataHoje -> "HOJE"
                         dataHoje.plusDays(1) -> "AMANHÃ"
@@ -703,7 +796,6 @@ private fun ProximoCompromissoCard(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Ícone duplicado foi removido na correção anterior (correto)
                         Spacer(Modifier.height(12.dp))
                         Text(
                             "Tarefas concluídas!",

@@ -33,21 +33,31 @@ class HistoricoImcViewModel(
         viewModelScope.launch {
             _state.value = ImcHistoryState.Loading
             try {
-                val resposta = repository.getHistoricoImc()
-                _state.value = ImcHistoryState.Success(resposta)
+                val response = repository.getHistoricoImc()
+                if (response.isSuccessful) {
+                    _state.value = ImcHistoryState.Success(response.body() ?: emptyList())
+                } else {
+                    _state.value = ImcHistoryState.Error("Falha ao buscar histórico: ${response.code()}")
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 _state.value = ImcHistoryState.Error(e.message ?: "Falha ao buscar histórico")
             }
         }
     }
+
     fun deletarRegistro(id: Int) {
         viewModelScope.launch {
             _isDeleting.value = true
             try {
                 repository.deleteImcRegistro(id)
-                val novaLista = repository.getHistoricoImc()
-                _state.value = ImcHistoryState.Success(novaLista)
+
+                val response = repository.getHistoricoImc()
+                if (response.isSuccessful) {
+                    _state.value = ImcHistoryState.Success(response.body() ?: emptyList())
+                } else {
+                    _state.value = ImcHistoryState.Error("Falha ao atualizar lista: ${response.code()}")
+                }
 
             } catch (e: Exception) {
                 e.printStackTrace()

@@ -48,7 +48,7 @@ interface AuthApi {
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
 
     @GET("imc/registrosConsultas/")
-    suspend fun getHistoricoImc(): List<ImcRegistro>
+    suspend fun getHistoricoImc(): Response<List<ImcRegistro>>
 
     @DELETE("imc/{id}/")
     suspend fun deleteImcRegistro(@Path("id") id: Int): Response<Unit>

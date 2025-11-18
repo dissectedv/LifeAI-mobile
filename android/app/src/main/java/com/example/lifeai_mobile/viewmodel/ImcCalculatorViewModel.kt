@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.*
 
 sealed class UiEvent {
@@ -26,7 +28,15 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     var sexo by mutableStateOf("")
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
-    var dataConsulta by mutableStateOf(Date())
+
+    // --- CORREÇÃO 1: Função helper para consistência ---
+    private fun getTodayAtUtcStart(): Date {
+        val instant = LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant()
+        return Date.from(instant)
+    }
+
+    // --- CORREÇÃO 2: Inicializar com o início do dia em UTC ---
+    var dataConsulta by mutableStateOf(getTodayAtUtcStart())
 
     var isLoading by mutableStateOf(false)
     var isHeightFieldLocked by mutableStateOf(true)
@@ -65,9 +75,10 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     fun onPesoChange(newValue: String) { peso = newValue }
     fun onAlturaChange(newValue: String) { altura = newValue }
 
+    // --- CORREÇÃO 3: Remover a lógica de ajuste de timezone ---
+    // A View já está enviando a data correta baseada em UTC.
     fun onDataChange(newDate: Date) {
-        val adjustedDate = Date(newDate.time + TimeZone.getDefault().getOffset(newDate.time))
-        dataConsulta = adjustedDate
+        dataConsulta = newDate
     }
 
     fun onUnlockHeightField() {
@@ -77,7 +88,8 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     private fun resetFormState() {
         peso = ""
         isHeightFieldLocked = true
-        dataConsulta = Date()
+        // --- CORREÇÃO 4: Usar a mesma inicialização UTC ---
+        dataConsulta = getTodayAtUtcStart()
     }
 
     fun calculateAndRegister() {
@@ -106,7 +118,10 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 return@launch
             }
 
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            // Define o formatter para usar UTC, garantindo que "yyyy-MM-dd" seja do dia correto
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                timeZone = TimeZone.getTimeZone("UTC")
+            }
             val dataFormatada = dateFormat.format(dataConsulta)
 
             val request = ImcRecordRequest(

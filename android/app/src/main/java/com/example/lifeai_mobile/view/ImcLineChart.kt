@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-
 import com.patrykandpatrick.vico.compose.chart.Chart
 import com.patrykandpatrick.vico.compose.chart.line.lineChart
 import com.patrykandpatrick.vico.compose.axis.horizontal.rememberBottomAxis
@@ -37,15 +36,12 @@ fun ImcLineChart(
     val modelProducer = ChartEntryModelProducer(entries)
 
     Chart(
-        chart = lineChart(
-            // se quiser customizar a linha: use lineSpec na versão 1.14 via parâmetro lines
-            // aqui deixamos a configuração padrão (usa tema)
-        ),
+        chart = lineChart(),
         chartModelProducer = modelProducer,
         modifier = modifier.padding(8.dp),
-        startAxis = rememberStartAxis(), // eixo Y
+        startAxis = rememberStartAxis(),
         bottomAxis = rememberBottomAxis(
             valueFormatter = { x, _ -> labels.getOrNull(x.toInt()) ?: "" }
-        ) // eixo X com rótulos das datas
+        )
     )
 }
