@@ -168,7 +168,7 @@ fun UsuarioScreen(
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Versão 0.2.0 Alpha", color = Color.White.copy(alpha = 0.8f))
+                    Text("Versão 0.4.0 Alpha", color = Color.White.copy(alpha = 0.8f))
                     Text(
                         "LifeAI é um projeto focado em ajudar a monitorar sua saúde e bem-estar.",
                         color = Color.White.copy(alpha = 0.8f)

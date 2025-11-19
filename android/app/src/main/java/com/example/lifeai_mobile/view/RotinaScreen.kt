@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.view
 
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
@@ -29,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.viewmodel.RotinaUIState
@@ -127,6 +129,7 @@ private fun RotinaContent(
     val todayStr = LocalDate.now().toString()
     val tomorrowStr = LocalDate.now().plusDays(1).toString()
 
+    val overdueTasks = compromissos.filter { it.data < todayStr && !it.concluido }
     val todayTasks = compromissos.filter { it.data == todayStr }
     val tomorrowTasks = compromissos.filter { it.data == tomorrowStr }
     val futureTasks = compromissos.filter { it.data > tomorrowStr }
@@ -150,14 +153,33 @@ private fun RotinaContent(
             }
         }
 
+        if (overdueTasks.isNotEmpty()) {
+            item {
+                Text(
+                    text = "Pendentes",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color(0xFFFF5252),
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            val sortedOverdue = overdueTasks.sortedBy { it.data }
+            items(sortedOverdue, key = { it.id!! }) { task ->
+                CompromissoItemCard(
+                    compromisso = task,
+                    isOverdue = true,
+                    onCheckClick = { onToggleConcluido(task) },
+                    onDelete = { onDelete(task) }
+                )
+            }
+        }
+
         if (todayTasks.isNotEmpty()) {
             item { SectionHeader("Hoje") }
-
             val sortedToday = todayTasks.sortedWith(
                 compareBy<Compromisso> { it.concluido }
                     .thenBy { it.hora_inicio }
             )
-
             items(sortedToday, key = { it.id!! }) { task ->
                 CompromissoItemCard(
                     compromisso = task,
@@ -197,6 +219,7 @@ private fun RotinaContent(
         item { Spacer(Modifier.height(60.dp)) }
     }
 }
+
 @Composable
 private fun DailyProgressHeader(completed: Int, total: Int, progress: Float) {
     val animatedProgress by animateFloatAsState(
@@ -269,6 +292,7 @@ private fun SectionHeader(title: String) {
 @Composable
 private fun CompromissoItemCard(
     compromisso: Compromisso,
+    isOverdue: Boolean = false,
     onCheckClick: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -287,6 +311,7 @@ private fun CompromissoItemCard(
 
     val stripColor = when {
         isCompleted -> Color.Gray
+        isOverdue -> Color(0xFFFF5252)
         horaInicio.hour < 12 -> Color(0xFFFFD54F)
         horaInicio.hour < 18 -> Color(0xFFFF8A65)
         else -> Color(0xFF9575CD)
@@ -298,7 +323,8 @@ private fun CompromissoItemCard(
             .alpha(alpha),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 4.dp),
+        border = if (isCompleted) BorderStroke(1.dp, Color.White.copy(alpha = 0.1f)) else null
     ) {
         Row(
             modifier = Modifier.height(IntrinsicSize.Min)
@@ -355,8 +381,17 @@ private fun CompromissoItemCard(
                         text = "${compromisso.hora_inicio.take(5)} - ${compromisso.hora_fim.take(5)}$dateLabel",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isCompleted) textColor else stripColor
+                        color = if (isCompleted) textColor else if (isOverdue) Color(0xFFFF5252) else stripColor
                     )
+
+                    if (isOverdue && !isCompleted) {
+                        Text(
+                            text = "Pendente",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color(0xFFFF5252),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
 
                 Spacer(Modifier.width(8.dp))

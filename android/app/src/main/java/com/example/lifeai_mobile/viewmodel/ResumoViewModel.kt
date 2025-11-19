@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ImcBaseProfile
-import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -27,13 +26,16 @@ sealed class GraficoUIState {
 
 sealed class CompromissoState {
     object NenhumAgendado : CompromissoState()
+
     data class TodosConcluidos(
         val total: Int
     ) : CompromissoState()
+
     data class Proximo(
         val compromisso: Compromisso,
         val total: Int,
-        val concluidas: Int
+        val concluidas: Int,
+        val isAtrasado: Boolean
     ) : CompromissoState()
 }
 
@@ -71,6 +73,17 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val totalHoje = tarefasHoje.size
         val concluidasHoje = tarefasHoje.count { it.concluido }
 
+        val atrasados = compromissos.filter { it.data < hojeStr && !it.concluido }.sortedBy { it.data }
+
+        if (atrasados.isNotEmpty()) {
+            return CompromissoState.Proximo(
+                compromisso = atrasados.first(),
+                total = totalHoje,
+                concluidas = concluidasHoje,
+                isAtrasado = true
+            )
+        }
+
         if (totalHoje == 0) return CompromissoState.NenhumAgendado
 
         val proximoHoje = tarefasHoje
@@ -80,19 +93,23 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val pendenteHoje = proximoHoje ?: tarefasHoje.filter { !it.concluido }.minByOrNull { it.hora_inicio }
 
         return if (pendenteHoje != null) {
-            CompromissoState.Proximo(pendenteHoje, totalHoje, concluidasHoje)
+            CompromissoState.Proximo(
+                compromisso = pendenteHoje,
+                total = totalHoje,
+                concluidas = concluidasHoje,
+                isAtrasado = false
+            )
         } else {
-            if (concluidasHoje == totalHoje) {
-                CompromissoState.TodosConcluidos(totalHoje)
-            } else {
-                CompromissoState.TodosConcluidos(totalHoje)
-            }
+            CompromissoState.TodosConcluidos(totalHoje)
         }
     }
 
     private fun fetchResumoData() {
         viewModelScope.launch(Dispatchers.IO) {
-            _state.value = ResumoState.Loading
+            if (_state.value !is ResumoState.Success) {
+                _state.value = ResumoState.Loading
+            }
+
             try {
                 val profileJob = async { repository.getImcBaseDashboard() }
                 val composicaoJob = async { repository.getHistoricoComposicao() }
@@ -105,7 +122,9 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 val graficoImcResponse = graficoImcJob.await()
 
                 if (!profileResponse.isSuccessful || profileResponse.body().isNullOrEmpty()) {
-                    _state.value = ResumoState.Error("Perfil não encontrado.")
+                    if (_state.value !is ResumoState.Success) {
+                        _state.value = ResumoState.Error("Perfil não encontrado.")
+                    }
                     return@launch
                 }
 
@@ -153,7 +172,9 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 )
 
             } catch (e: Exception) {
-                _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
+                if (_state.value !is ResumoState.Success) {
+                    _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
+                }
             }
         }
     }

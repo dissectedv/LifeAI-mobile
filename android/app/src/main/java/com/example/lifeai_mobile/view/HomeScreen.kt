@@ -1,9 +1,7 @@
 package com.example.lifeai_mobile.view
 
-import androidx.compose.animation.animateContentSize
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
@@ -17,14 +15,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -38,15 +41,13 @@ import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
+import com.example.lifeai_mobile.utils.HealthUiUtils
 import com.example.lifeai_mobile.viewmodel.CompromissoState
+import com.example.lifeai_mobile.viewmodel.GraficoUIState
 import com.example.lifeai_mobile.viewmodel.ResumoState
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import java.util.*
-import com.example.lifeai_mobile.viewmodel.GraficoUIState
-import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.TrendingDown
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.sp
+import kotlin.math.abs
 
 @Composable
 fun HomeScreen(
@@ -192,15 +193,6 @@ fun HomeScreen(
     }
 }
 
-private fun getGreeting(): String {
-    val calendar = Calendar.getInstance()
-    return when (calendar.get(Calendar.HOUR_OF_DAY)) {
-        in 0..11 -> "Bom dia"
-        in 12..17 -> "Boa tarde"
-        else -> "Boa noite"
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatGreetingCard(
@@ -208,7 +200,7 @@ private fun ChatGreetingCard(
     navController: NavHostController,
     isLoading: Boolean
 ) {
-    val greeting = getGreeting()
+    val greeting = HealthUiUtils.getSaudacao()
     val userName = profile?.nome
         ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
         ?: "Usuário"
@@ -284,18 +276,14 @@ private fun ChatGreetingCard(
     }
 }
 
-
 @Composable
 private fun ResumoImcCard(profile: ImcBaseProfile) {
     val imc = profile.imcResultado.toFloat()
-    val imcProgress = calculateIdealRangeProgress(imc)
 
-    val progressActiveColor = when {
-        imc < 18.5f -> Color(0xFF4A90E2)
-        imc <= 24.9f -> Color(0xFF00C853)
-        imc <= 29.9f -> Color(0xFFFDD835)
-        else -> Color(0xFFFF5252)
-    }
+    val imcProgress = HealthUiUtils.calculateImcProgress(imc)
+    val progressActiveColor = HealthUiUtils.getImcColor(imc)
+    val classificacaoTexto = HealthUiUtils.getImcClassificacao(imc)
+    val motivational = HealthUiUtils.getFraseMotivacional(imc)
 
     val progressInactiveColor = Color(0xFF2E4A5C)
     val gradientOverlay = Brush.verticalGradient(
@@ -305,8 +293,7 @@ private fun ResumoImcCard(profile: ImcBaseProfile) {
     val textMutedColor = Color.White.copy(alpha = 0.7f)
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
@@ -340,7 +327,7 @@ private fun ResumoImcCard(profile: ImcBaseProfile) {
                         modifier = Modifier.align(Alignment.Start)
                     ) {
                         Text(
-                            text = profile.classificacao?.uppercase(Locale.getDefault()) ?: "N/A",
+                            text = classificacaoTexto,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = progressActiveColor,
@@ -349,7 +336,7 @@ private fun ResumoImcCard(profile: ImcBaseProfile) {
                     }
 
                     Text(
-                        text = motivationalPhrase(imc),
+                        text = motivational,
                         style = MaterialTheme.typography.bodyMedium,
                         color = textMutedColor
                     )
@@ -382,28 +369,6 @@ private fun ResumoImcCard(profile: ImcBaseProfile) {
             }
         }
     }
-}
-
-private fun motivationalPhrase(imc: Float): String {
-    return when {
-        imc < 18.5f -> "Vamos fortalecer sua rotina e alcançar o equilíbrio!"
-        imc <= 24.9f -> "Excelente! Continue cuidando da sua saúde."
-        imc <= 29.9f -> "Você está quase lá! Continue progredindo."
-        else -> "Vamos te ajudar a começar essa mudança!"
-    }
-}
-
-private fun calculateIdealRangeProgress(imc: Float): Float {
-    val minNormalImc = 18.5f
-    val maxNormalImc = 24.9f
-
-    if (imc < minNormalImc) {
-        return 0.15f
-    }
-
-    val range = maxNormalImc - minNormalImc
-    val progressInBuffer = imc - minNormalImc
-    return (progressInBuffer / range).coerceIn(0f, 1f)
 }
 
 @Composable
@@ -482,14 +447,10 @@ private fun ImcHistoricoCard(
                             message = "Registre mais ${3 - graficoState.valores.size} vez(es) para ver o gráfico."
                         )
                     } else {
-                        val primeira = graficoState.valores.first()
-                        val ultima = graficoState.valores.last()
-                        val diff = ultima - primeira
-
-                        val isSubindo = diff > 0
-                        val corIndicador = if (isSubindo) Color(0xFFFF5252) else Color(0xFF00C853)
-                        val icone = if (isSubindo) Icons.Default.TrendingUp else Icons.Default.TrendingDown
-                        val textoDiff = String.format(Locale.US, "%.1f", kotlin.math.abs(diff))
+                        val variacao = graficoState.valores.last() - graficoState.valores.first()
+                        val isMelhoria = variacao < 0
+                        val corVariacao = if (isMelhoria) Color(0xFF00C853) else Color(0xFFFF5252)
+                        val iconeVaria = if (isMelhoria) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp
 
                         val corStatusImc = when {
                             (profile?.imcResultado ?: 0.0) < 18.5 -> Color(0xFF4A90E2)
@@ -515,34 +476,33 @@ private fun ImcHistoricoCard(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
+
                                 Surface(
-                                    color = corIndicador.copy(alpha = 0.15f),
+                                    color = corVariacao.copy(alpha = 0.15f),
                                     shape = RoundedCornerShape(50),
-                                    border = BorderStroke(1.dp, corIndicador.copy(alpha = 0.3f))
+                                    border = BorderStroke(1.dp, corVariacao.copy(alpha = 0.3f))
                                 ) {
                                     Row(
-                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                                     ) {
                                         Icon(
-                                            imageVector = icone,
+                                            imageVector = iconeVaria,
                                             contentDescription = null,
-                                            tint = corIndicador,
+                                            tint = corVariacao,
                                             modifier = Modifier.size(16.dp)
                                         )
                                         Text(
-                                            text = textoDiff,
-                                            style = MaterialTheme.typography.labelLarge,
+                                            text = String.format(Locale.US, "%.1f", abs(variacao)),
+                                            style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
-                                            color = corIndicador
+                                            color = corVariacao
                                         )
                                     }
                                 }
                             }
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
+                            Spacer(modifier = Modifier.height(8.dp))
                             ImcLineChart(
                                 values = graficoState.valores,
                                 labels = graficoState.labels,
@@ -593,27 +553,6 @@ private fun EmptyChartState(
     }
 }
 
-@Composable
-private fun getAnaliseGordura(gordura: Float, sexo: String): Pair<String, Color> {
-    if (gordura <= 0) return "N/A" to Color.White.copy(alpha = 0.7f)
-
-    return if (sexo == "Masculino") {
-        when {
-            gordura < 8 -> "Muito Baixo" to Color(0xFFFDD835)
-            gordura <= 20 -> "Ideal" to Color(0xFF00C853)
-            gordura <= 25 -> "Saudável" to Color(0xFF4A90E2)
-            else -> "Elevado" to Color(0xFFFF5252)
-        }
-    } else {
-        when {
-            gordura < 15 -> "Muito Baixo" to Color(0xFFFDD835)
-            gordura <= 25 -> "Ideal" to Color(0xFF00C853)
-            gordura <= 32 -> "Saudável" to Color(0xFF4A90E2)
-            else -> "Elevado" to Color(0xFFFF5252)
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ComposicaoCorporalCard(
@@ -622,20 +561,21 @@ private fun ComposicaoCorporalCard(
     ultimoRegistro: ComposicaoCorporalRegistro?,
     onClick: () -> Unit
 ) {
-    val hasData = ultimoRegistro != null && profile != null && ultimoRegistro.gorduraPercentual > 0
-
-    val (analise, corDestaque) = if (hasData) {
-        getAnaliseGordura(ultimoRegistro.gorduraPercentual, profile.sexo)
-    } else {
-        null to Color(0xFF38BDF8)
+    val dadosGordura = remember(profile, ultimoRegistro) {
+        if (ultimoRegistro != null && profile != null && ultimoRegistro.gorduraPercentual > 0) {
+            val (analise, cor) = HealthUiUtils.getAnaliseGordura(ultimoRegistro.gorduraPercentual, profile.sexo)
+            Triple(ultimoRegistro.gorduraPercentual, analise, cor)
+        } else {
+            null
+        }
     }
 
     val containerBase = Color(0xFF020617)
-    val corBorda = if (hasData) corDestaque.copy(alpha = 0.4f) else Color(0xFF1E293B)
+    val corDestaque = dadosGordura?.third ?: Color(0xFF38BDF8)
+    val corBorda = if (dadosGordura != null) corDestaque.copy(alpha = 0.4f) else Color(0xFF1E293B)
 
     Card(
-        modifier = modifier
-            .height(170.dp),
+        modifier = modifier.height(170.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = containerBase),
         shape = RoundedCornerShape(20.dp),
@@ -646,13 +586,15 @@ private fun ComposicaoCorporalCard(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    if (hasData)
+                    if (dadosGordura != null)
                         Brush.verticalGradient(listOf(corDestaque.copy(alpha = 0.25f), containerBase))
                     else
                         Brush.verticalGradient(listOf(Color(0xFF1E293B), containerBase))
                 )
         ) {
-            if (hasData) {
+            if (dadosGordura != null) {
+                val (percentual, analiseTexto, corTexto) = dadosGordura
+
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -668,14 +610,14 @@ private fun ComposicaoCorporalCard(
 
                     Column {
                         Text(
-                            text = String.format(Locale.US, "%.1f%%", ultimoRegistro.gorduraPercentual),
-                            color = corDestaque,
+                            text = String.format(Locale.US, "%.1f%%", percentual),
+                            color = corTexto,
                             style = MaterialTheme.typography.headlineLarge,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = analise!!.uppercase(Locale.getDefault()),
-                            color = corDestaque,
+                            text = analiseTexto.uppercase(Locale.getDefault()),
+                            color = corTexto,
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 4.dp)
@@ -723,13 +665,18 @@ private fun ProximoCompromissoCard(
     state: CompromissoState,
     onClick: () -> Unit
 ) {
+    val baseGradientColor = if (state is CompromissoState.Proximo && state.isAtrasado) {
+        Color(0xFFFF5252).copy(alpha = 0.15f)
+    } else {
+        Color(0x334A90E2)
+    }
+
     val gradientOverlay = Brush.verticalGradient(
-        listOf(Color(0x334A90E2), Color.Transparent)
+        listOf(baseGradientColor, Color.Transparent)
     )
 
     Card(
-        modifier = modifier
-            .height(170.dp),
+        modifier = modifier.height(170.dp),
         onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
         shape = RoundedCornerShape(20.dp),
@@ -743,32 +690,33 @@ private fun ProximoCompromissoCard(
         ) {
             when (state) {
                 is CompromissoState.Proximo -> {
-                    // --- ESTADO 1: TAREFA PENDENTE ---
+                    val corDestaque = if (state.isAtrasado) Color(0xFFFF5252) else Color(0xFFFDD835)
+                    val tituloSecao = if (state.isAtrasado) "Pendente" else "Próximo Foco"
+                    val icone = if (state.isAtrasado) Icons.Default.Warning else Icons.Default.Alarm
+
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        // Topo: Título da seção e Ícone
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Top
                         ) {
                             Text(
-                                text = "Próximo Foco",
-                                color = Color.White.copy(alpha = 0.7f),
+                                text = tituloSecao,
+                                color = if (state.isAtrasado) corDestaque else Color.White.copy(alpha = 0.7f),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelLarge
                             )
                             Icon(
-                                imageVector = Icons.Default.Alarm,
+                                imageVector = icone,
                                 contentDescription = null,
-                                tint = Color(0xFFFDD835),
+                                tint = corDestaque,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
 
-                        // Meio: Título da Tarefa e Horário
                         Column {
                             Text(
                                 text = state.compromisso.titulo,
@@ -781,15 +729,14 @@ private fun ProximoCompromissoCard(
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Etiqueta de Horário (Pílula)
                             Surface(
-                                color = Color(0xFFFDD835).copy(alpha = 0.15f),
+                                color = corDestaque.copy(alpha = 0.15f),
                                 shape = RoundedCornerShape(8.dp),
-                                border = BorderStroke(1.dp, Color(0xFFFDD835).copy(alpha = 0.3f))
+                                border = BorderStroke(1.dp, corDestaque.copy(alpha = 0.3f))
                             ) {
                                 Text(
                                     text = state.compromisso.hora_inicio.take(5),
-                                    color = Color(0xFFFDD835),
+                                    color = corDestaque,
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -797,25 +744,43 @@ private fun ProximoCompromissoCard(
                             }
                         }
 
-                        // Rodapé: Barra de Progresso
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            val progresso = if (state.total > 0) state.concluidas.toFloat() / state.total else 0f
+                        if (state.isAtrasado) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Error,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFF5252),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Tarefa Pendente",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color(0xFFFF5252),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                val progresso = if (state.total > 0) state.concluidas.toFloat() / state.total else 0f
 
-                            LinearProgressIndicator(
-                                progress = { progresso },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(6.dp)
-                                    .clip(RoundedCornerShape(3.dp)),
-                                color = Color(0xFF00C9A7),
-                                trackColor = Color.White.copy(alpha = 0.1f),
-                            )
-                            Text(
-                                text = "${state.concluidas}/${state.total} concluídas hoje",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 11.sp
-                            )
+                                LinearProgressIndicator(
+                                    progress = { progresso },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp)),
+                                    color = Color(0xFF00C9A7),
+                                    trackColor = Color.White.copy(alpha = 0.1f),
+                                )
+                                Text(
+                                    text = "${state.concluidas}/${state.total} concluídas hoje",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.White.copy(alpha = 0.5f)
+                                )
+                            }
                         }
                     }
                 }
@@ -848,7 +813,6 @@ private fun ProximoCompromissoCard(
                 }
 
                 is CompromissoState.NenhumAgendado -> {
-                    // --- ESTADO 3: VAZIO ---
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -858,7 +822,7 @@ private fun ProximoCompromissoCard(
                             imageVector = Icons.Default.DateRange,
                             contentDescription = "Planejar",
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(32.dp)
                         )
                         Spacer(Modifier.height(12.dp))
                         Text(
@@ -869,7 +833,7 @@ private fun ProximoCompromissoCard(
                         )
                         Text(
                             text = "Toque para planejar seu dia",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = Color.White.copy(alpha = 0.6f),
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center
                         )
