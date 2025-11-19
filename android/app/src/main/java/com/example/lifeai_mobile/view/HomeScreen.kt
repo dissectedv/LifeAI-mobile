@@ -43,6 +43,8 @@ import com.example.lifeai_mobile.viewmodel.ResumoState
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import java.util.*
 import com.example.lifeai_mobile.viewmodel.GraficoUIState
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.TrendingDown
 
 @Composable
 fun HomeScreen(
@@ -478,9 +480,14 @@ private fun ImcHistoricoCard(
                             message = "Registre mais ${3 - graficoState.valores.size} vez(es) para ver o gráfico."
                         )
                     } else {
-                        val variacao = graficoState.valores.last() - graficoState.valores.first()
-                        val corVariacao = if (variacao > 0) Color(0xFFFF5252) else Color(0xFF00C853)
-                        val simbolo = if (variacao > 0) "+" else ""
+                        val primeira = graficoState.valores.first()
+                        val ultima = graficoState.valores.last()
+                        val diff = ultima - primeira
+
+                        val isSubindo = diff > 0
+                        val corIndicador = if (isSubindo) Color(0xFFFF5252) else Color(0xFF00C853)
+                        val icone = if (isSubindo) Icons.Default.TrendingUp else Icons.Default.TrendingDown
+                        val textoDiff = String.format(Locale.US, "%.1f", kotlin.math.abs(diff))
 
                         val corStatusImc = when {
                             (profile?.imcResultado ?: 0.0) < 18.5 -> Color(0xFF4A90E2)
@@ -498,7 +505,7 @@ private fun ImcHistoricoCard(
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.Top
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
                                     text = "Evolução do IMC",
@@ -506,17 +513,38 @@ private fun ImcHistoricoCard(
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
                                 )
-                                Text(
-                                    text = "Variação: $simbolo${String.format(Locale.US, "%.1f", variacao)}",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = corVariacao
-                                )
+                                Surface(
+                                    color = corIndicador.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(50),
+                                    border = BorderStroke(1.dp, corIndicador.copy(alpha = 0.3f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = icone,
+                                            contentDescription = null,
+                                            tint = corIndicador,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = textoDiff,
+                                            style = MaterialTheme.typography.labelLarge,
+                                            fontWeight = FontWeight.Bold,
+                                            color = corIndicador
+                                        )
+                                    }
+                                }
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             ImcLineChart(
                                 values = graficoState.valores,
                                 labels = graficoState.labels,
+                                chartColor = corStatusImc,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

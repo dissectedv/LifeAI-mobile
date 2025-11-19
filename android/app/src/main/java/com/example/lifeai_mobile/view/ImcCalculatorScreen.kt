@@ -1,11 +1,13 @@
 package com.example.lifeai_mobile.view
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.Warning
@@ -23,6 +26,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -39,7 +43,6 @@ import com.example.lifeai_mobile.viewmodel.HistoricoImcViewModel
 import com.example.lifeai_mobile.viewmodel.ImcCalculatorViewModel
 import com.example.lifeai_mobile.viewmodel.UiEvent
 import java.util.*
-import androidx.compose.animation.core.animateFloatAsState
 import com.example.lifeai_mobile.viewmodel.ImcHistoryState
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -63,14 +66,11 @@ fun ImcCalculatorScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
-    // --- CORREÇÃO FINAL AQUI ---
-    // A lógica de LEITURA deve ser consistente com a lógica de ESCRITA (DatePicker).
-    // Se o DatePicker salva em UTC, a formatação deve LER em UTC.
     val formattedDate by remember {
         derivedStateOf {
             val millis = viewModel.dataConsulta.time
             val localDate = Instant.ofEpochMilli(millis)
-                .atZone(ZoneId.of("UTC")) // <-- CORRIGIDO PARA UTC
+                .atZone(ZoneId.of("UTC"))
                 .toLocalDate()
             localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         }
@@ -208,6 +208,12 @@ fun ImcCalculatorScreen(
                         item {
                             ImcInsightCard(registro = ultimoRegistro)
                         }
+
+                        // --- TABELA DE REFERÊNCIA ADICIONADA AQUI ---
+                        item {
+                            ImcReferenceTable()
+                        }
+
                         item {
                             OutlinedButton(
                                 onClick = { showHistory = !showHistory },
@@ -260,13 +266,9 @@ fun ImcCalculatorScreen(
         }
     }
 
-    // Lógica do DatePicker (consistente com UTC, igual ao RotinaScreen)
     if (showDatePicker) {
         val todayMillisUtc = remember {
-            LocalDate.now()
-                .atStartOfDay(ZoneId.of("UTC"))
-                .toInstant()
-                .toEpochMilli()
+            LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
         }
 
         val selectableDates = remember {
@@ -449,7 +451,7 @@ private fun ImcEntrySheet(
                     modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                 )
                 OutlinedTextField(
-                    value = formattedDate, // Esta variável agora lê consistentemente em UTC
+                    value = formattedDate,
                     onValueChange = {},
                     readOnly = true,
                     modifier = Modifier
@@ -564,6 +566,89 @@ private fun ImcInsightCard(registro: ImcRegistro) {
                 fontSize = 22.sp
             )
         }
+    }
+}
+
+@Composable
+private fun ImcReferenceTable() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Tabela de Referência (OMS)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            ReferenceRow(
+                range = "Menor que 18.5",
+                label = "Abaixo do Peso",
+                color = Color(0xFF4A90E2)
+            )
+            ReferenceRow(
+                range = "18.5 - 24.9",
+                label = "Peso Normal",
+                color = Color(0xFF00C853)
+            )
+            ReferenceRow(
+                range = "25.0 - 29.9",
+                label = "Sobrepeso",
+                color = Color(0xFFFDD835)
+            )
+            ReferenceRow(
+                range = "30.0 ou mais",
+                label = "Obesidade",
+                color = Color(0xFFFF5252)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReferenceRow(range: String, label: String, color: Color) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.9f),
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Text(
+            text = range,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = 0.6f)
+        )
     }
 }
 

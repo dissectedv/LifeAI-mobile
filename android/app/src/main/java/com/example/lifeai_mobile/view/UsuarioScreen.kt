@@ -42,7 +42,7 @@ fun UsuarioScreen(
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Text(
-            "Conta e Preferências",
+            text = "Conta e Preferências",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             color = Color.White
@@ -62,11 +62,21 @@ fun UsuarioScreen(
                     mainNavController.navigate("premium")
                 }
             )
-            UsuarioCard("Configurações", Icons.Default.Settings) {}
+
+            UsuarioCard(
+                title = "Personalizar Inteligência Artificial",
+                icon = Icons.Default.Psychology,
+                onClick = {
+                    mainNavController.navigate("ai_personalizacao")
+                }
+            )
+
             UsuarioCard("Avalie-nos", Icons.Default.StarRate) {}
+
             UsuarioCard("Sobre o App", Icons.Default.Info) {
                 showAboutDialog = true
             }
+
             UsuarioCard(
                 title = "Sair da Conta",
                 icon = Icons.AutoMirrored.Filled.Logout,
@@ -78,7 +88,6 @@ fun UsuarioScreen(
         }
     }
 
-    // --- DIALOG DE LOGOUT (Sem alteração) ---
     if (showLogoutDialog) {
         Box(
             modifier = Modifier
@@ -150,7 +159,6 @@ fun UsuarioScreen(
         }
     }
 
-    // --- DIALOG "SOBRE" (Sem alteração) ---
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
@@ -180,11 +188,8 @@ fun UsuarioScreen(
             }
         )
     }
-
-    // --- LÓGICA DO PREMIUM FOI REMOVIDA DAQUI ---
 }
 
-// --- UsuarioCard (Sem alteração, mas com OptIn) ---
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UsuarioCard(

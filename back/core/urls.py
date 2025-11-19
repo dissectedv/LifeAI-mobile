@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/token', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('imc_base_perfil/', viewsets.ImcBaseAPIView.as_view(), name='imc_base_perfil'),
+    path('imc_base_manage/', viewsets.ImcBaseManageView.as_view(), name='imc_base_manage'),
     path('imc_base_dashboard/', viewsets.ImcBaseDashAPIView.as_view(), name='imc_base_dashboard'),
     path('imc_rec/', viewsets.ImcBaseRecAPIView.as_view(), name='imc_rec'),
     path('pontuacoes/mensal/', viewsets.DesempenhoMensalAPIView.as_view(), name='pontuacoes-mensal'),

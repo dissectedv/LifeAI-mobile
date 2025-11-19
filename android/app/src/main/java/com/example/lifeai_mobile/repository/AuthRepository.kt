@@ -91,6 +91,14 @@ class AuthRepository(
         return api.getImcBaseDashboard()
     }
 
+    suspend fun getProfileData(): Response<ImcBaseProfile> {
+        return api.getProfileData()
+    }
+
+    suspend fun updateProfileData(data: ImcBaseProfile): Response<ImcBaseProfile> {
+        return api.updateProfileData(data)
+    }
+
     suspend fun createImcRecord(record: ImcRecordRequest): Response<ImcRecordResponse> {
         return api.createImcRecord(record)
     }

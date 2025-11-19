@@ -34,14 +34,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // -----------------------------
-        // Application (para repos e sessionManager)
-        // -----------------------------
         val app = application as MyApplication
 
-        // -----------------------------
-        // Factories
-        // -----------------------------
         val authVMFactory = AuthViewModelFactory(app.authRepository, app.sessionManager)
         val onboardingVMFactory = OnboardingViewModelFactory(app.authRepository, app.sessionManager)
         val resumoVMFactory = ResumoViewModelFactory(app.authRepository)
@@ -51,6 +45,7 @@ class MainActivity : ComponentActivity() {
         val dietaVMFactory = DietaViewModelFactory(app, app.authRepository, app.sessionManager)
         val rotinaVMFactory = RotinaViewModelFactory(app.authRepository)
         val corpoVMFactory = ComposicaoCorporalViewModelFactory(app.authRepository)
+        val aiPersonalizacaoVMFactory = AIPersonalizacaoViewModelFactory(app.authRepository)
 
         setContent {
             LifeAImobileTheme {
@@ -58,17 +53,10 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF10161C)
                 ) {
-
-                    // -----------------------------
-                    // Tokens / Estados do SessionManager
-                    // -----------------------------
                     val token by app.sessionManager.authToken.collectAsState(initial = "LOADING")
                     val onboardingCompleted by app.sessionManager.onboardingCompleted.collectAsState(initial = null)
                     val isLoading = token == "LOADING" || onboardingCompleted == null
 
-                    // -----------------------------
-                    // Carregamento inicial
-                    // -----------------------------
                     if (isLoading) {
                         Box(
                             modifier = Modifier.fillMaxSize(),
@@ -79,9 +67,6 @@ class MainActivity : ComponentActivity() {
                         return@Surface
                     }
 
-                    // -----------------------------
-                    // Escolhe rota inicial
-                    // -----------------------------
                     val startDestination = remember(token, onboardingCompleted) {
                         when {
                             token.isNullOrBlank() -> "welcome"
@@ -93,9 +78,6 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val authViewModel: AuthViewModel = viewModel(factory = authVMFactory)
 
-                    // -----------------------------
-                    // Regras automáticas de navegação
-                    // -----------------------------
                     LaunchedEffect(token, onboardingCompleted) {
                         val current = navController.currentBackStackEntry?.destination?.route
 
@@ -114,9 +96,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // -----------------------------
-                    // NavHost global
-                    // -----------------------------
                     NavHost(
                         navController = navController,
                         startDestination = startDestination,
@@ -192,6 +171,11 @@ class MainActivity : ComponentActivity() {
 
                         composable("premium") {
                             PremiumScreen(navController = navController)
+                        }
+
+                        composable("ai_personalizacao") {
+                            val aiVM: AIPersonalizacaoViewModel = viewModel(factory = aiPersonalizacaoVMFactory)
+                            AIPersonalizacaoScreen(navController, aiVM)
                         }
                     }
                 }

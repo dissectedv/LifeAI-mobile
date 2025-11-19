@@ -197,6 +197,29 @@ class ImcBaseRecAPIView(APIView):
         serializer = serializers.ImcBaseRecSerializer(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class ImcBaseManageView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id').first()
+        if not profile:
+            return Response({"erro": "Perfil não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = serializers.ImcBaseSerializer(profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        profile = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id').first()
+        if not profile:
+            return Response({"erro": "Perfil não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = serializers.ImcBaseSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class ImcDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

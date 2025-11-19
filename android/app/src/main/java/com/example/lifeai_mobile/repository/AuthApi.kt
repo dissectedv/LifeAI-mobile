@@ -22,6 +22,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -37,6 +38,12 @@ interface AuthApi {
 
     @GET("imc_base_dashboard/")
     suspend fun getImcBaseDashboard(): Response<List<ImcBaseProfile>>
+
+    @GET("imc_base_manage/")
+    suspend fun getProfileData(): Response<ImcBaseProfile>
+
+    @PATCH("imc_base_manage/")
+    suspend fun updateProfileData(@Body data: ImcBaseProfile): Response<ImcBaseProfile>
 
     @POST("imc/")
     suspend fun createImcRecord(@Body request: ImcRecordRequest): Response<ImcRecordResponse>
