@@ -64,7 +64,7 @@ fun UsuarioScreen(
             )
 
             UsuarioCard(
-                title = "Personalizar Inteligência Artificial",
+                title = "Personalizar Dados",
                 icon = Icons.Default.Psychology,
                 onClick = {
                     mainNavController.navigate("ai_personalizacao")

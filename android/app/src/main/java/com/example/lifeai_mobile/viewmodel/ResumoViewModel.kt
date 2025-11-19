@@ -27,8 +27,14 @@ sealed class GraficoUIState {
 
 sealed class CompromissoState {
     object NenhumAgendado : CompromissoState()
-    object TodosConcluidos : CompromissoState()
-    data class Proximo(val compromisso: Compromisso) : CompromissoState()
+    data class TodosConcluidos(
+        val total: Int
+    ) : CompromissoState()
+    data class Proximo(
+        val compromisso: Compromisso,
+        val total: Int,
+        val concluidas: Int
+    ) : CompromissoState()
 }
 
 sealed class ResumoState {
@@ -61,14 +67,26 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val hojeStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val agoraStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
-        val futuros = compromissos
-            .filter { !it.concluido && (it.data > hojeStr || (it.data == hojeStr && it.hora_inicio > agoraStr)) }
-            .sortedWith(compareBy({ it.data }, { it.hora_inicio }))
+        val tarefasHoje = compromissos.filter { it.data == hojeStr }
+        val totalHoje = tarefasHoje.size
+        val concluidasHoje = tarefasHoje.count { it.concluido }
 
-        return if (futuros.isNotEmpty()) {
-            CompromissoState.Proximo(futuros.first())
+        if (totalHoje == 0) return CompromissoState.NenhumAgendado
+
+        val proximoHoje = tarefasHoje
+            .filter { !it.concluido && it.hora_inicio >= agoraStr }
+            .minByOrNull { it.hora_inicio }
+
+        val pendenteHoje = proximoHoje ?: tarefasHoje.filter { !it.concluido }.minByOrNull { it.hora_inicio }
+
+        return if (pendenteHoje != null) {
+            CompromissoState.Proximo(pendenteHoje, totalHoje, concluidasHoje)
         } else {
-            CompromissoState.TodosConcluidos
+            if (concluidasHoje == totalHoje) {
+                CompromissoState.TodosConcluidos(totalHoje)
+            } else {
+                CompromissoState.TodosConcluidos(totalHoje)
+            }
         }
     }
 
@@ -91,7 +109,12 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                     return@launch
                 }
 
-                val profile = profileResponse.body()!!.first()
+                var profile = profileResponse.body()!!.first()
+                if (profile.imcResultado < 1.0 && profile.peso > 0 && profile.altura > 0) {
+                    val alturaMetros = if (profile.altura > 3.0) profile.altura / 100.0 else profile.altura
+                    val imcCorrigido = profile.peso / (alturaMetros * alturaMetros)
+                    profile = profile.copy(imcResultado = imcCorrigido)
+                }
 
                 val ultimoRegistroComposicao = if (composicaoResponse.isSuccessful) {
                     composicaoResponse.body()?.firstOrNull()
@@ -109,7 +132,9 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                         GraficoUIState.Error("Nenhum histórico de IMC.")
                     } else {
                         val listaInvertida = lista.reversed()
-                        val valores = listaInvertida.map { it.imcRes.toFloat() }
+                        val valores = listaInvertida.map {
+                            if (it.imcRes < 1.0) (it.imcRes * 10000).toFloat() else it.imcRes.toFloat()
+                        }
                         val labels = listaInvertida.map {
                             val partes = it.dataConsulta.split("-")
                             if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""

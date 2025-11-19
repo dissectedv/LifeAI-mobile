@@ -75,6 +75,9 @@ interface AuthApi {
     @POST("compromissos/")
     suspend fun createCompromisso(@Body compromisso: Compromisso): Response<Compromisso>
 
+    @PATCH("compromissos/{id}/")
+    suspend fun updateCompromisso(@Path("id") id: Int, @Body compromisso: Compromisso): Response<Compromisso>
+
     @DELETE("compromissos/{id}/")
     suspend fun deleteCompromisso(@Path("id") id: Int): Response<Unit>
 

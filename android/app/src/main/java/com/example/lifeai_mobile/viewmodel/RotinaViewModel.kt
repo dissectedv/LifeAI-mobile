@@ -10,9 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-// Define os estados da tela: Carregando, Sucesso (com dados) ou Erro
-
 private const val TAG = "RotinaViewModel"
+
 sealed class RotinaUIState {
     object Loading : RotinaUIState()
     data class Success(val compromissos: List<Compromisso>) : RotinaUIState()
@@ -33,7 +32,6 @@ class RotinaViewModel(
     fun carregarCompromissos() {
         Log.d(TAG, "Iniciando carregarCompromissos()...")
         viewModelScope.launch {
-
             _uiState.value = RotinaUIState.Loading
             try {
                 val response = authRepository.getCompromissos()
@@ -55,7 +53,8 @@ class RotinaViewModel(
                 titulo = titulo,
                 data = data,
                 hora_inicio = horaInicio,
-                hora_fim = horaFim
+                hora_fim = horaFim,
+                concluido = false
             )
 
             try {
@@ -63,10 +62,27 @@ class RotinaViewModel(
                 if (response.isSuccessful) {
                     carregarCompromissos()
                 } else {
-                    Log.e("RotinaViewModel", "Erro ao criar: ${response.message()}")
+                    Log.e(TAG, "Erro ao criar: ${response.message()}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao adicionar compromisso: ${e.message}", e)
+            }
+        }
+    }
+
+    fun toggleConcluido(compromisso: Compromisso) {
+        viewModelScope.launch {
+            try {
+                val atualizado = compromisso.copy(concluido = !compromisso.concluido)
+                val response = authRepository.updateCompromisso(atualizado)
+
+                if (response.isSuccessful) {
+                    carregarCompromissos()
+                } else {
+                    Log.e(TAG, "Erro ao atualizar status: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Erro de rede ao atualizar: ${e.message}")
             }
         }
     }
@@ -80,10 +96,10 @@ class RotinaViewModel(
                 if (response.isSuccessful) {
                     carregarCompromissos()
                 } else {
-                    Log.e("RotinaViewModel", "Erro ao deletar: ${response.message()}")
+                    Log.e(TAG, "Erro ao deletar: ${response.message()}")
                 }
             } catch (e: Exception) {
-                Log.e("RotinaViewModel", "Exceção ao deletar: ${e.message}")
+                Log.e(TAG, "Exceção ao deletar: ${e.message}")
             }
         }
     }

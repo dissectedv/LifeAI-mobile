@@ -45,6 +45,8 @@ import java.util.*
 import com.example.lifeai_mobile.viewmodel.GraficoUIState
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun HomeScreen(
@@ -725,12 +727,6 @@ private fun ProximoCompromissoCard(
         listOf(Color(0x334A90E2), Color.Transparent)
     )
 
-    val (corDestaque, icon, cardTitle) = when (state) {
-        is CompromissoState.Proximo -> Triple(Color(0xFFFDD835), Icons.Default.Alarm, "Próximo")
-        is CompromissoState.NenhumAgendado -> Triple(MaterialTheme.colorScheme.primary, Icons.Default.DateRange, "Minha Rotina")
-        is CompromissoState.TodosConcluidos -> Triple(Color(0xFF00C853), Icons.Default.CheckCircle, "Parabéns!")
-    }
-
     Card(
         modifier = modifier
             .height(170.dp),
@@ -739,102 +735,140 @@ private fun ProximoCompromissoCard(
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradientOverlay)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = cardTitle,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Icon(
-                    imageVector = icon,
-                    contentDescription = "Rotina",
-                    tint = corDestaque.copy(alpha = 0.8f),
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
             when (state) {
                 is CompromissoState.Proximo -> {
-                    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                    val dataHoje = LocalDate.now()
-                    val dataCompromisso = LocalDate.parse(state.compromisso.data, formatter)
-
-                    val labelData = when (dataCompromisso) {
-                        dataHoje -> "HOJE"
-                        dataHoje.plusDays(1) -> "AMANHÃ"
-                        else -> DateTimeFormatter.ofPattern("dd/MM").format(dataCompromisso)
-                    }
-
-                    Column {
-                        Text(
-                            text = state.compromisso.titulo,
-                            color = Color.White,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = "$labelData ÀS ${state.compromisso.hora_inicio.substring(0, 5)}",
-                            color = corDestaque,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-
-                is CompromissoState.NenhumAgendado -> {
+                    // --- ESTADO 1: TAREFA PENDENTE ---
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Nenhum compromisso hoje",
-                            color = Color.White.copy(alpha = 0.7f),
-                            style = MaterialTheme.typography.bodySmall,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Clique para planejar",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
+                        // Topo: Título da seção e Ícone
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = "Próximo Foco",
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge
+                            )
+                            Icon(
+                                imageVector = Icons.Default.Alarm,
+                                contentDescription = null,
+                                tint = Color(0xFFFDD835),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Meio: Título da Tarefa e Horário
+                        Column {
+                            Text(
+                                text = state.compromisso.titulo,
+                                color = Color.White,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            // Etiqueta de Horário (Pílula)
+                            Surface(
+                                color = Color(0xFFFDD835).copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(1.dp, Color(0xFFFDD835).copy(alpha = 0.3f))
+                            ) {
+                                Text(
+                                    text = state.compromisso.hora_inicio.take(5),
+                                    color = Color(0xFFFDD835),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        // Rodapé: Barra de Progresso
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            val progresso = if (state.total > 0) state.concluidas.toFloat() / state.total else 0f
+
+                            LinearProgressIndicator(
+                                progress = { progresso },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = Color(0xFF00C9A7),
+                                trackColor = Color.White.copy(alpha = 0.1f),
+                            )
+                            Text(
+                                text = "${state.concluidas}/${state.total} concluídas hoje",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
 
                 is CompromissoState.TodosConcluidos -> {
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = "Concluído",
+                            tint = Color(0xFF00C853),
+                            modifier = Modifier.size(48.dp)
+                        )
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            "Tarefas concluídas!",
-                            color = corDestaque,
+                            text = "Tudo Feito!",
+                            color = Color(0xFF00C853),
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                            fontWeight = FontWeight.Bold
                         )
-                        Spacer(Modifier.height(4.dp))
                         Text(
-                            "Bom trabalho hoje.",
+                            text = "${state.total} tarefas finalizadas",
+                            color = Color.White.copy(alpha = 0.7f),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+
+                is CompromissoState.NenhumAgendado -> {
+                    // --- ESTADO 3: VAZIO ---
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Planejar",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            text = "Minha Rotina",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Toque para planejar seu dia",
                             color = Color.White.copy(alpha = 0.7f),
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center

@@ -1,11 +1,13 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -16,22 +18,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.ParagraphStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextIndent
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.lifeai_mobile.R
-import com.example.lifeai_mobile.viewmodel.ChatMessage
 import com.example.lifeai_mobile.viewmodel.ChatIAViewModel
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextIndent
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.ParagraphStyle
+import com.example.lifeai_mobile.viewmodel.ChatMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -158,7 +160,7 @@ fun UserInputBar(
 ) {
     Surface(color = Color.Transparent) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Bottom,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -168,8 +170,11 @@ fun UserInputBar(
                 value = message,
                 onValueChange = onMessageChange,
                 placeholder = { Text("Digite sua mensagem...", color = Color.Gray) },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 2.dp),
+                singleLine = false,
+                maxLines = 5,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
@@ -182,7 +187,8 @@ fun UserInputBar(
             )
             IconButton(
                 onClick = onSendClick,
-                enabled = message.isNotBlank()
+                enabled = message.isNotBlank(),
+                modifier = Modifier.padding(bottom = 4.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
@@ -277,14 +283,101 @@ fun ChatBubble(message: ChatMessage) {
             contentAlignment = contentAlignment
         ) {
             if (message.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    color = Color.White,
-                    strokeWidth = 2.dp
-                )
+                TypingIndicator()
             } else {
                 MarkdownText(text = message.text)
             }
         }
     }
+}
+
+@Composable
+fun TypingIndicator(
+    color: Color = Color.White.copy(alpha = 0.7f),
+    dotSize: Dp = 6.dp
+) {
+    val transition = rememberInfiniteTransition(label = "typing")
+
+    val dot1Alpha by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot1"
+    )
+
+    val dot2Alpha by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2"
+    )
+
+    val dot3Alpha by transition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3"
+    )
+
+    val dot1Y by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot1Y"
+    )
+
+    val dot2Y by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2Y"
+    )
+
+    val dot3Y by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = -4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3Y"
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+    ) {
+        Dot(alpha = dot1Alpha, translateY = dot1Y, size = dotSize, color = color)
+        Dot(alpha = dot2Alpha, translateY = dot2Y, size = dotSize, color = color)
+        Dot(alpha = dot3Alpha, translateY = dot3Y, size = dotSize, color = color)
+    }
+}
+
+@Composable
+private fun Dot(alpha: Float, translateY: Float, size: Dp, color: Color) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .graphicsLayer {
+                translationY = translateY
+                this.alpha = alpha
+            }
+            .background(color, CircleShape)
+    )
 }

@@ -1,8 +1,5 @@
 package com.example.lifeai_mobile.view
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -155,6 +151,14 @@ private fun PersonalizacaoForm(
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             CustomTextField(
+                value = sexo,
+                onValueChange = {},
+                label = "Sexo",
+                modifier = Modifier.weight(1f),
+                enabled = false
+            )
+
+            CustomTextField(
                 value = idade,
                 onValueChange = { viewModel.idade.value = it },
                 label = "Idade",
@@ -162,21 +166,7 @@ private fun PersonalizacaoForm(
                 modifier = Modifier.weight(1f),
                 enabled = !isSaving
             )
-            CustomTextField(
-                value = sexo,
-                onValueChange = {},
-                label = "Sexo Biológico",
-                readOnly = true,
-                modifier = Modifier.weight(1f),
-                enabled = false
-            )
         }
-
-        GenderSelectionRow(
-            selectedGender = sexo,
-            onGenderSelected = { viewModel.sexo.value = it },
-            enabled = !isSaving
-        )
 
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             CustomTextField(
@@ -237,62 +227,6 @@ private fun PersonalizacaoForm(
         }
 
         Spacer(modifier = Modifier.height(32.dp))
-    }
-}
-
-@Composable
-private fun GenderSelectionRow(
-    selectedGender: String,
-    onGenderSelected: (String) -> Unit,
-    enabled: Boolean
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        GenderOption(
-            text = "Masculino",
-            isSelected = selectedGender.equals("Masculino", ignoreCase = true),
-            onClick = { onGenderSelected("Masculino") },
-            modifier = Modifier.weight(1f),
-            enabled = enabled
-        )
-        GenderOption(
-            text = "Feminino",
-            isSelected = selectedGender.equals("Feminino", ignoreCase = true),
-            onClick = { onGenderSelected("Feminino") },
-            modifier = Modifier.weight(1f),
-            enabled = enabled
-        )
-    }
-}
-
-@Composable
-private fun GenderOption(
-    text: String,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean
-) {
-    val borderColor = if (isSelected) Color(0xFF4A90E2) else Color.White.copy(alpha = 0.3f)
-    val backgroundColor = if (isSelected) Color(0xFF4A90E2).copy(alpha = 0.1f) else Color.Transparent
-    val textColor = if (isSelected) Color(0xFF4A90E2) else Color.White.copy(alpha = 0.7f)
-
-    Box(
-        modifier = modifier
-            .height(50.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
-            .clickable(enabled = enabled) { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = textColor,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-        )
     }
 }
 

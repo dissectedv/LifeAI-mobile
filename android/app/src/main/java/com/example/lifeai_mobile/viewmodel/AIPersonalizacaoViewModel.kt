@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ImcBaseProfile
@@ -43,6 +44,8 @@ class AIPersonalizacaoViewModel(
                 val response = repository.getProfileData()
                 if (response.isSuccessful && response.body() != null) {
                     val profile = response.body()!!
+
+                    Log.d("LifeAI_Update", "Dados carregados do banco: $profile")
 
                     nome.value = profile.nome
                     idade.value = profile.idade.toString()
@@ -96,11 +99,15 @@ class AIPersonalizacaoViewModel(
                 val response = repository.updateProfileData(profileAtualizado)
 
                 if (response.isSuccessful) {
+                    Log.d("LifeAI_Update", "✅ Sucesso! Dados atualizados no servidor: ${response.body()}")
+
                     _uiState.value = PersonalizacaoState.Success
                 } else {
+                    Log.e("LifeAI_Update", "❌ Falha ao salvar: ${response.code()} - ${response.errorBody()?.string()}")
                     _uiState.value = PersonalizacaoState.Error("Falha ao salvar: ${response.code()}")
                 }
             } catch (e: Exception) {
+                Log.e("LifeAI_Update", "❌ Erro de exceção: ${e.message}")
                 _uiState.value = PersonalizacaoState.Error(e.message ?: "Erro ao salvar dados")
             }
         }

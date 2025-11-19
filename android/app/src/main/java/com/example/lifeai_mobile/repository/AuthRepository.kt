@@ -13,15 +13,16 @@ import com.example.lifeai_mobile.model.ImcRecordResponse
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
+import com.example.lifeai_mobile.model.LogoutRequest
 import com.example.lifeai_mobile.model.PerfilImcBase
+import com.example.lifeai_mobile.model.RefreshTokenRequest
+import com.example.lifeai_mobile.model.RefreshTokenResponse
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
 import retrofit2.Response
 import retrofit2.HttpException
 import com.example.lifeai_mobile.utils.SessionManager
 import kotlinx.coroutines.flow.firstOrNull
-import com.example.lifeai_mobile.model.RefreshTokenRequest
-import com.example.lifeai_mobile.model.LogoutRequest
 
 class AuthRepository(
     private val api: AuthApi,
@@ -128,6 +129,11 @@ class AuthRepository(
 
     suspend fun createCompromisso(compromisso: Compromisso): Response<Compromisso> {
         return api.createCompromisso(compromisso)
+    }
+
+    suspend fun updateCompromisso(compromisso: Compromisso): Response<Compromisso> {
+        val id = compromisso.id ?: throw Exception("ID inválido")
+        return api.updateCompromisso(id, compromisso)
     }
 
     suspend fun deleteCompromisso(id: Int): Response<Unit> {

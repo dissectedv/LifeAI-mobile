@@ -1,27 +1,34 @@
 package com.example.lifeai_mobile.view
 
-import android.util.Log
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.EventNote
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ErrorOutline
-import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.viewmodel.RotinaUIState
@@ -41,12 +48,12 @@ fun RotinaScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
-    Log.d("RotinaScreen", "Recompondo a tela. Estado: $state")
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Agenda de Compromissos", fontWeight = FontWeight.Bold, color = Color.White) },
+                title = { Text("Minha Rotina", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar", tint = Color.White)
@@ -67,7 +74,6 @@ fun RotinaScreen(
         containerColor = Color(0xFF0D1A26)
     ) { innerPadding ->
 
-        // Mostra o Pop-up de Adicionar
         if (showAddDialog) {
             AddCompromissoDialog(
                 onDismiss = { showAddDialog = false },
@@ -96,14 +102,305 @@ fun RotinaScreen(
                     )
                 }
                 is RotinaUIState.Success -> {
-                    CompromissoList(
+                    RotinaContent(
                         compromissos = currentState.compromissos,
-                        onDelete = { compromisso ->
-                            viewModel.deletarCompromisso(compromisso)
-                        }
+                        onToggleConcluido = { viewModel.toggleConcluido(it) },
+                        onDelete = { viewModel.deletarCompromisso(it) }
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun RotinaContent(
+    compromissos: List<Compromisso>,
+    onToggleConcluido: (Compromisso) -> Unit,
+    onDelete: (Compromisso) -> Unit
+) {
+    if (compromissos.isEmpty()) {
+        EmptyState()
+        return
+    }
+
+    val todayStr = LocalDate.now().toString()
+    val tomorrowStr = LocalDate.now().plusDays(1).toString()
+
+    val todayTasks = compromissos.filter { it.data == todayStr }
+    val tomorrowTasks = compromissos.filter { it.data == tomorrowStr }
+    val futureTasks = compromissos.filter { it.data > tomorrowStr }
+
+    val totalToday = todayTasks.size
+    val completedToday = todayTasks.count { it.concluido }
+    val progress = if (totalToday > 0) completedToday.toFloat() / totalToday else 0f
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        if (totalToday > 0) {
+            item {
+                DailyProgressHeader(
+                    completed = completedToday,
+                    total = totalToday,
+                    progress = progress
+                )
+            }
+        }
+
+        if (todayTasks.isNotEmpty()) {
+            item { SectionHeader("Hoje") }
+
+            val sortedToday = todayTasks.sortedWith(
+                compareBy<Compromisso> { it.concluido }
+                    .thenBy { it.hora_inicio }
+            )
+
+            items(sortedToday, key = { it.id!! }) { task ->
+                CompromissoItemCard(
+                    compromisso = task,
+                    onCheckClick = { onToggleConcluido(task) },
+                    onDelete = { onDelete(task) }
+                )
+            }
+        }
+
+        if (tomorrowTasks.isNotEmpty()) {
+            item { SectionHeader("Amanhã") }
+            val sortedTomorrow = tomorrowTasks.sortedBy { it.hora_inicio }
+            items(sortedTomorrow, key = { it.id!! }) { task ->
+                CompromissoItemCard(
+                    compromisso = task,
+                    onCheckClick = { onToggleConcluido(task) },
+                    onDelete = { onDelete(task) }
+                )
+            }
+        }
+
+        if (futureTasks.isNotEmpty()) {
+            item { SectionHeader("Futuro") }
+            val sortedFuture = futureTasks.sortedWith(
+                compareBy<Compromisso> { it.data }
+                    .thenBy { it.hora_inicio }
+            )
+            items(sortedFuture, key = { it.id!! }) { task ->
+                CompromissoItemCard(
+                    compromisso = task,
+                    onCheckClick = { onToggleConcluido(task) },
+                    onDelete = { onDelete(task) }
+                )
+            }
+        }
+
+        item { Spacer(Modifier.height(60.dp)) }
+    }
+}
+@Composable
+private fun DailyProgressHeader(completed: Int, total: Int, progress: Float) {
+    val animatedProgress by animateFloatAsState(
+        targetValue = progress,
+        label = "progress"
+    )
+    val color by animateColorAsState(
+        targetValue = if (progress >= 1f) Color(0xFF00C853) else Color(0xFF4A90E2),
+        label = "color"
+    )
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Progresso Diário",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = color
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = { animatedProgress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = color,
+                trackColor = Color.White.copy(alpha = 0.1f),
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "$completed de $total tarefas concluídas",
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        color = Color.White.copy(alpha = 0.9f),
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(vertical = 4.dp)
+    )
+}
+
+@Composable
+private fun CompromissoItemCard(
+    compromisso: Compromisso,
+    onCheckClick: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val isCompleted = compromisso.concluido
+
+    val alpha by animateFloatAsState(targetValue = if (isCompleted) 0.5f else 1f, label = "alpha")
+
+    val cardColor = if (isCompleted) Color(0xFF12212F) else Color(0xFF1B2A3D)
+    val textColor = if (isCompleted) Color.White.copy(alpha = 0.5f) else Color.White
+    val textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None
+    val checkColor = if (isCompleted) Color(0xFF00C9A7) else Color.White.copy(alpha = 0.3f)
+
+    val horaInicio = try {
+        LocalTime.parse(compromisso.hora_inicio.substring(0, 5))
+    } catch (_: Exception) { LocalTime.NOON }
+
+    val stripColor = when {
+        isCompleted -> Color.Gray
+        horaInicio.hour < 12 -> Color(0xFFFFD54F)
+        horaInicio.hour < 18 -> Color(0xFFFF8A65)
+        else -> Color(0xFF9575CD)
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(alpha),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isCompleted) 0.dp else 4.dp)
+    ) {
+        Row(
+            modifier = Modifier.height(IntrinsicSize.Min)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(6.dp)
+                    .background(stripColor)
+            )
+
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (isCompleted) checkColor else Color.Transparent)
+                        .border(2.dp, checkColor, CircleShape)
+                        .clickable { onCheckClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isCompleted) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = compromisso.titulo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = textColor,
+                        textDecoration = textDecoration
+                    )
+                    Spacer(Modifier.height(4.dp))
+
+                    val dateLabel = if (compromisso.data == LocalDate.now().toString()) "" else " • ${compromisso.data.split("-").reversed().joinToString("/")}"
+
+                    Text(
+                        text = "${compromisso.hora_inicio.take(5)} - ${compromisso.hora_fim.take(5)}$dateLabel",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isCompleted) textColor else stripColor
+                    )
+                }
+
+                Spacer(Modifier.width(8.dp))
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Deletar",
+                        tint = Color.Gray.copy(alpha = 0.6f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyState() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                Icons.AutoMirrored.Filled.EventNote,
+                contentDescription = "Sem compromissos",
+                modifier = Modifier.size(60.dp),
+                tint = Color(0xFF4A90E2)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "Agenda Limpa",
+                style = MaterialTheme.typography.titleLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "Adicione seus compromissos no botão '+'",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
@@ -151,107 +448,6 @@ private fun ErrorState(message: String, onRetryClick: () -> Unit) {
     }
 }
 
-@Composable
-private fun CompromissoList(
-    compromissos: List<Compromisso>,
-    onDelete: (Compromisso) -> Unit
-) {
-    if (compromissos.isEmpty()) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    Icons.Default.EventNote,
-                    contentDescription = "Sem compromissos",
-                    modifier = Modifier.size(60.dp),
-                    tint = Color(0xFF4A90E2)
-                )
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    "Agenda Limpa",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White
-                )
-                Text(
-                    "Adicione seus compromissos no botão '+'",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.7f)
-                )
-            }
-        }
-        return
-    }
-
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(compromissos, key = { it.id!! }) { compromisso ->
-            CompromissoItemCard(
-                compromisso = compromisso,
-                onDelete = { onDelete(compromisso) }
-            )
-        }
-    }
-}
-
-@Composable
-private fun CompromissoItemCard(
-    compromisso: Compromisso,
-    onDelete: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = compromisso.titulo,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "Data: ${compromisso.data}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.8f)
-                )
-                Text(
-                    text = "${compromisso.hora_inicio} - ${compromisso.hora_fim}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF4A90E2)
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Deletar Compromisso",
-                    tint = Color.Gray
-                )
-            }
-        }
-    }
-}
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddCompromissoDialog(
@@ -270,12 +466,9 @@ private fun AddCompromissoDialog(
     var showStartTimePicker by remember { mutableStateOf(false) }
     var showEndTimePicker by remember { mutableStateOf(false) }
 
-    // --- CORREÇÃO AQUI: LÓGICA PARA BLOQUEAR DATAS PASSADAS ---
-    // 1. Pega o início do dia de "hoje" em UTC (em milissegundos)
     val todayMillisUtc = remember {
         LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
     }
-    // 2. Cria a regra: só datas >= "hoje" são selecionáveis.
     val selectableDates = remember {
         object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
@@ -284,12 +477,9 @@ private fun AddCompromissoDialog(
         }
     }
 
-    // --- FIM DA CORREÇÃO ---
-
     val datePickerState = rememberDatePickerState(
-        // Começa selecionando "hoje"
         initialSelectedDateMillis = Instant.now().toEpochMilli(),
-        selectableDates = selectableDates // <-- 3. APLICA A REGRA
+        selectableDates = selectableDates
     )
     val startTimePickerState = rememberTimePickerState(
         initialHour = horaInicio.hour,
