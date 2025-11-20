@@ -1,3 +1,5 @@
+from django.core.mail import EmailMultiAlternatives
+
 from LIFEAI_ import settings
 
 def send_welcome_email_html(user):

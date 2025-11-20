@@ -77,9 +77,6 @@ interface AuthApi {
     @POST("logout/")
     suspend fun logout(@Body request: LogoutRequest): Response<Unit>
 
-    @POST("send-email/")
-    suspend fun sendEmail(@Body emailData: Map<String, String>): Response<Unit>
-
     @GET("compromissos/")
     suspend fun getCompromissos(): Response<List<Compromisso>>
 
