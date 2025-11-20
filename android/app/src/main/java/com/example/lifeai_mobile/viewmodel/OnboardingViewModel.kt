@@ -7,7 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lifeai_mobile.model.PerfilImcBase
+import com.example.lifeai_mobile.model.PerfilRequest      // <--- NOVO IMPORT
+import com.example.lifeai_mobile.model.RegistroImcRequest // <--- NOVO IMPORT
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -64,8 +65,6 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
 
     var objective by mutableStateOf("")
     var objectiveError by mutableStateOf<String?>(null)
-
-
 
     val isNextButtonEnabled: Boolean
         get() = when (_currentStepIndex.value) {
@@ -164,16 +163,19 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = UiState.Loading
             try {
+                // Conversão de valores
                 val pesoFloat = weight.toFloatOrNull() ?: 0.0f
                 val alturaFloatCm = height.toFloatOrNull() ?: 0.0f
                 val alturaDoubleM = alturaFloatCm / 100.0f
 
+                // Cálculo do IMC
                 val imcValor = if (alturaDoubleM > 0f) {
                     pesoFloat / (alturaDoubleM * alturaDoubleM)
                 } else {
                     0.0f
                 }
 
+                // Lógica de Classificação
                 val classificacao = when {
                     imcValor < 18.5f -> "Abaixo do peso"
                     imcValor < 25f -> "Peso normal"
@@ -181,24 +183,35 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                     else -> "Obesidade"
                 }
 
-                val profileData = PerfilImcBase(
+                // --- PREPARAÇÃO DOS OBJETOS SEPARADOS ---
+
+                // 1. Objeto de Perfil (Dados pessoais)
+                val perfilRequest = PerfilRequest(
                     nome = name,
                     idade = age.toInt(),
-                    altura = alturaFloatCm,
-                    peso = pesoFloat,
                     sexo = gender,
-                    objetivo = objective,
-                    imcResultado = imcValor,
+                    objetivo = objective
+                )
+
+                // 2. Objeto de IMC (Dados corporais)
+                // Convertemos para Double pois foi como definimos nas Data Classes
+                val imcRequest = RegistroImcRequest(
+                    peso = pesoFloat.toDouble(),
+                    altura = alturaFloatCm.toDouble(),
+                    imc = imcValor.toDouble(),
                     classificacao = classificacao
                 )
 
-                val response = repository.imcBase(profileData)
+                // --- CHAMADA AO REPOSITÓRIO (ORQUESTRAÇÃO) ---
+                // O repositório vai chamar /perfil/ e depois /imc/
+                val response = repository.createFullProfile(perfilRequest, imcRequest)
+
                 if (response.isSuccessful) {
                     sessionManager.setOnboardingCompleted(true)
                     _uiState.value = UiState.Success
                     _navigateToHome.emit(Unit)
                 } else {
-                    _uiState.value = UiState.Error("Erro ao salvar perfil: ${response.code()}")
+                    _uiState.value = UiState.Error("Erro ao salvar dados: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "Ocorreu um erro desconhecido.")

@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lifeai_mobile.model.ImcRecordRequest
+import com.example.lifeai_mobile.model.RegistroImcRequest // <--- CORREÇÃO: Importando o modelo novo
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -29,13 +29,11 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
 
-    // --- CORREÇÃO 1: Função helper para consistência ---
     private fun getTodayAtUtcStart(): Date {
         val instant = LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant()
         return Date.from(instant)
     }
 
-    // --- CORREÇÃO 2: Inicializar com o início do dia em UTC ---
     var dataConsulta by mutableStateOf(getTodayAtUtcStart())
 
     var isLoading by mutableStateOf(false)
@@ -59,11 +57,12 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
 
                     if (profile.altura > 0) {
                         var alturaMetros = profile.altura
+                        // Se vier em CM (ex: 180), converte para metros visualmente (1.80)
                         if (alturaMetros > 3) {
                             alturaMetros /= 100f
                         }
                         val alturaFormatada = String.format(Locale.US, "%.2f", alturaMetros)
-                        onAlturaChange(alturaFormatada)
+                        onAlturaChange(alturaFormatada) // Atualiza a UI
                     }
                 }
             } catch (e: Exception) {
@@ -75,8 +74,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     fun onPesoChange(newValue: String) { peso = newValue }
     fun onAlturaChange(newValue: String) { altura = newValue }
 
-    // --- CORREÇÃO 3: Remover a lógica de ajuste de timezone ---
-    // A View já está enviando a data correta baseada em UTC.
     fun onDataChange(newDate: Date) {
         dataConsulta = newDate
     }
@@ -88,7 +85,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     private fun resetFormState() {
         peso = ""
         isHeightFieldLocked = true
-        // --- CORREÇÃO 4: Usar a mesma inicialização UTC ---
         dataConsulta = getTodayAtUtcStart()
     }
 
@@ -111,25 +107,42 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 isLoading = false
                 return@launch
             }
+
+            // Garante que alturaFloat esteja em Metros para o cálculo do IMC
             if (alturaFloat > 3) alturaFloat /= 100f
+
             if (alturaFloat < 0.5f || alturaFloat > 2.5f) {
                 _eventFlow.emit(UiEvent.ShowSnackbar("Altura fora do intervalo (0.5m a 2.5m)"))
                 isLoading = false
                 return@launch
             }
 
-            // Define o formatter para usar UTC, garantindo que "yyyy-MM-dd" seja do dia correto
+            // --- LÓGICA DE CÁLCULO (Adicionada para atender o novo modelo) ---
+            val imcValor = pesoFloat / (alturaFloat * alturaFloat)
+
+            val classificacao = when {
+                imcValor < 18.5f -> "Abaixo do peso"
+                imcValor < 25f -> "Peso normal"
+                imcValor < 30f -> "Sobrepeso"
+                else -> "Obesidade"
+            }
+            // ----------------------------------------------------------------
+
+            // Define o formatter para usar UTC
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
                 timeZone = TimeZone.getTimeZone("UTC")
             }
             val dataFormatada = dateFormat.format(dataConsulta)
 
-            val request = ImcRecordRequest(
-                idade = idade.toInt(),
-                sexo = sexo,
-                peso = pesoFloat,
-                altura = alturaFloat,
-                dataConsulta = dataFormatada
+            // --- CRIAÇÃO DO NOVO REQUEST ---
+            // O Backend espera a altura em CM (baseado no Onboarding), então multiplicamos por 100
+            // O Backend não pede mais idade e sexo no registro de IMC (pega do perfil)
+            val request = RegistroImcRequest(
+                peso = pesoFloat.toDouble(),
+                altura = (alturaFloat * 100).toDouble(),
+                imc = imcValor.toDouble(),
+                classificacao = classificacao
+                // dataConsulta = dataFormatada -> Se o backend aceitar data, descomente e adicione no data class
             )
 
             Log.d("IMC_CALC_DEBUG", "Validação OK. Enviando para a API: $request")

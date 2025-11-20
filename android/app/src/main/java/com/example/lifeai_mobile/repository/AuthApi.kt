@@ -7,18 +7,16 @@ import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ImcBaseProfile
-import com.example.lifeai_mobile.model.ImcRecordRequest
-import com.example.lifeai_mobile.model.ImcRecordResponse
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.LogoutRequest
-import com.example.lifeai_mobile.model.PerfilImcBase
+import com.example.lifeai_mobile.model.PerfilRequest  // <--- NOVO
+import com.example.lifeai_mobile.model.RegistroImcRequest // <--- NOVO
 import com.example.lifeai_mobile.model.RefreshTokenRequest
 import com.example.lifeai_mobile.model.RefreshTokenResponse
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
-import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -34,8 +32,17 @@ interface AuthApi {
     @POST("login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    @POST("imc_base_perfil/")
-    suspend fun imcBase(@Body request: PerfilImcBase): Response<Unit>
+    // --- MUDANÇA AQUI: Substituímos o antigo imcBase por createProfile ---
+    // Rota para criar os dados pessoais (Nome, Idade, Objetivo, etc)
+    @POST("perfil/")
+    suspend fun createProfile(@Body request: PerfilRequest): Response<Unit>
+
+    // Rota para criar o registro de IMC (Peso, Altura, IMC)
+    // Atualizei para usar o RegistroImcRequest que criamos no passo 1
+    @POST("imc/")
+    suspend fun createImcRecord(@Body request: RegistroImcRequest): Response<Unit>
+
+    // ---------------------------------------------------------------------
 
     @GET("imc_base_dashboard/")
     suspend fun getImcBaseDashboard(): Response<List<ImcBaseProfile>>
@@ -46,14 +53,12 @@ interface AuthApi {
     @PATCH("imc_base_manage/")
     suspend fun updateProfileData(@Body data: ImcBaseProfile): Response<ImcBaseProfile>
 
-    @POST("imc/")
-    suspend fun createImcRecord(@Body request: ImcRecordRequest): Response<ImcRecordResponse>
-
     @POST("chat-ia/")
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
 
     @POST("gerar-dieta-ia/")
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
+
     @GET("imc/registrosConsultas/")
     suspend fun getHistoricoImc(): Response<List<ImcRegistro>>
 
