@@ -37,21 +37,23 @@ data class LoginResponse(
     val onboardingCompleted: Boolean
 )
 
-// --- MODELS DE PERFIL E SAÚDE (NOVOS) ---
+// --- MODELS DE PERFIL E SAÚDE ---
 
 /**
  * Usado para ENVIAR dados (POST /perfil/)
+ * Adicionado campo de restrições/preferências alimentares
  */
 data class PerfilRequest(
     val nome: String,
     val idade: Int,
     val sexo: String,
-    val objetivo: String
+    val objetivo: String,
+    @SerializedName("restricoes_alimentares")
+    val restricoesAlimentares: String? = null
 )
 
 /**
  * Usado para RECEBER dados (GET /perfil/)
- * Mapeia o JSON: {"id":1, "nome":"...", "sexo":"...", "idade":20, ...}
  */
 data class PerfilResponse(
     val id: Int,

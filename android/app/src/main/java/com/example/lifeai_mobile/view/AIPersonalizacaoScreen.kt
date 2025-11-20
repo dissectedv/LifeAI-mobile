@@ -72,6 +72,7 @@ fun AIPersonalizacaoScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .imePadding() // <--- ADICIONADO: Faz a tela subir com o teclado
         ) {
             when (val state = uiState) {
                 is PersonalizacaoState.Loading -> {
@@ -121,7 +122,9 @@ private fun PersonalizacaoForm(
     val altura by viewModel.altura.collectAsState()
     val sexo by viewModel.sexo.collectAsState()
     val objetivo by viewModel.objetivo.collectAsState()
+    val restricoes by viewModel.restricoes.collectAsState()
 
+    // Adiciona espaçamento extra no final para o scroll funcionar bem com teclado
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -197,6 +200,16 @@ private fun PersonalizacaoForm(
             enabled = !isSaving
         )
 
+        CustomTextField(
+            value = restricoes,
+            onValueChange = { viewModel.restricoes.value = it },
+            label = "Preferências Alimentares (Opcional)",
+            placeholder = "Ex: Sou vegano, sem glúten, não gosto de peixe...",
+            singleLine = false,
+            maxLines = 3,
+            enabled = !isSaving
+        )
+
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
@@ -226,7 +239,8 @@ private fun PersonalizacaoForm(
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        // Espaço extra no final para garantir que o botão suba acima do teclado
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from collections import defaultdict
 from django.conf import settings
+from django.db import transaction
 
 import requests.exceptions
 from tenacity import (
@@ -56,6 +57,10 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
     )
 
     if user_profile:
+        # --- AQUI INSERIMOS AS RESTRIÇÕES NO CONTEXTO DA IA ---
+        restricoes = user_profile.get('restricoes_alimentares')
+        texto_restricoes = f"\nPreferências/Restrições Alimentares: {restricoes}" if restricoes else ""
+        
         profile_context = (
             "\n\n--- CONTEXTO DO PACIENTE ---\n"
             f"Nome: {user_profile.get('nome')}\n"
@@ -63,7 +68,8 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
             f"Peso: {user_profile.get('peso')} kg\n"
             f"Altura: {user_profile.get('altura')} cm\n"
             f"Sexo: {user_profile.get('sexo')}\n"
-            f"Objetivo: {user_profile.get('objetivo')}\n"
+            f"Objetivo: {user_profile.get('objetivo')}"
+            f"{texto_restricoes}\n"
             f"IMC Atual: {user_profile.get('classificacao_imc')}\n"
             "Use este contexto para dar conselhos mais personalizados. "
             "Você pode mencionar esses dados se for útil para a conversa (ex: 'Vejo que seu objetivo é ganhar força...')."
@@ -120,6 +126,7 @@ def gerar_dieta_gemini(prompt_json):
                     "Sua única tarefa é retornar um objeto JSON válido. "
                     "NUNCA adicione qualquer texto, explicação ou formatação (como ```json) antes ou depois do JSON. "
                     "Responda apenas com o JSON."
+                    "IMPORTANTE: Se o prompt mencionar restrições alimentares (ex: vegano, sem glúten, intolerante a lactose), você DEVE respeitá-las rigorosamente."
                 )
             }]
         }
@@ -158,25 +165,17 @@ def chat_ia_view(request):
         perfil = PerfilUsuario.objects.filter(id_usuario=request.user).first()
         registro = RegistroCorporal.objects.filter(id_usuario=request.user).order_by('-id').first()
         
-        if perfil and registro:
+        if perfil:
             user_profile_data = {
                 "nome": perfil.nome,
                 "idade": perfil.idade,
                 "sexo": perfil.sexo,
                 "objetivo": perfil.objetivo,
-                "peso": registro.peso,
-                "altura": registro.altura,
-                "classificacao_imc": registro.classificacao
-            }
-        elif perfil:
-             user_profile_data = {
-                "nome": perfil.nome,
-                "idade": perfil.idade,
-                "sexo": perfil.sexo,
-                "objetivo": perfil.objetivo,
-                "peso": "N/A",
-                "altura": "N/A",
-                "classificacao_imc": "N/A"
+                # Adicionado aqui também para o Chat usar
+                "restricoes_alimentares": perfil.restricoes_alimentares,
+                "peso": registro.peso if registro else "N/A",
+                "altura": registro.altura if registro else "N/A",
+                "classificacao_imc": registro.classificacao if registro else "N/A"
             }
             
     except Exception as e:
@@ -206,26 +205,21 @@ def chat_ia_view(request):
             conversas_em_memoria[sessao_id].pop()
         return Response({"erro": f"Erro ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# --- MUDANÇA AQUI: Aceita GET e POST ---
 @api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
 def gerar_dieta_ia_view(request):
     
-    # >>> GET: Apenas consulta se existe <<<
     if request.method == 'GET':
         dieta_existente = Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao').first()
         if dieta_existente:
             return Response(dieta_existente.plano_alimentar, status=status.HTTP_200_OK)
         else:
-            # Retorna 404 para o App saber que deve mostrar o botão "Gerar"
             return Response({"erro": "Nenhuma dieta encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
-    # >>> POST: Gera uma nova dieta (Create) <<<
     force_new = request.data.get("force_new", False)
     if isinstance(force_new, str) and force_new.lower() == 'true':
         force_new = True
     
-    # Se não forçar nova, verifica se já tem (Safe check)
     if not force_new:
         dieta_existente = Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao').first()
         if dieta_existente:

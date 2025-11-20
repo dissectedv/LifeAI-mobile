@@ -33,14 +33,15 @@ sealed class DietaState {
     data class Error(val message: String) : DietaState()
 }
 
-// Classe interna simples para ajudar a montar o prompt
+// Classe interna atualizada com as restrições
 private data class DadosParaDieta(
     val nome: String,
     val idade: Int,
     val sexo: String,
     val objetivo: String,
     val peso: Double,
-    val altura: Double
+    val altura: Double,
+    val restricoes: String? // <--- NOVO CAMPO
 )
 
 class DietaViewModel(
@@ -57,7 +58,6 @@ class DietaViewModel(
 
     init {
         viewModelScope.launch {
-            // 1. Tenta carregar do cache local primeiro (Instantâneo)
             val savedJson = sessionManager.savedDietJson.first()
 
             if (savedJson != null) {
@@ -65,41 +65,33 @@ class DietaViewModel(
                     val dieta = gson.fromJson(savedJson, DietaResponse::class.java)
                     _state.value = DietaState.Success(dieta)
                 } catch (e: JsonSyntaxException) {
-                    // JSON corrompido, tenta buscar da nuvem
                     sessionManager.saveDietJson(null)
                     verificarDietaNaNuvem()
                 }
             } else {
-                // 2. Se não tem local, verifica na nuvem se já existe (Backup)
                 verificarDietaNaNuvem()
             }
         }
     }
 
-    // Nova função: Apenas consulta (GET), não gera nada novo
     private suspend fun verificarDietaNaNuvem() {
         _state.value = DietaState.Loading
         try {
             val response = authRepository.getDietaAtual()
 
             if (response.isSuccessful && response.body() != null) {
-                // AQUI ESTÁ A MÁGICA: Se achou no banco, baixa e exibe.
                 val dieta = response.body()!!
                 val json = gson.toJson(dieta)
-                sessionManager.saveDietJson(json) // Salva local para a próxima
+                sessionManager.saveDietJson(json)
                 _state.value = DietaState.Success(dieta)
             } else {
-                // Se deu 404 (Não encontrado), mostra o botão para o usuário gerar
                 _state.value = DietaState.Empty
             }
         } catch (e: Exception) {
-            // Se deu erro de conexão, mostra o botão (ou poderia mostrar erro)
-            // Vamos mostrar Empty para permitir que o usuário tente clicar em gerar depois
             _state.value = DietaState.Empty
         }
     }
 
-    // Função chamada SOMENTE quando o usuário clica no botão (POST)
     fun gerarPlanoDeDieta(forceNew: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _state.value = DietaState.Generating
@@ -123,7 +115,7 @@ class DietaViewModel(
 
                 if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
                     val ultimoRegistro = imcResponse.body()!!.last()
-                    // Correção de valores (igual aos outros VMs)
+
                     val imcReg = if (ultimoRegistro.imcRes < 5.0) {
                         ultimoRegistro.copy(imcRes = ultimoRegistro.imcRes * 10000)
                     } else ultimoRegistro
@@ -138,12 +130,12 @@ class DietaViewModel(
                     sexo = perfil.sexo,
                     objetivo = perfil.objetivo,
                     peso = pesoAtual,
-                    altura = alturaAtual
+                    altura = alturaAtual,
+                    restricoes = perfil.restricoesAlimentares // <--- Lendo do Perfil
                 )
 
                 val prompt = construirPrompt(dadosParaPrompt)
 
-                // Envia o POST para gerar (ou recriar se forceNew=true)
                 val request = ChatRequest(
                     pergunta = prompt,
                     sessaoId = sessaoId,
@@ -187,7 +179,6 @@ class DietaViewModel(
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.w("DietaViewModel", "Permissão de notificação NÃO concedida.")
             return
         }
         val builder = NotificationCompat.Builder(context, MyApplication.DIETA_CHANNEL_ID)
@@ -203,6 +194,13 @@ class DietaViewModel(
     }
 
     private fun construirPrompt(dados: DadosParaDieta): String {
+        // Formata a string de restrição (se houver)
+        val linhaRestricoes = if (!dados.restricoes.isNullOrBlank()) {
+            "- Preferências/Restrições Alimentares: ${dados.restricoes}"
+        } else {
+            ""
+        }
+
         return """
             Baseado neste perfil de usuário:
             - Idade: ${dados.idade}
@@ -210,6 +208,7 @@ class DietaViewModel(
             - Peso: ${dados.peso} kg
             - Altura: ${dados.altura} cm
             - Objetivo: ${dados.objetivo}
+            $linhaRestricoes
 
             Gere um plano de dieta de 7 dias (Segunda a Domingo).
             Responda APENAS em formato JSON, seguindo esta estrutura 

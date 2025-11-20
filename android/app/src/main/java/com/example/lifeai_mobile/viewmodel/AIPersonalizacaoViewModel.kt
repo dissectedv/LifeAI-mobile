@@ -3,8 +3,8 @@ package com.example.lifeai_mobile.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lifeai_mobile.model.PerfilRequest      // <--- NOVO
-import com.example.lifeai_mobile.model.RegistroImcRequest // <--- NOVO
+import com.example.lifeai_mobile.model.PerfilRequest
+import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -35,6 +35,9 @@ class AIPersonalizacaoViewModel(
     val sexo = MutableStateFlow("")
     val objetivo = MutableStateFlow("")
 
+    // NOVO CAMPO: Preferências / Restrições
+    val restricoes = MutableStateFlow("")
+
     init {
         carregarDadosAtuais()
     }
@@ -59,15 +62,13 @@ class AIPersonalizacaoViewModel(
                     sexo.value = profile.sexo
                     objetivo.value = profile.objetivo
 
+                    // Carrega a preferência salva (se for null, fica vazio)
+                    restricoes.value = profile.restricoesAlimentares ?: ""
+
                     // Preenche dados de Peso/Altura (pegando do último registro de IMC)
                     if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
-                        val ultimoRegistro = imcResponse.body()!!.last() // Assume ordem cronológica
-
+                        val ultimoRegistro = imcResponse.body()!!.last()
                         peso.value = ultimoRegistro.peso.toString()
-
-                        // Altura vem do backend. Se vier em cm (ex 180), ok.
-                        // Se vier em metros (1.80), o user vê em metros.
-                        // Vamos assumir que o backend manda como foi salvo.
                         altura.value = ultimoRegistro.altura.toString()
                     }
 
@@ -89,13 +90,13 @@ class AIPersonalizacaoViewModel(
                 val pesoDouble = peso.value.toDoubleOrNull() ?: 0.0
                 val alturaInput = altura.value.toDoubleOrNull() ?: 0.0
 
-                // Normalização de altura para o cálculo do IMC (deve ser em Metros)
+                // Normalização de altura (converte para Metros para cálculo do IMC)
                 val alturaMetros = if (alturaInput > 3.0) alturaInput / 100.0 else alturaInput
-                // Altura para salvar no banco (geralmente CM, mas depende do padrão. Vamos salvar o input direto ou converter pra CM se for < 3)
+                // Altura para salvar no banco (salva como o usuário digitou ou converte pra CM se for < 3)
                 val alturaParaSalvar = if (alturaInput < 3.0) alturaInput * 100 else alturaInput
 
                 if (nome.value.isBlank() || idadeInt <= 0 || pesoDouble <= 0 || alturaMetros <= 0) {
-                    _uiState.value = PersonalizacaoState.Error("Preencha todos os campos corretamente.")
+                    _uiState.value = PersonalizacaoState.Error("Preencha todos os campos obrigatórios.")
                     return@launch
                 }
 
@@ -107,12 +108,13 @@ class AIPersonalizacaoViewModel(
                     else -> "Obesidade"
                 }
 
-                // PASSO 1: Atualizar Perfil
+                // PASSO 1: Atualizar Perfil (Incluindo as restrições)
                 val perfilRequest = PerfilRequest(
                     nome = nome.value,
                     idade = idadeInt,
                     sexo = sexo.value,
-                    objetivo = objetivo.value
+                    objetivo = objetivo.value,
+                    restricoesAlimentares = if (restricoes.value.isBlank()) null else restricoes.value
                 )
                 val resPerfil = repository.updateProfileData(perfilRequest)
 
@@ -121,7 +123,7 @@ class AIPersonalizacaoViewModel(
                     return@launch
                 }
 
-                // PASSO 2: Criar novo registro de IMC (Atualizando peso/altura)
+                // PASSO 2: Criar novo registro de IMC
                 val imcRequest = RegistroImcRequest(
                     peso = pesoDouble,
                     altura = alturaParaSalvar,
@@ -134,9 +136,6 @@ class AIPersonalizacaoViewModel(
                     Log.d("LifeAI_Update", "✅ Sucesso! Dados atualizados.")
                     _uiState.value = PersonalizacaoState.Success
                 } else {
-                    Log.e("LifeAI_Update", "❌ Falha ao salvar IMC: ${resImc.code()}")
-                    // Consideramos sucesso se o perfil salvou, mas avisamos do erro?
-                    // Ou damos erro geral? Vamos dar erro geral para forçar consistência.
                     _uiState.value = PersonalizacaoState.Error("Perfil salvo, mas erro ao atualizar medidas.")
                 }
 

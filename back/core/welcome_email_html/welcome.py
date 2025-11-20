@@ -1,6 +1,5 @@
 from LIFEAI_ import settings
 
-
 def _send_welcome_email_html(user):
     subject = "Bem-vindo ao LifeAI!"
     from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
