@@ -12,7 +12,7 @@ import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.LogoutRequest
 import com.example.lifeai_mobile.model.PerfilRequest
-import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO IMPORT
+import com.example.lifeai_mobile.model.PerfilResponse
 import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.model.RefreshTokenRequest
 import com.example.lifeai_mobile.model.RegisterRequest
@@ -96,7 +96,7 @@ class AuthRepository(
     }
     // -----------------------------------------------------
 
-    // --- GESTÃO DE PERFIL (ATUALIZADO) ---
+    // --- GESTÃO DE PERFIL ---
 
     suspend fun getProfileData(): Response<PerfilResponse> {
         return api.getProfileData()
@@ -112,9 +112,15 @@ class AuthRepository(
         return api.postChatMessage(request)
     }
 
+    // --- DIETA ---
     suspend fun postDietaRequest(request: ChatRequest): Response<DietaResponse> {
         return api.postDietaRequest(request)
     }
+
+    suspend fun getDietaAtual(): Response<DietaResponse> {
+        return api.getDietaAtual()
+    }
+    // -------------
 
     suspend fun getHistoricoImc(): Response<List<ImcRegistro>> {
         return api.getHistoricoImc()

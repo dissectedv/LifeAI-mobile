@@ -11,7 +11,7 @@ import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.LogoutRequest
 import com.example.lifeai_mobile.model.PerfilRequest
-import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO MODEL
+import com.example.lifeai_mobile.model.PerfilResponse
 import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.model.RefreshTokenRequest
 import com.example.lifeai_mobile.model.RefreshTokenResponse
@@ -40,13 +40,11 @@ interface AuthApi {
     @POST("imc/")
     suspend fun createImcRecord(@Body request: RegistroImcRequest): Response<Unit>
 
-    // --- LEITURA E ATUALIZAÇÃO DE PERFIL (ATUALIZADO) ---
+    // --- LEITURA E ATUALIZAÇÃO DE PERFIL ---
 
-    // Busca apenas os dados pessoais (Nome, Idade, etc)
     @GET("perfil/")
     suspend fun getProfileData(): Response<PerfilResponse>
 
-    // Atualiza apenas os dados pessoais
     @PATCH("perfil/")
     suspend fun updateProfileData(@Body data: PerfilRequest): Response<PerfilResponse>
 
@@ -55,8 +53,17 @@ interface AuthApi {
     @POST("chat-ia/")
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
 
+    // --- DIETA (GET e POST) ---
+
+    // Gera uma nova dieta (ou força nova)
     @POST("gerar-dieta-ia/")
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
+
+    // Consulta a dieta atual salva no banco (sem gerar)
+    @GET("gerar-dieta-ia/")
+    suspend fun getDietaAtual(): Response<DietaResponse>
+
+    // --------------------------
 
     @GET("imc/registrosConsultas/")
     suspend fun getHistoricoImc(): Response<List<ImcRegistro>>

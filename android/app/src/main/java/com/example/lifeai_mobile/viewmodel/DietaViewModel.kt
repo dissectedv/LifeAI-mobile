@@ -57,23 +57,49 @@ class DietaViewModel(
 
     init {
         viewModelScope.launch {
+            // 1. Tenta carregar do cache local primeiro (Instantâneo)
             val savedJson = sessionManager.savedDietJson.first()
-            if (savedJson == null) {
-                // Se não tem local, tenta buscar do servidor (sem forçar nova)
-                gerarPlanoDeDieta(forceNew = false)
-            } else {
+
+            if (savedJson != null) {
                 try {
                     val dieta = gson.fromJson(savedJson, DietaResponse::class.java)
                     _state.value = DietaState.Success(dieta)
                 } catch (e: JsonSyntaxException) {
-                    _state.value = DietaState.Error("Erro ao ler dieta salva. Tentando buscar do servidor...")
-                    gerarPlanoDeDieta(forceNew = false)
+                    // JSON corrompido, tenta buscar da nuvem
+                    sessionManager.saveDietJson(null)
+                    verificarDietaNaNuvem()
                 }
+            } else {
+                // 2. Se não tem local, verifica na nuvem se já existe (Backup)
+                verificarDietaNaNuvem()
             }
         }
     }
 
-    // ADICIONADO PARÂMETRO forceNew
+    // Nova função: Apenas consulta (GET), não gera nada novo
+    private suspend fun verificarDietaNaNuvem() {
+        _state.value = DietaState.Loading
+        try {
+            val response = authRepository.getDietaAtual()
+
+            if (response.isSuccessful && response.body() != null) {
+                // AQUI ESTÁ A MÁGICA: Se achou no banco, baixa e exibe.
+                val dieta = response.body()!!
+                val json = gson.toJson(dieta)
+                sessionManager.saveDietJson(json) // Salva local para a próxima
+                _state.value = DietaState.Success(dieta)
+            } else {
+                // Se deu 404 (Não encontrado), mostra o botão para o usuário gerar
+                _state.value = DietaState.Empty
+            }
+        } catch (e: Exception) {
+            // Se deu erro de conexão, mostra o botão (ou poderia mostrar erro)
+            // Vamos mostrar Empty para permitir que o usuário tente clicar em gerar depois
+            _state.value = DietaState.Empty
+        }
+    }
+
+    // Função chamada SOMENTE quando o usuário clica no botão (POST)
     fun gerarPlanoDeDieta(forceNew: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _state.value = DietaState.Generating
@@ -92,14 +118,12 @@ class DietaViewModel(
 
                 val perfil = profileResponse.body()!!
 
-                // Pegar peso e altura do último registro
                 var pesoAtual = 0.0
                 var alturaAtual = 0.0
 
                 if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
-                    val ultimoRegistro = imcResponse.body()!!.last() // Assume ordem cronológica
-
-                    // Correção de valores se necessário (igual ao ResumoViewModel)
+                    val ultimoRegistro = imcResponse.body()!!.last()
+                    // Correção de valores (igual aos outros VMs)
                     val imcReg = if (ultimoRegistro.imcRes < 5.0) {
                         ultimoRegistro.copy(imcRes = ultimoRegistro.imcRes * 10000)
                     } else ultimoRegistro
@@ -108,7 +132,6 @@ class DietaViewModel(
                     alturaAtual = imcReg.altura
                 }
 
-                // Monta o objeto consolidado para o prompt
                 val dadosParaPrompt = DadosParaDieta(
                     nome = perfil.nome,
                     idade = perfil.idade,
@@ -120,7 +143,7 @@ class DietaViewModel(
 
                 val prompt = construirPrompt(dadosParaPrompt)
 
-                // CORREÇÃO AQUI: Passando forceNew para o ChatRequest
+                // Envia o POST para gerar (ou recriar se forceNew=true)
                 val request = ChatRequest(
                     pergunta = prompt,
                     sessaoId = sessaoId,
@@ -131,14 +154,11 @@ class DietaViewModel(
 
                 if (response.isSuccessful && response.body() != null) {
                     val dietaResponse = response.body()!!
-
-                    // Salva localmente também para acesso offline
                     val jsonParaSalvar = gson.toJson(dietaResponse)
                     sessionManager.saveDietJson(jsonParaSalvar)
 
                     _state.value = DietaState.Success(dietaResponse)
 
-                    // Só manda notificação se realmente gerou uma nova (status 201) ou se forçado
                     if (response.code() == 201 || forceNew) {
                         sendDietaProntaNotification()
                     }
@@ -155,7 +175,6 @@ class DietaViewModel(
     fun apagarPlanoEGerarNovo() {
         viewModelScope.launch {
             sessionManager.saveDietJson(null)
-            // CORREÇÃO AQUI: Agora passamos true para forçar o backend a gerar uma nova
             gerarPlanoDeDieta(forceNew = true)
         }
     }

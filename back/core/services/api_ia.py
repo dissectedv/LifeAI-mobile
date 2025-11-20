@@ -206,23 +206,31 @@ def chat_ia_view(request):
             conversas_em_memoria[sessao_id].pop()
         return Response({"erro": f"Erro ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
+# --- MUDANÇA AQUI: Aceita GET e POST ---
+@api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
 def gerar_dieta_ia_view(request):
-    # Recebe a flag force_new (pode vir como boolean true ou string "true")
+    
+    # >>> GET: Apenas consulta se existe <<<
+    if request.method == 'GET':
+        dieta_existente = Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao').first()
+        if dieta_existente:
+            return Response(dieta_existente.plano_alimentar, status=status.HTTP_200_OK)
+        else:
+            # Retorna 404 para o App saber que deve mostrar o botão "Gerar"
+            return Response({"erro": "Nenhuma dieta encontrada."}, status=status.HTTP_404_NOT_FOUND)
+
+    # >>> POST: Gera uma nova dieta (Create) <<<
     force_new = request.data.get("force_new", False)
     if isinstance(force_new, str) and force_new.lower() == 'true':
         force_new = True
     
-    # 1. Verifica se já existe dieta salva, MAS SÓ SE não estiver forçando nova
+    # Se não forçar nova, verifica se já tem (Safe check)
     if not force_new:
         dieta_existente = Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao').first()
         if dieta_existente:
-            print("Retornando dieta existente do banco.")
             return Response(dieta_existente.plano_alimentar, status=status.HTTP_200_OK)
 
-    # 2. Se não existir OU se force_new=True, gera uma nova
-    print("Gerando NOVA dieta via IA...")
     prompt_json = request.data.get("pergunta")
     if not prompt_json:
         return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
@@ -238,7 +246,6 @@ def gerar_dieta_ia_view(request):
         try:
             dieta_data = json.loads(resposta_string_json.strip())
             
-            # 3. Salva a nova dieta no banco
             Dieta.objects.create(
                 id_usuario=request.user,
                 plano_alimentar=dieta_data

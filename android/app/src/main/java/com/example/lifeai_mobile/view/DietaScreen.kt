@@ -1,14 +1,10 @@
 package com.example.lifeai_mobile.view
 
-// --- IMPORTS NOVOS ---
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-// --- FIM IMPORTS NOVOS ---
-
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,8 +13,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -27,23 +23,17 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect // <-- IMPORT NOVO
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext // <-- IMPORT NOVO
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.PlanoDiario
@@ -61,38 +51,25 @@ fun DietaScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
-
-    // --- CÓDIGO PARA PEDIR PERMISSÃO DE NOTIFICAÇÃO ---
     val context = LocalContext.current
-    // 1. Cria um "lançador" que sabe como pedir permissão
+
+    // Launcher para permissão de notificação
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-        onResult = { isGranted ->
-            if (isGranted) {
-                // Permissão concedida! O usuário receberá notificações.
-            } else {
-                // Permissão negada. O app funciona, mas sem notificações.
-                // Não precisa fazer nada aqui.
-            }
-        }
+        onResult = { }
     )
 
-    // 2. Roda este bloco UMA VEZ quando a tela carregar
     LaunchedEffect(Unit) {
-        // 3. Só é necessário pedir permissão no Android 13 (TIRAMISU) ou mais novo
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // 4. Checa se a permissão AINDA NÃO foi dada
             if (ContextCompat.checkSelfPermission(
                     context,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                // 5. Pede a permissão (isso vai mostrar o pop-up)
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }
-    // --- FIM DO CÓDIGO DE PERMISSÃO ---
 
     Scaffold(
         modifier = modifier,
@@ -148,6 +125,7 @@ fun DietaScreen(
                 }
 
                 is DietaState.Generating -> {
+                    // Este estado aparece enquanto busca no banco OU gera na IA
                     GeneratingState()
                 }
 
@@ -229,22 +207,15 @@ private fun GeneratingState() {
         )
         Spacer(Modifier.height(20.dp))
         Text(
-            "Analisando seu perfil...",
+            "Sincronizando seu plano...", // Texto ajustado para fazer mais sentido
             style = MaterialTheme.typography.titleMedium,
             color = Color.White
         )
         Text(
-            "Estamos gerando seu plano de dieta com IA...",
+            "Buscando dieta salva ou gerando uma nova...",
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center
-        )
-        Text(
-            "(Isso pode levar até 60 segundos)",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.5f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 8.dp)
         )
     }
 }
@@ -267,7 +238,7 @@ private fun ErrorState(message: String, onRetryClick: () -> Unit) {
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "Erro ao Gerar Plano",
+            "Erro ao carregar plano",
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
             fontWeight = FontWeight.Bold
