@@ -13,12 +13,13 @@ import com.example.lifeai_mobile.MyApplication
 import com.example.lifeai_mobile.R
 import com.example.lifeai_mobile.model.ChatRequest
 import com.example.lifeai_mobile.model.DietaResponse
-import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.PerfilResponse
 import com.example.lifeai_mobile.repository.AuthRepository
 import com.example.lifeai_mobile.utils.SessionManager
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -31,6 +32,16 @@ sealed class DietaState {
     data class Success(val dieta: DietaResponse) : DietaState()
     data class Error(val message: String) : DietaState()
 }
+
+// Classe interna simples para ajudar a montar o prompt
+private data class DadosParaDieta(
+    val nome: String,
+    val idade: Int,
+    val sexo: String,
+    val objetivo: String,
+    val peso: Double,
+    val altura: Double
+)
 
 class DietaViewModel(
     application: Application,
@@ -48,42 +59,92 @@ class DietaViewModel(
         viewModelScope.launch {
             val savedJson = sessionManager.savedDietJson.first()
             if (savedJson == null) {
-                _state.value = DietaState.Empty
+                // Se não tem local, tenta buscar do servidor (sem forçar nova)
+                gerarPlanoDeDieta(forceNew = false)
             } else {
                 try {
                     val dieta = gson.fromJson(savedJson, DietaResponse::class.java)
                     _state.value = DietaState.Success(dieta)
                 } catch (e: JsonSyntaxException) {
-                    _state.value = DietaState.Error("Erro ao ler dieta salva. Tente gerar uma nova.")
-                    sessionManager.saveDietJson(null)
+                    _state.value = DietaState.Error("Erro ao ler dieta salva. Tentando buscar do servidor...")
+                    gerarPlanoDeDieta(forceNew = false)
                 }
             }
         }
     }
 
-    fun gerarPlanoDeDieta() {
+    // ADICIONADO PARÂMETRO forceNew
+    fun gerarPlanoDeDieta(forceNew: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _state.value = DietaState.Generating
             try {
-                val profileResponse = authRepository.getImcBaseDashboard()
-                if (!profileResponse.isSuccessful || profileResponse.body().isNullOrEmpty()) {
+                // 1. Buscar dados de Perfil e IMC em paralelo
+                val profileJob = async { authRepository.getProfileData() }
+                val imcJob = async { authRepository.getHistoricoImc() }
+
+                val profileResponse = profileJob.await()
+                val imcResponse = imcJob.await()
+
+                if (!profileResponse.isSuccessful || profileResponse.body() == null) {
                     _state.value = DietaState.Error("Perfil de usuário não encontrado.")
                     return@launch
                 }
-                val profile = profileResponse.body()!!.first()
-                val prompt = construirPrompt(profile)
-                val request = ChatRequest(pergunta = prompt, sessaoId = sessaoId)
+
+                val perfil = profileResponse.body()!!
+
+                // Pegar peso e altura do último registro
+                var pesoAtual = 0.0
+                var alturaAtual = 0.0
+
+                if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
+                    val ultimoRegistro = imcResponse.body()!!.last() // Assume ordem cronológica
+
+                    // Correção de valores se necessário (igual ao ResumoViewModel)
+                    val imcReg = if (ultimoRegistro.imcRes < 5.0) {
+                        ultimoRegistro.copy(imcRes = ultimoRegistro.imcRes * 10000)
+                    } else ultimoRegistro
+
+                    pesoAtual = imcReg.peso
+                    alturaAtual = imcReg.altura
+                }
+
+                // Monta o objeto consolidado para o prompt
+                val dadosParaPrompt = DadosParaDieta(
+                    nome = perfil.nome,
+                    idade = perfil.idade,
+                    sexo = perfil.sexo,
+                    objetivo = perfil.objetivo,
+                    peso = pesoAtual,
+                    altura = alturaAtual
+                )
+
+                val prompt = construirPrompt(dadosParaPrompt)
+
+                // CORREÇÃO AQUI: Passando forceNew para o ChatRequest
+                val request = ChatRequest(
+                    pergunta = prompt,
+                    sessaoId = sessaoId,
+                    forceNew = forceNew
+                )
+
                 val response = authRepository.postDietaRequest(request)
 
                 if (response.isSuccessful && response.body() != null) {
                     val dietaResponse = response.body()!!
+
+                    // Salva localmente também para acesso offline
                     val jsonParaSalvar = gson.toJson(dietaResponse)
                     sessionManager.saveDietJson(jsonParaSalvar)
+
                     _state.value = DietaState.Success(dietaResponse)
-                    sendDietaProntaNotification()
+
+                    // Só manda notificação se realmente gerou uma nova (status 201) ou se forçado
+                    if (response.code() == 201 || forceNew) {
+                        sendDietaProntaNotification()
+                    }
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "Erro desconhecido"
-                    _state.value = DietaState.Error("Falha ao gerar dieta: $errorBody")
+                    _state.value = DietaState.Error("Falha ao obter dieta: $errorBody")
                 }
             } catch (e: Exception) {
                 _state.value = DietaState.Error(e.message ?: "Erro desconhecido")
@@ -94,7 +155,8 @@ class DietaViewModel(
     fun apagarPlanoEGerarNovo() {
         viewModelScope.launch {
             sessionManager.saveDietJson(null)
-            gerarPlanoDeDieta()
+            // CORREÇÃO AQUI: Agora passamos true para forçar o backend a gerar uma nova
+            gerarPlanoDeDieta(forceNew = true)
         }
     }
 
@@ -112,7 +174,7 @@ class DietaViewModel(
         val builder = NotificationCompat.Builder(context, MyApplication.DIETA_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Sua dieta está pronta!")
-            .setContentText("Volte para a tela de Dieta para conferir o seu novo plano.") // <-- MENSAGEM CORRIGIDA
+            .setContentText("Volte para a tela de Dieta para conferir o seu novo plano.")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 
@@ -121,14 +183,14 @@ class DietaViewModel(
         }
     }
 
-    private fun construirPrompt(profile: ImcBaseProfile): String {
+    private fun construirPrompt(dados: DadosParaDieta): String {
         return """
             Baseado neste perfil de usuário:
-            - Idade: ${profile.idade}
-            - Sexo: ${profile.sexo}
-            - Peso: ${profile.peso} kg
-            - Altura: ${profile.altura} cm
-            - Objetivo: ${profile.objetivo}
+            - Idade: ${dados.idade}
+            - Sexo: ${dados.sexo}
+            - Peso: ${dados.peso} kg
+            - Altura: ${dados.altura} cm
+            - Objetivo: ${dados.objetivo}
 
             Gere um plano de dieta de 7 dias (Segunda a Domingo).
             Responda APENAS em formato JSON, seguindo esta estrutura 

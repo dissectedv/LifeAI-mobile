@@ -17,8 +17,7 @@ from tenacity import (
     retry_if_exception
 )
 
-# CORREÇÃO AQUI: Importando os modelos que realmente existem
-from core.models import PerfilUsuario, RegistroCorporal
+from core.models import PerfilUsuario, RegistroCorporal, Dieta
 
 conversas_em_memoria = defaultdict(list)
 
@@ -156,12 +155,7 @@ def chat_ia_view(request):
     
     user_profile_data = None
     try:
-        # CORREÇÃO AQUI: Buscamos dados de DUAS tabelas diferentes
-        
-        # 1. Busca dados de perfil (Nome, Idade, Sexo, Objetivo)
         perfil = PerfilUsuario.objects.filter(id_usuario=request.user).first()
-        
-        # 2. Busca o registro corporal mais recente (Peso, Altura, IMC)
         registro = RegistroCorporal.objects.filter(id_usuario=request.user).order_by('-id').first()
         
         if perfil and registro:
@@ -174,7 +168,7 @@ def chat_ia_view(request):
                 "altura": registro.altura,
                 "classificacao_imc": registro.classificacao
             }
-        elif perfil: # Caso tenha perfil mas não tenha registro corporal ainda
+        elif perfil:
              user_profile_data = {
                 "nome": perfil.nome,
                 "idade": perfil.idade,
@@ -215,6 +209,20 @@ def chat_ia_view(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def gerar_dieta_ia_view(request):
+    # Recebe a flag force_new (pode vir como boolean true ou string "true")
+    force_new = request.data.get("force_new", False)
+    if isinstance(force_new, str) and force_new.lower() == 'true':
+        force_new = True
+    
+    # 1. Verifica se já existe dieta salva, MAS SÓ SE não estiver forçando nova
+    if not force_new:
+        dieta_existente = Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao').first()
+        if dieta_existente:
+            print("Retornando dieta existente do banco.")
+            return Response(dieta_existente.plano_alimentar, status=status.HTTP_200_OK)
+
+    # 2. Se não existir OU se force_new=True, gera uma nova
+    print("Gerando NOVA dieta via IA...")
     prompt_json = request.data.get("pergunta")
     if not prompt_json:
         return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
@@ -229,11 +237,18 @@ def gerar_dieta_ia_view(request):
             
         try:
             dieta_data = json.loads(resposta_string_json.strip())
+            
+            # 3. Salva a nova dieta no banco
+            Dieta.objects.create(
+                id_usuario=request.user,
+                plano_alimentar=dieta_data
+            )
+            
+            return Response(dieta_data, status=status.HTTP_201_CREATED)
+
         except json.JSONDecodeError:
             return Response({"erro": "A IA não retornou um JSON válido.", "resposta_ia_invalida": resposta_string_json}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-        return Response(dieta_data, status=status.HTTP_200_OK)
-
     except RetryError as e:
         return Response({"erro": "A IA está sobrecarregada no momento. Tente novamente em alguns segundos."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     except requests.exceptions.HTTPError as e:

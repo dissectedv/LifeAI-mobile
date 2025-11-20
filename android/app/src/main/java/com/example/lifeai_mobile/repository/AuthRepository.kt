@@ -7,13 +7,13 @@ import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
-import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.LogoutRequest
-import com.example.lifeai_mobile.model.PerfilRequest      // <--- NOVO
-import com.example.lifeai_mobile.model.RegistroImcRequest // <--- NOVO
+import com.example.lifeai_mobile.model.PerfilRequest
+import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO IMPORT
+import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.model.RefreshTokenRequest
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
@@ -82,41 +82,31 @@ class AuthRepository(
         sessionManager.clearTokens()
     }
 
-    // --- LÓGICA NOVA: CRIAÇÃO DE PERFIL EM DUAS ETAPAS ---
-    /**
-     * Tenta criar o Perfil primeiro. Se der certo, tenta criar o IMC.
-     * Retorna a resposta do último passo (IMC) ou o erro do primeiro passo (Perfil).
-     */
+    // --- CRIAÇÃO DE PERFIL EM DUAS ETAPAS ---
     suspend fun createFullProfile(perfil: PerfilRequest, imc: RegistroImcRequest): Response<Unit> {
-        // 1. Envia dados pessoais (Nome, Idade, etc)
         val perfilResponse = api.createProfile(perfil)
-
         if (!perfilResponse.isSuccessful) {
-            // Se falhar no perfil, retorna o erro imediatamente
             return perfilResponse
         }
-
-        // 2. Se o perfil foi criado, envia os dados corporais (Peso, Altura, IMC)
         return api.createImcRecord(imc)
     }
 
-    // Atualizado para usar o novo RegistroImcRequest
     suspend fun createImcRecord(record: RegistroImcRequest): Response<Unit> {
         return api.createImcRecord(record)
     }
     // -----------------------------------------------------
 
-    suspend fun getImcBaseDashboard(): Response<List<ImcBaseProfile>> {
-        return api.getImcBaseDashboard()
-    }
+    // --- GESTÃO DE PERFIL (ATUALIZADO) ---
 
-    suspend fun getProfileData(): Response<ImcBaseProfile> {
+    suspend fun getProfileData(): Response<PerfilResponse> {
         return api.getProfileData()
     }
 
-    suspend fun updateProfileData(data: ImcBaseProfile): Response<ImcBaseProfile> {
+    suspend fun updateProfileData(data: PerfilRequest): Response<PerfilResponse> {
         return api.updateProfileData(data)
     }
+
+    // -------------------------------------
 
     suspend fun postChatMessage(request: ChatRequest): Response<ChatResponse> {
         return api.postChatMessage(request)

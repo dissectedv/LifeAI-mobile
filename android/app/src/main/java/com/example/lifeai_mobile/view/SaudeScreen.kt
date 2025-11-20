@@ -23,8 +23,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+// --- IMPORTANTE: AQUI ESTÃO OS IMPORTS (E NÃO AS DEFINIÇÕES) ---
 import com.example.lifeai_mobile.viewmodel.ResumoViewModel
 import com.example.lifeai_mobile.viewmodel.ResumoState
+// ---------------------------------------------------------------
 
 @Composable
 fun SaudeScreen(
@@ -59,7 +61,9 @@ fun SaudeScreen(
                 icon = Icons.Default.FitnessCenter,
                 onClick = {
                     if (state is ResumoState.Success) {
-                        val imc = (state as ResumoState.Success).profile.imcResultado.toFloat()
+                        // AQUI ESTÁ A FORMA CORRETA DE ACESSAR O NOVO ESTADO
+                        val successState = state as ResumoState.Success
+                        val imc = successState.ultimoImc?.imcRes?.toFloat() ?: 0f
                         navController.navigate("atividade_fisica/$imc")
                     }
                 }

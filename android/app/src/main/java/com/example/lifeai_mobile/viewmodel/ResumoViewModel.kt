@@ -1,10 +1,12 @@
 package com.example.lifeai_mobile.viewmodel
 
+import android.util.Log // <--- Importante para os logs
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.Compromisso
-import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.ImcRegistro
+import com.example.lifeai_mobile.model.PerfilResponse
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -26,11 +28,7 @@ sealed class GraficoUIState {
 
 sealed class CompromissoState {
     object NenhumAgendado : CompromissoState()
-
-    data class TodosConcluidos(
-        val total: Int
-    ) : CompromissoState()
-
+    data class TodosConcluidos(val total: Int) : CompromissoState()
     data class Proximo(
         val compromisso: Compromisso,
         val total: Int,
@@ -42,15 +40,19 @@ sealed class CompromissoState {
 sealed class ResumoState {
     object Loading : ResumoState()
     data class Success(
-        val profile: ImcBaseProfile,
+        val perfil: PerfilResponse,
+        val ultimoImc: ImcRegistro?,
         val ultimoRegistroComposicao: ComposicaoCorporalRegistro?,
         val compromissoState: CompromissoState,
         val graficoImcState: GraficoUIState
     ) : ResumoState()
+
     data class Error(val message: String) : ResumoState()
 }
 
 class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
+
+    private val TAG = "ResumoVM_Debug" // Tag para filtrar no Logcat
 
     private val _state = MutableStateFlow<ResumoState>(ResumoState.Loading)
     val state: StateFlow<ResumoState> = _state
@@ -72,16 +74,10 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val tarefasHoje = compromissos.filter { it.data == hojeStr }
         val totalHoje = tarefasHoje.size
         val concluidasHoje = tarefasHoje.count { it.concluido }
-
         val atrasados = compromissos.filter { it.data < hojeStr && !it.concluido }.sortedBy { it.data }
 
         if (atrasados.isNotEmpty()) {
-            return CompromissoState.Proximo(
-                compromisso = atrasados.first(),
-                total = totalHoje,
-                concluidas = concluidasHoje,
-                isAtrasado = true
-            )
+            return CompromissoState.Proximo(atrasados.first(), totalHoje, concluidasHoje, true)
         }
 
         if (totalHoje == 0) return CompromissoState.NenhumAgendado
@@ -93,12 +89,7 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val pendenteHoje = proximoHoje ?: tarefasHoje.filter { !it.concluido }.minByOrNull { it.hora_inicio }
 
         return if (pendenteHoje != null) {
-            CompromissoState.Proximo(
-                compromisso = pendenteHoje,
-                total = totalHoje,
-                concluidas = concluidasHoje,
-                isAtrasado = false
-            )
+            CompromissoState.Proximo(pendenteHoje, totalHoje, concluidasHoje, false)
         } else {
             CompromissoState.TodosConcluidos(totalHoje)
         }
@@ -110,29 +101,73 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 _state.value = ResumoState.Loading
             }
 
+            Log.d(TAG, "Iniciando busca de dados...")
+
             try {
-                val profileJob = async { repository.getImcBaseDashboard() }
+                val profileJob = async { repository.getProfileData() }
+                val imcJob = async { repository.getHistoricoImc() }
                 val composicaoJob = async { repository.getHistoricoComposicao() }
                 val compromissosJob = async { repository.getCompromissos() }
-                val graficoImcJob = async { repository.getHistoricoImc() }
 
                 val profileResponse = profileJob.await()
+                val imcHistoryResponse = imcJob.await()
                 val composicaoResponse = composicaoJob.await()
                 val compromissosResponse = compromissosJob.await()
-                val graficoImcResponse = graficoImcJob.await()
 
-                if (!profileResponse.isSuccessful || profileResponse.body().isNullOrEmpty()) {
-                    if (_state.value !is ResumoState.Success) {
-                        _state.value = ResumoState.Error("Perfil não encontrado.")
-                    }
+                Log.d(TAG, "Respostas recebidas -> Perfil: ${profileResponse.code()}, IMC: ${imcHistoryResponse.code()}")
+
+                if (!profileResponse.isSuccessful || profileResponse.body() == null) {
+                    Log.e(TAG, "Erro ao carregar perfil. Body nulo ou erro HTTP.")
+                    _state.value = ResumoState.Error("Não foi possível carregar o perfil.")
                     return@launch
                 }
 
-                var profile = profileResponse.body()!!.first()
-                if (profile.imcResultado < 1.0 && profile.peso > 0 && profile.altura > 0) {
-                    val alturaMetros = if (profile.altura > 3.0) profile.altura / 100.0 else profile.altura
-                    val imcCorrigido = profile.peso / (alturaMetros * alturaMetros)
-                    profile = profile.copy(imcResultado = imcCorrigido)
+                val perfilData = profileResponse.body()!!
+                Log.d(TAG, "Perfil carregado: ${perfilData.nome}")
+
+                // 4. Processamento do Histórico de IMC
+                var ultimoImcRegistro: ImcRegistro? = null
+                val graficoState: GraficoUIState
+
+                if (imcHistoryResponse.isSuccessful && !imcHistoryResponse.body().isNullOrEmpty()) {
+                    val lista = imcHistoryResponse.body()!!
+                    Log.d(TAG, "Histórico IMC recebido. Tamanho: ${lista.size}")
+
+                    // Pega o último registro cru
+                    var rawLastRecord = lista.lastOrNull()
+
+                    if (rawLastRecord != null) {
+                        Log.d(TAG, "Valor CRU do último IMC vindo do Backend: ${rawLastRecord.imcRes}")
+                        Log.d(TAG, "Peso: ${rawLastRecord.peso}, Altura: ${rawLastRecord.altura}")
+
+                        // --- CORREÇÃO DE BUG DO BACKEND ---
+                        if (rawLastRecord.imcRes < 5.0) {
+                            Log.w(TAG, "Detectado IMC muito baixo (${rawLastRecord.imcRes}). Aplicando correção * 10000")
+                            val imcCorrigido = rawLastRecord.imcRes * 10000
+                            rawLastRecord = rawLastRecord.copy(imcRes = imcCorrigido)
+                            Log.d(TAG, "Novo valor IMC Corrigido: ${rawLastRecord.imcRes}")
+                        } else {
+                            Log.d(TAG, "IMC parece normal (>= 5.0). Nenhuma correção aplicada.")
+                        }
+                    }
+                    ultimoImcRegistro = rawLastRecord
+
+                    // Montagem do Gráfico
+                    val listaParaGrafico = lista.reversed()
+
+                    val valores = listaParaGrafico.map {
+                        // Aplica a mesma correção no gráfico
+                        if (it.imcRes < 5.0) (it.imcRes * 10000).toFloat() else it.imcRes.toFloat()
+                    }
+
+                    val labels = listaParaGrafico.map {
+                        val partes = it.dataConsulta.split("-")
+                        if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""
+                    }
+                    graficoState = GraficoUIState.Success(valores, labels)
+                } else {
+                    Log.w(TAG, "Histórico de IMC vazio ou falhou.")
+                    graficoState = GraficoUIState.Error("Sem histórico")
                 }
 
                 val ultimoRegistroComposicao = if (composicaoResponse.isSuccessful) {
@@ -145,33 +180,18 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                     CompromissoState.NenhumAgendado
                 }
 
-                val graficoImcState: GraficoUIState = if (graficoImcResponse.isSuccessful) {
-                    val lista = graficoImcResponse.body() ?: emptyList()
-                    if (lista.isEmpty()) {
-                        GraficoUIState.Error("Nenhum histórico de IMC.")
-                    } else {
-                        val listaInvertida = lista.reversed()
-                        val valores = listaInvertida.map {
-                            if (it.imcRes < 1.0) (it.imcRes * 10000).toFloat() else it.imcRes.toFloat()
-                        }
-                        val labels = listaInvertida.map {
-                            val partes = it.dataConsulta.split("-")
-                            if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""
-                        }
-                        GraficoUIState.Success(valores, labels)
-                    }
-                } else {
-                    GraficoUIState.Error("Erro HTTP ${graficoImcResponse.code()}")
-                }
+                Log.d(TAG, "Emitindo estado de SUCESSO. IMC Final na tela: ${ultimoImcRegistro?.imcRes}")
 
                 _state.value = ResumoState.Success(
-                    profile = profile,
+                    perfil = perfilData,
+                    ultimoImc = ultimoImcRegistro,
                     ultimoRegistroComposicao = ultimoRegistroComposicao,
                     compromissoState = compromissoState,
-                    graficoImcState = graficoImcState
+                    graficoImcState = graficoState
                 )
 
             } catch (e: Exception) {
+                Log.e(TAG, "Exceção fatal no ViewModel: ${e.message}", e)
                 if (_state.value !is ResumoState.Success) {
                     _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
                 }

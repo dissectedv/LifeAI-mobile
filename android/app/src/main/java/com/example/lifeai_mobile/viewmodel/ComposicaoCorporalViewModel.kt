@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
-import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO MODEL
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +51,9 @@ class ComposicaoCorporalViewModel(
     private val _state = MutableStateFlow<ComposicaoCorporalState>(ComposicaoCorporalState.Loading)
     val state: StateFlow<ComposicaoCorporalState> = _state.asStateFlow()
 
-    private var perfilUsuario: ImcBaseProfile? = null
+    // CORREÇÃO: Usando o model correto de perfil
+    private var perfilUsuario: PerfilResponse? = null
+
     private val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     private val _gorduraPercentual = MutableStateFlow("")
@@ -94,11 +96,13 @@ class ComposicaoCorporalViewModel(
     }
 
     private suspend fun loadProfile() {
-        val response = repository.getImcBaseDashboard()
-        if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-            perfilUsuario = response.body()!!.first()
+        // CORREÇÃO: Chamando a rota correta (/perfil/)
+        val response = repository.getProfileData()
+        if (response.isSuccessful && response.body() != null) {
+            perfilUsuario = response.body()
         } else {
-            throw Exception("Perfil de usuário não encontrado.")
+            // Não vamos travar se falhar o perfil, assumimos padrão masculino para não quebrar a UI
+            Log.e("ComposicaoVM", "Falha ao carregar perfil: ${response.code()}")
         }
     }
 

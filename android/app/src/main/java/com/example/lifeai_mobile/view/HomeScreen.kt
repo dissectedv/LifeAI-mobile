@@ -39,7 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
-import com.example.lifeai_mobile.model.ImcBaseProfile
+import com.example.lifeai_mobile.model.ImcRegistro    // <--- NOVO
+import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.utils.HealthUiUtils
 import com.example.lifeai_mobile.viewmodel.CompromissoState
@@ -105,7 +106,7 @@ fun HomeScreen(
                     ) {
                         CircularProgressIndicator()
                     }
-                    ChatGreetingCard(profile = null, navController = navController, isLoading = true)
+                    ChatGreetingCard(perfil = null, navController = navController, isLoading = true)
                 }
 
                 is ResumoState.Error -> {
@@ -131,6 +132,7 @@ fun HomeScreen(
                 }
 
                 is ResumoState.Success -> {
+                    // --- CARD GRÁFICO HISTÓRICO ---
                     AnimatedVisibility(
                         visible = isVisible,
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 100)) +
@@ -138,28 +140,33 @@ fun HomeScreen(
                     ) {
                         ImcHistoricoCard(
                             graficoState = currentState.graficoImcState,
-                            profile = currentState.profile,
+                            ultimoImc = currentState.ultimoImc, // Passa o último registro para cor
                             onClick = {
                                 mainNavController.navigate("imc_calculator")
                             }
                         )
                     }
 
+                    // --- RESUMO DO IMC ATUAL + CHAT ---
                     AnimatedVisibility(
                         visible = isVisible,
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) +
                                 slideInVertically(initialOffsetY = { 50 })
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            ResumoImcCard(profile = currentState.profile)
+                            // Passa o último registro de IMC
+                            ResumoImcCard(ultimoImc = currentState.ultimoImc)
+
+                            // Passa o perfil para pegar o nome
                             ChatGreetingCard(
-                                profile = currentState.profile,
+                                perfil = currentState.perfil,
                                 navController = navController,
                                 isLoading = false
                             )
                         }
                     }
 
+                    // --- COMPOSIÇÃO + COMPROMISSO ---
                     AnimatedVisibility(
                         visible = isVisible,
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 300)) +
@@ -171,7 +178,7 @@ fun HomeScreen(
                         ) {
                             ComposicaoCorporalCard(
                                 modifier = Modifier.weight(1f),
-                                profile = currentState.profile,
+                                perfil = currentState.perfil, // Passa perfil para saber o sexo
                                 ultimoRegistro = currentState.ultimoRegistroComposicao,
                                 onClick = {
                                     mainNavController.navigate("composicao_corporal_screen")
@@ -196,12 +203,12 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatGreetingCard(
-    profile: ImcBaseProfile?,
+    perfil: PerfilResponse?, // Alterado de ImcBaseProfile para PerfilResponse
     navController: NavHostController,
     isLoading: Boolean
 ) {
     val greeting = HealthUiUtils.getSaudacao()
-    val userName = profile?.nome
+    val userName = perfil?.nome
         ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
         ?: "Usuário"
     val greetingMessage = "$greeting, $userName!"
@@ -277,12 +284,14 @@ private fun ChatGreetingCard(
 }
 
 @Composable
-private fun ResumoImcCard(profile: ImcBaseProfile) {
-    val imc = profile.imcResultado.toFloat()
+private fun ResumoImcCard(ultimoImc: ImcRegistro?) {
+    // Se não tiver registro ainda, assume 0
+    val imc = ultimoImc?.imcRes?.toFloat() ?: 0f
 
     val imcProgress = HealthUiUtils.calculateImcProgress(imc)
     val progressActiveColor = HealthUiUtils.getImcColor(imc)
-    val classificacaoTexto = HealthUiUtils.getImcClassificacao(imc)
+    // Se não tiver registro, mostra "Sem dados" ou similar
+    val classificacaoTexto = ultimoImc?.classificacao ?: "Sem dados"
     val motivational = HealthUiUtils.getFraseMotivacional(imc)
 
     val progressInactiveColor = Color(0xFF2E4A5C)
@@ -405,7 +414,7 @@ private fun DonutChart(
 @Composable
 private fun ImcHistoricoCard(
     graficoState: GraficoUIState,
-    profile: ImcBaseProfile?,
+    ultimoImc: ImcRegistro?, // Alterado para ImcRegistro para pegar o dado mais recente
     onClick: () -> Unit
 ) {
     val gradientOverlay = Brush.verticalGradient(
@@ -452,10 +461,11 @@ private fun ImcHistoricoCard(
                         val corVariacao = if (isMelhoria) Color(0xFF00C853) else Color(0xFFFF5252)
                         val iconeVaria = if (isMelhoria) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp
 
+                        val imcAtual = ultimoImc?.imcRes?.toFloat() ?: 0f
                         val corStatusImc = when {
-                            (profile?.imcResultado ?: 0.0) < 18.5 -> Color(0xFF4A90E2)
-                            (profile?.imcResultado ?: 0.0) <= 24.9 -> Color(0xFF00C853)
-                            (profile?.imcResultado ?: 0.0) <= 29.9 -> Color(0xFFFDD835)
+                            imcAtual < 18.5 -> Color(0xFF4A90E2)
+                            imcAtual <= 24.9 -> Color(0xFF00C853)
+                            imcAtual <= 29.9 -> Color(0xFFFDD835)
                             else -> Color(0xFFFF5252)
                         }
 
@@ -557,13 +567,13 @@ private fun EmptyChartState(
 @Composable
 private fun ComposicaoCorporalCard(
     modifier: Modifier = Modifier,
-    profile: ImcBaseProfile?,
+    perfil: PerfilResponse?, // Alterado para PerfilResponse para pegar o sexo
     ultimoRegistro: ComposicaoCorporalRegistro?,
     onClick: () -> Unit
 ) {
-    val dadosGordura = remember(profile, ultimoRegistro) {
-        if (ultimoRegistro != null && profile != null && ultimoRegistro.gorduraPercentual > 0) {
-            val (analise, cor) = HealthUiUtils.getAnaliseGordura(ultimoRegistro.gorduraPercentual, profile.sexo)
+    val dadosGordura = remember(perfil, ultimoRegistro) {
+        if (ultimoRegistro != null && perfil != null && ultimoRegistro.gorduraPercentual > 0) {
+            val (analise, cor) = HealthUiUtils.getAnaliseGordura(ultimoRegistro.gorduraPercentual, perfil.sexo)
             Triple(ultimoRegistro.gorduraPercentual, analise, cor)
         } else {
             null

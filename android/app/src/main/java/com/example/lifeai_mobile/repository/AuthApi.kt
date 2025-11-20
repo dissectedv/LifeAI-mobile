@@ -6,13 +6,13 @@ import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
-import com.example.lifeai_mobile.model.ImcBaseProfile
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.LogoutRequest
-import com.example.lifeai_mobile.model.PerfilRequest  // <--- NOVO
-import com.example.lifeai_mobile.model.RegistroImcRequest // <--- NOVO
+import com.example.lifeai_mobile.model.PerfilRequest
+import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO MODEL
+import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.model.RefreshTokenRequest
 import com.example.lifeai_mobile.model.RefreshTokenResponse
 import com.example.lifeai_mobile.model.RegisterRequest
@@ -32,26 +32,25 @@ interface AuthApi {
     @POST("login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    // --- MUDANÇA AQUI: Substituímos o antigo imcBase por createProfile ---
     // Rota para criar os dados pessoais (Nome, Idade, Objetivo, etc)
     @POST("perfil/")
     suspend fun createProfile(@Body request: PerfilRequest): Response<Unit>
 
     // Rota para criar o registro de IMC (Peso, Altura, IMC)
-    // Atualizei para usar o RegistroImcRequest que criamos no passo 1
     @POST("imc/")
     suspend fun createImcRecord(@Body request: RegistroImcRequest): Response<Unit>
 
-    // ---------------------------------------------------------------------
+    // --- LEITURA E ATUALIZAÇÃO DE PERFIL (ATUALIZADO) ---
 
-    @GET("imc_base_dashboard/")
-    suspend fun getImcBaseDashboard(): Response<List<ImcBaseProfile>>
+    // Busca apenas os dados pessoais (Nome, Idade, etc)
+    @GET("perfil/")
+    suspend fun getProfileData(): Response<PerfilResponse>
 
-    @GET("imc_base_manage/")
-    suspend fun getProfileData(): Response<ImcBaseProfile>
+    // Atualiza apenas os dados pessoais
+    @PATCH("perfil/")
+    suspend fun updateProfileData(@Body data: PerfilRequest): Response<PerfilResponse>
 
-    @PATCH("imc_base_manage/")
-    suspend fun updateProfileData(@Body data: ImcBaseProfile): Response<ImcBaseProfile>
+    // ----------------------------------------------------
 
     @POST("chat-ia/")
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>

@@ -2,7 +2,7 @@ package com.example.lifeai_mobile.model
 
 import com.google.gson.annotations.SerializedName
 
-// --- MODELS DE AUTENTICAÇÃO (Mantidos) ---
+// --- MODELS DE AUTENTICAÇÃO ---
 data class RegisterRequest(
     val username: String,
     val email: String,
@@ -37,10 +37,10 @@ data class LoginResponse(
     val onboardingCompleted: Boolean
 )
 
-// --- NOVOS MODELS PARA O ONBOARDING (Adicionados) ---
+// --- MODELS DE PERFIL E SAÚDE (NOVOS) ---
 
 /**
- * Passo 1: Dados pessoais enviados para /perfil/
+ * Usado para ENVIAR dados (POST /perfil/)
  */
 data class PerfilRequest(
     val nome: String,
@@ -50,8 +50,21 @@ data class PerfilRequest(
 )
 
 /**
- * Passo 2: Dados corporais enviados para /imc/
- * Backend espera 'imc_res' no JSON, mas no Kotlin podemos chamar de 'imc' usando SerializedName
+ * Usado para RECEBER dados (GET /perfil/)
+ * Mapeia o JSON: {"id":1, "nome":"...", "sexo":"...", "idade":20, ...}
+ */
+data class PerfilResponse(
+    val id: Int,
+    val nome: String,
+    val sexo: String,
+    val idade: Int,
+    val objetivo: String,
+    @SerializedName("restricoes_alimentares")
+    val restricoesAlimentares: String?
+)
+
+/**
+ * Usado para ENVIAR e RECEBER registro de IMC (POST/GET /imc/)
  */
 data class RegistroImcRequest(
     val peso: Double,

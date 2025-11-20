@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lifeai_mobile.model.RegistroImcRequest // <--- CORREÇÃO: Importando o modelo novo
+import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -49,20 +49,28 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     private fun loadInitialData() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val response = repository.getImcBaseDashboard()
-                if (response.isSuccessful && !response.body().isNullOrEmpty()) {
-                    val profile = response.body()!!.first()
+                // 1. Busca dados do Perfil (Idade e Sexo)
+                val profileResponse = repository.getProfileData()
+                if (profileResponse.isSuccessful && profileResponse.body() != null) {
+                    val profile = profileResponse.body()!!
                     idade = profile.idade.toString()
                     sexo = profile.sexo
+                }
 
-                    if (profile.altura > 0) {
-                        var alturaMetros = profile.altura
+                // 2. Busca histórico para tentar preencher a Altura automaticamente
+                val historyResponse = repository.getHistoricoImc()
+                if (historyResponse.isSuccessful && !historyResponse.body().isNullOrEmpty()) {
+                    // Pega o último registro (assumindo ordem cronológica)
+                    val ultimoRegistro = historyResponse.body()!!.last()
+
+                    if (ultimoRegistro.altura > 0) {
+                        var alturaMetros = ultimoRegistro.altura
                         // Se vier em CM (ex: 180), converte para metros visualmente (1.80)
                         if (alturaMetros > 3) {
                             alturaMetros /= 100f
                         }
                         val alturaFormatada = String.format(Locale.US, "%.2f", alturaMetros)
-                        onAlturaChange(alturaFormatada) // Atualiza a UI
+                        onAlturaChange(alturaFormatada)
                     }
                 }
             } catch (e: Exception) {
@@ -117,7 +125,7 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 return@launch
             }
 
-            // --- LÓGICA DE CÁLCULO (Adicionada para atender o novo modelo) ---
+            // Cálculo do IMC e Classificação
             val imcValor = pesoFloat / (alturaFloat * alturaFloat)
 
             val classificacao = when {
@@ -126,7 +134,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 imcValor < 30f -> "Sobrepeso"
                 else -> "Obesidade"
             }
-            // ----------------------------------------------------------------
 
             // Define o formatter para usar UTC
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
@@ -134,15 +141,13 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
             }
             val dataFormatada = dateFormat.format(dataConsulta)
 
-            // --- CRIAÇÃO DO NOVO REQUEST ---
-            // O Backend espera a altura em CM (baseado no Onboarding), então multiplicamos por 100
-            // O Backend não pede mais idade e sexo no registro de IMC (pega do perfil)
+            // Cria o objeto de requisição
+            // Nota: Convertemos altura para Double e multiplicamos por 100 se o backend esperar CM
             val request = RegistroImcRequest(
                 peso = pesoFloat.toDouble(),
-                altura = (alturaFloat * 100).toDouble(),
+                altura = (alturaFloat * 100).toDouble(), // Enviando em CM
                 imc = imcValor.toDouble(),
                 classificacao = classificacao
-                // dataConsulta = dataFormatada -> Se o backend aceitar data, descomente e adicione no data class
             )
 
             Log.d("IMC_CALC_DEBUG", "Validação OK. Enviando para a API: $request")
