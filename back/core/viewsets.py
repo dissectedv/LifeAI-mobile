@@ -8,7 +8,7 @@ from core import models
 from rest_framework_simplejwt.tokens import RefreshToken
 from datetime import date
 
-from core.welcome_email_html.welcome import _send_welcome_email_html
+from core.welcome_email_html.welcome import send_welcome_email_html
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -31,7 +31,7 @@ class RegisterView(APIView):
         user = User.objects.create_user(username=username, email=email, password=password)
 
         try:
-            _send_welcome_email_html(user)
+            send_welcome_email_html(user)
         except Exception as e:
             print(f"ALERTA: Falha ao enviar e-mail: {str(e)}")
 
@@ -94,7 +94,6 @@ class LogoutView(APIView):
 
 class SendEmailView(APIView):
     def post(self, request):
-        # Placeholder for email logic
         return Response({'status': 'Email functionality placeholder'})
 
 class PerfilUsuarioView(APIView):

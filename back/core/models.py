@@ -39,8 +39,20 @@ class PerfilUsuario(ModelBase):
     sexo = models.CharField(db_column='sexo', max_length=10, null=False)
     idade = models.IntegerField(db_column='idade', null=False)
     objetivo = models.CharField(db_column='objetivo', max_length=200, null=False)
-    restricoes_alimentares = models.TextField(db_column='restricoes_alimentares', null=True, blank=True,
-                                              help_text="Ex: Intolerância a lactose, Vegano")
+
+    restricoes_alimentares = models.TextField(
+        db_column='restricoes_alimentares',
+        null=True,
+        blank=True,
+        help_text="Ex: Intolerância à lactose, Vegano"
+    )
+
+    observacao_saude = models.TextField(
+        db_column='observacao_saude',
+        null=True,
+        blank=True,
+        help_text="Ex: Asma, problema no joelho, hérnia, limitação para exercícios"
+    )
 
     class Meta:
         db_table = 'perfil_usuario'
