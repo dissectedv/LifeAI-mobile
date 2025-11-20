@@ -18,6 +18,7 @@ import com.example.lifeai_mobile.model.RefreshTokenRequest
 import com.example.lifeai_mobile.model.RefreshTokenResponse
 import com.example.lifeai_mobile.model.RegisterRequest
 import com.example.lifeai_mobile.model.RegisterResponse
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -53,7 +54,6 @@ interface AuthApi {
 
     @POST("gerar-dieta-ia/")
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
-
     @GET("imc/registrosConsultas/")
     suspend fun getHistoricoImc(): Response<List<ImcRegistro>>
 

@@ -74,14 +74,13 @@ class DietaViewModel(
                 val prompt = construirPrompt(profile)
                 val request = ChatRequest(pergunta = prompt, sessaoId = sessaoId)
                 val response = authRepository.postDietaRequest(request)
+
                 if (response.isSuccessful && response.body() != null) {
                     val dietaResponse = response.body()!!
-                    val jsonString = gson.toJson(dietaResponse)
-                    sessionManager.saveDietJson(jsonString)
+                    val jsonParaSalvar = gson.toJson(dietaResponse)
+                    sessionManager.saveDietJson(jsonParaSalvar)
                     _state.value = DietaState.Success(dietaResponse)
-
                     sendDietaProntaNotification()
-
                 } else {
                     val errorBody = response.errorBody()?.string() ?: "Erro desconhecido"
                     _state.value = DietaState.Error("Falha ao gerar dieta: $errorBody")

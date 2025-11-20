@@ -6,11 +6,9 @@ from rest_framework import status, permissions
 from core import serializers
 from core import models
 from rest_framework_simplejwt.tokens import RefreshToken
-from datetime import datetime
+from datetime import date
 
-from django.conf import settings
-from django.core.mail import EmailMultiAlternatives
-from rest_framework import status
+from core.welcome_email_html.welcome import _send_welcome_email_html
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -31,12 +29,12 @@ class RegisterView(APIView):
             return Response({'message': 'Email já em uso.'}, status=400)
 
         user = User.objects.create_user(username=username, email=email, password=password)
-        
+
         try:
             _send_welcome_email_html(user)
         except Exception as e:
-            print(f"ALERTA: Falha ao enviar e-mail de boas-vindas para {user.email}: {str(e)}")
-            
+            print(f"ALERTA: Falha ao enviar e-mail: {str(e)}")
+
         refresh = RefreshToken.for_user(user)
 
         return Response({
@@ -49,6 +47,7 @@ class RegisterView(APIView):
                 'email': user.email
             }
         }, status=201)
+
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -66,7 +65,9 @@ class LoginView(APIView):
             return Response({"error": "Usuário com esse email não encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
         user = authenticate(username=user.username, password=password)
-        onboarding_completed = models.imc_user_base.objects.filter(id_usuario=user).exists()
+
+        # Check for profile existence (Onboarding check)
+        onboarding_completed = hasattr(user, 'perfil')
 
         if user is not None:
             refresh = RefreshToken.for_user(user)
@@ -82,48 +83,65 @@ class LoginView(APIView):
         else:
             return Response({'message': 'Credenciais inválidas'}, status=401)
 
+
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
-    
+
     def post(self, request):
         logout(request)
         return Response({"message": "Logout realizado com sucesso."}, status=status.HTTP_200_OK)
 
+
 class SendEmailView(APIView):
     def post(self, request):
-        subject = request.data.get('subject')
-        message = request.data.get('message')
-        recipient = request.data.get('to')
-        html_content = request.data.get('html')
+        # Placeholder for email logic
+        return Response({'status': 'Email functionality placeholder'})
 
-        if not all([subject, message, recipient]):
-            return Response({'error': 'Campos obrigatórios ausentes'}, status=status.HTTP_400_BAD_REQUEST)
+class PerfilUsuarioView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
 
-        from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
-
+    def get(self, request):
         try:
-            msg = EmailMultiAlternatives(
-                subject=subject,
-                body=message,
-                from_email=from_email,
-                to=[recipient],
-            )
-            if html_content:
-                msg.attach_alternative(html_content, "text/html")
-            msg.send(fail_silently=False)
-            return Response({'success': 'E-mail enviado com sucesso'})
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            perfil = request.user.perfil
+            serializer = serializers.PerfilUsuarioSerializer(perfil)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except models.PerfilUsuario.DoesNotExist:
+            return Response({"erro": "Perfil não encontrado. Complete seu cadastro."}, status=status.HTTP_404_NOT_FOUND)
 
-class ImcCreateAPIView(APIView):
+    def post(self, request):
+        if hasattr(request.user, 'perfil'):
+            return Response({"erro": "Este usuário já possui um perfil."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = serializers.PerfilUsuarioSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(id_usuario=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request):
+        try:
+            perfil = request.user.perfil
+        except models.PerfilUsuario.DoesNotExist:
+            return Response({"erro": "Perfil não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = serializers.PerfilUsuarioSerializer(perfil, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class RegistroCorporalCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        serializer = serializers.ImcSerializer(data=request.data, context={'request': request})
+        data = request.data.copy()
+        if 'data_consulta' not in data:
+            data['data_consulta'] = date.today()
+
+        serializer = serializers.RegistroCorporalSerializer(data=data, context={'request': request})
+
         if serializer.is_valid():
-            data_consulta = serializer.validated_data['data_consulta']
-            idade = serializer.validated_data['idade']
-            sexo = serializer.validated_data['sexo']
+            # Calculate IMC
             peso = serializer.validated_data['peso']
             altura = serializer.validated_data['altura']
             imc_valor = peso / (altura ** 2)
@@ -137,105 +155,81 @@ class ImcCreateAPIView(APIView):
             else:
                 classificacao = "Obesidade"
 
-            imc_obj = serializer.save(
-                id_usuario=request.user,
-                data_consulta=data_consulta,
-                idade=idade,
-                sexo=sexo,
-                peso=peso,
-                altura=altura,
+            registro = serializer.save(
                 imc_res=imc_valor,
                 classificacao=classificacao
             )
+
             return Response({
-                'mensagem': 'IMC registrado com sucesso.',
-                'id': imc_obj.id,
+                'mensagem': 'Registro salvo com sucesso!',
+                'id': registro.id,
                 'imc': imc_valor,
                 'classificacao': classificacao
             }, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class DesempenhoImc(APIView):
+
+class HistoricoRegistrosView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        registros = models.imc.objects.filter(id_usuario=request.user).order_by('-id')
-        serializer = serializers.DesempenhoImcGrafico(registros, many=True)
+        registros = models.RegistroCorporal.objects.filter(id_usuario=request.user).order_by('-data_consulta')
+        serializer = serializers.RegistroCorporalSerializer(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class RegistrosImc(APIView):
+
+class GraficoEvolucaoView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        registros = models.imc.objects.filter(id_usuario=request.user).order_by('-data_consulta')
-        serializer = serializers.ImcSerializer(registros, many=True)
+        registros = models.RegistroCorporal.objects.filter(id_usuario=request.user).order_by('data_consulta')
+        serializer = serializers.GraficoEvolucaoSerializer(registros, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class ImcBaseAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
 
-    def post(self, request):
-        serializer = serializers.ImcBaseSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(id_usuario=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class ImcBaseDashAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        registros = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id')
-        serializer = serializers.ImcBaseSerializer(registros, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class ImcBaseRecAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        registros = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id')
-        serializer = serializers.ImcBaseRecSerializer(registros, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class ImcBaseManageView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        profile = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id').first()
-        if not profile:
-            return Response({"erro": "Perfil não encontrado."}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = serializers.ImcBaseSerializer(profile)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def patch(self, request):
-        profile = models.imc_user_base.objects.filter(id_usuario=request.user).order_by('-id').first()
-        if not profile:
-            return Response({"erro": "Perfil não encontrado."}, status=status.HTTP_404_NOT_FOUND)
-        
-        serializer = serializers.ImcBaseSerializer(profile, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-class ImcDeleteAPIView(APIView):
+class RegistroDeleteView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def delete(self, request, pk):
         try:
-            registro = models.imc.objects.get(id=pk, id_usuario=request.user)
-        except models.imc.DoesNotExist:
+            registro = models.RegistroCorporal.objects.get(id=pk, id_usuario=request.user)
+            registro.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except models.RegistroCorporal.DoesNotExist:
             return Response({"error": "Registro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
-        registro.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
+
+class HistoricoDietasView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        dietas = models.Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao')
+        serializer = serializers.DietaSerializer(dietas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ComposicaoCorporalListCreateAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        registros = models.ComposicaoCorporal.objects.filter(id_usuario=request.user).order_by('-data_consulta')
+        serializer = serializers.ComposicaoCorporalSerializer(registros, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = serializers.ComposicaoCorporalSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
 class CompromissosListCreateAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        compromissos = models.compromisso.objects.filter(id_usuario=request.user).order_by('-data', 'hora_inicio')
+        compromissos = models.Compromisso.objects.filter(id_usuario=request.user).order_by('-data', 'hora_inicio')
         serializer = serializers.CompromissoSerializer(compromissos, many=True)
         return Response(serializer.data)
 
@@ -245,14 +239,15 @@ class CompromissosListCreateAPIView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 class CompromissoRetrieveUpdateDeleteAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self, pk, user):
         try:
-            return models.compromisso.objects.get(id=pk, id_usuario=user)
-        except models.compromisso.DoesNotExist:
+            return models.Compromisso.objects.get(id=pk, id_usuario=user)
+        except models.Compromisso.DoesNotExist:
             return None
 
     def get(self, request, pk):
@@ -276,7 +271,8 @@ class CompromissoRetrieveUpdateDeleteAPIView(APIView):
         compromisso = self.get_object(pk, request.user)
         if not compromisso:
             return Response({'erro': 'Compromisso não encontrado.'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = serializers.CompromissoSerializer(compromisso, data=request.data, partial=True, context={'request': request})
+        serializer = serializers.CompromissoSerializer(compromisso, data=request.data, partial=True,
+                                                       context={'request': request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -289,16 +285,17 @@ class CompromissoRetrieveUpdateDeleteAPIView(APIView):
         compromisso.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class GerarPontuacaoCompromissoAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, compromisso_id):
         try:
-            comp = models.compromisso.objects.get(id=compromisso_id, id_usuario=request.user)
-        except models.compromisso.DoesNotExist:
+            comp = models.Compromisso.objects.get(id=compromisso_id, id_usuario=request.user)
+        except models.Compromisso.DoesNotExist:
             return Response({'erro': 'Compromisso não encontrado'}, status=status.HTTP_404_NOT_FOUND)
 
-        atividades = models.atividade.objects.filter(compromisso=comp)
+        atividades = models.CompromissoAtividade.objects.filter(compromisso=comp)
         total = atividades.count()
         feitas = atividades.filter(done=True).count()
 
@@ -307,7 +304,7 @@ class GerarPontuacaoCompromissoAPIView(APIView):
 
         porcentagem = (feitas / total) * 100
 
-        pontuacao, _ = models.pontuacao_compromisso.objects.update_or_create(
+        pontuacao, _ = models.PontuacaoCompromisso.objects.update_or_create(
             compromisso=comp,
             defaults={
                 'qtd_total_atv': total,
@@ -322,7 +319,8 @@ class GerarPontuacaoCompromissoAPIView(APIView):
             'qtd_atv_done': feitas,
             'porcentagem': round(pontuacao.porcentagem, 2)
         })
-    
+
+
 class DesempenhoMensalAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -339,7 +337,7 @@ class DesempenhoMensalAPIView(APIView):
         except ValueError:
             return Response({"erro": "Ano e mês devem ser números."}, status=400)
 
-        pontuacoes = models.pontuacao_compromisso.objects.filter(
+        pontuacoes = models.PontuacaoCompromisso.objects.filter(
             compromisso__id_usuario=request.user,
             compromisso__data__year=ano,
             compromisso__data__month=mes
@@ -366,105 +364,3 @@ class DesempenhoMensalAPIView(APIView):
             })
 
         return Response(resultado)
-
-def _send_welcome_email_html(user):
-    subject = "Bem-vindo ao LifeAI!"
-    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', settings.EMAIL_HOST_USER)
-    to_email = [user.email]
-
-    text_content = f"""
-        Olá, {user.username}!
-        Seja muito bem-vindo ao LifeAI, sua nova plataforma de bem-estar e inteligência personalizada.
-        Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.
-        Atenciosamente,
-        Equipe LifeAI
-    """
-
-    html_content = f"""
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-                margin: 0;
-                padding: 0;
-                background-color: #f4f7f6;
-                color: #333;
-            }}
-            .container {{
-                width: 90%;
-                max-width: 600px;
-                margin: 20px auto;
-                background-color: #ffffff;
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            }}
-            .header {{
-                background: linear-gradient(90deg, #007BFF, #6C63FF);
-                padding: 30px 20px;
-                text-align: center;
-            }}
-            .header h1 {{
-                margin: 0;
-                color: #ffffff;
-                font-size: 28px;
-                font-weight: 700;
-            }}
-            .content {{
-                padding: 35px 30px;
-                line-height: 1.6;
-            }}
-            .content p {{
-                font-size: 16px;
-                margin-bottom: 20px;
-            }}
-            .footer {{
-                padding: 20px 30px;
-                background-color: #f9f9f9;
-                text-align: center;
-                font-size: 12px;
-                color: #999;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>Bem-vindo ao LifeAI!</h1>
-            </div>
-            <div class="content">
-                <p>Olá, <strong>{user.username}</strong>!</p>
-                <p>Seja muito bem-vindo ao <strong>LifeAI</strong>, sua nova plataforma de bem-estar e inteligência personalizada.</p>
-                <p>Sua conta foi criada com sucesso e agora você pode aproveitar recursos exclusivos para melhorar sua saúde física e mental.</p>
-                <p>Estamos felizes em ter você conosco.</p>
-                <p>Atenciosamente,<br>Equipe LifeAI</p>
-            </div>
-            <div class="footer">
-                <p>&copy; 2025 LifeAI. Todos os direitos reservados.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
-    
-    msg = EmailMultiAlternatives(subject, text_content, from_email, to_email)
-    msg.attach_alternative(html_content, "text/html")
-    msg.send(fail_silently=False)
-
-class ComposicaoCorporalListCreateAPIView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request):
-        registros = models.ComposicaoCorporal.objects.filter(id_usuario=request.user).order_by('-data_consulta')
-        serializer = serializers.ComposicaoCorporalSerializer(registros, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        serializer = serializers.ComposicaoCorporalSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

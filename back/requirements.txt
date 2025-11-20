@@ -12,11 +12,12 @@ dnspython==2.7.0
 ecdsa==0.19.1
 email_validator==2.2.0
 fastapi==0.68.1
-greenlet==3.2.2
 h11==0.16.0
 idna==3.10
 passlib==1.7.4
-psycopg2-binary==2.9.10
+
+psycopg[binary]==3.2.12
+
 pyasn1==0.6.1
 pydantic==1.10.22
 PyJWT==2.9.0
