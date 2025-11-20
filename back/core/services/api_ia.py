@@ -17,7 +17,8 @@ from tenacity import (
     retry_if_exception
 )
 
-from core.models import imc_user_base
+# CORREÇÃO AQUI: Importando os modelos que realmente existem
+from core.models import PerfilUsuario, RegistroCorporal
 
 conversas_em_memoria = defaultdict(list)
 
@@ -155,18 +156,35 @@ def chat_ia_view(request):
     
     user_profile_data = None
     try:
-        profile_instance = imc_user_base.objects.filter(id_usuario=request.user).order_by('-id').first()
+        # CORREÇÃO AQUI: Buscamos dados de DUAS tabelas diferentes
         
-        if profile_instance:
+        # 1. Busca dados de perfil (Nome, Idade, Sexo, Objetivo)
+        perfil = PerfilUsuario.objects.filter(id_usuario=request.user).first()
+        
+        # 2. Busca o registro corporal mais recente (Peso, Altura, IMC)
+        registro = RegistroCorporal.objects.filter(id_usuario=request.user).order_by('-id').first()
+        
+        if perfil and registro:
             user_profile_data = {
-                "nome": profile_instance.nome,
-                "idade": profile_instance.idade,
-                "peso": profile_instance.peso,
-                "altura": profile_instance.altura,
-                "sexo": profile_instance.sexo,
-                "objetivo": profile_instance.objetivo,
-                "classificacao_imc": profile_instance.classificacao
+                "nome": perfil.nome,
+                "idade": perfil.idade,
+                "sexo": perfil.sexo,
+                "objetivo": perfil.objetivo,
+                "peso": registro.peso,
+                "altura": registro.altura,
+                "classificacao_imc": registro.classificacao
             }
+        elif perfil: # Caso tenha perfil mas não tenha registro corporal ainda
+             user_profile_data = {
+                "nome": perfil.nome,
+                "idade": perfil.idade,
+                "sexo": perfil.sexo,
+                "objetivo": perfil.objetivo,
+                "peso": "N/A",
+                "altura": "N/A",
+                "classificacao_imc": "N/A"
+            }
+            
     except Exception as e:
         print(f"Alerta: Não foi possível carregar o perfil do usuário {request.user.id} para a IA: {str(e)}")
 
