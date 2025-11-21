@@ -41,15 +41,20 @@ data class LoginResponse(
 
 /**
  * Usado para ENVIAR dados (POST /perfil/)
- * Adicionado campo de restrições/preferências alimentares
+ * Adicionado campos de restrições e observações de saúde
  */
 data class PerfilRequest(
     val nome: String,
     val idade: Int,
     val sexo: String,
     val objetivo: String,
+
     @SerializedName("restricoes_alimentares")
-    val restricoesAlimentares: String? = null
+    val restricoesAlimentares: String? = null,
+
+    // NOVO CAMPO: Histórico médico / Observações
+    @SerializedName("observacao_saude")
+    val observacaoSaude: String? = null
 )
 
 /**
@@ -61,8 +66,13 @@ data class PerfilResponse(
     val sexo: String,
     val idade: Int,
     val objetivo: String,
+
     @SerializedName("restricoes_alimentares")
-    val restricoesAlimentares: String?
+    val restricoesAlimentares: String?,
+
+    // NOVO CAMPO
+    @SerializedName("observacao_saude")
+    val observacaoSaude: String?
 )
 
 /**

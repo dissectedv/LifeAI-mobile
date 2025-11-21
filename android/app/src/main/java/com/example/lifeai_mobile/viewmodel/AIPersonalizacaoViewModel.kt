@@ -35,8 +35,9 @@ class AIPersonalizacaoViewModel(
     val sexo = MutableStateFlow("")
     val objetivo = MutableStateFlow("")
 
-    // NOVO CAMPO: Preferências / Restrições
+    // CAMPOS EXTRAS
     val restricoes = MutableStateFlow("")
+    val observacoes = MutableStateFlow("") // <--- NOVO: Histórico Médico / Observações
 
     init {
         carregarDadosAtuais()
@@ -62,8 +63,9 @@ class AIPersonalizacaoViewModel(
                     sexo.value = profile.sexo
                     objetivo.value = profile.objetivo
 
-                    // Carrega a preferência salva (se for null, fica vazio)
+                    // Carrega campos opcionais
                     restricoes.value = profile.restricoesAlimentares ?: ""
+                    observacoes.value = profile.observacaoSaude ?: "" // <--- Carrega do banco
 
                     // Preenche dados de Peso/Altura (pegando do último registro de IMC)
                     if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
@@ -90,9 +92,9 @@ class AIPersonalizacaoViewModel(
                 val pesoDouble = peso.value.toDoubleOrNull() ?: 0.0
                 val alturaInput = altura.value.toDoubleOrNull() ?: 0.0
 
-                // Normalização de altura (converte para Metros para cálculo do IMC)
+                // Normalização de altura
                 val alturaMetros = if (alturaInput > 3.0) alturaInput / 100.0 else alturaInput
-                // Altura para salvar no banco (salva como o usuário digitou ou converte pra CM se for < 3)
+                // Altura para salvar (CM se for padrão do banco)
                 val alturaParaSalvar = if (alturaInput < 3.0) alturaInput * 100 else alturaInput
 
                 if (nome.value.isBlank() || idadeInt <= 0 || pesoDouble <= 0 || alturaMetros <= 0) {
@@ -108,13 +110,15 @@ class AIPersonalizacaoViewModel(
                     else -> "Obesidade"
                 }
 
-                // PASSO 1: Atualizar Perfil (Incluindo as restrições)
+                // PASSO 1: Atualizar Perfil
                 val perfilRequest = PerfilRequest(
                     nome = nome.value,
                     idade = idadeInt,
                     sexo = sexo.value,
                     objetivo = objetivo.value,
-                    restricoesAlimentares = if (restricoes.value.isBlank()) null else restricoes.value
+                    // Enviando os campos opcionais
+                    restricoesAlimentares = if (restricoes.value.isBlank()) null else restricoes.value,
+                    observacaoSaude = if (observacoes.value.isBlank()) null else observacoes.value // <--- Envia novo
                 )
                 val resPerfil = repository.updateProfileData(perfilRequest)
 

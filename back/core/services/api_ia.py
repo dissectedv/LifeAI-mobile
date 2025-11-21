@@ -57,9 +57,12 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
     )
 
     if user_profile:
-        # --- AQUI INSERIMOS AS RESTRIÇÕES NO CONTEXTO DA IA ---
+        # --- MUDANÇA 1: Lendo Restrições E Observações de Saúde ---
         restricoes = user_profile.get('restricoes_alimentares')
+        obs_saude = user_profile.get('observacao_saude') # <--- NOVO
+        
         texto_restricoes = f"\nPreferências/Restrições Alimentares: {restricoes}" if restricoes else ""
+        texto_obs = f"\nHistórico Médico/Observações de Saúde: {obs_saude}" if obs_saude else "" # <--- NOVO
         
         profile_context = (
             "\n\n--- CONTEXTO DO PACIENTE ---\n"
@@ -69,11 +72,12 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
             f"Altura: {user_profile.get('altura')} cm\n"
             f"Sexo: {user_profile.get('sexo')}\n"
             f"Objetivo: {user_profile.get('objetivo')}"
-            f"{texto_restricoes}\n"
+            f"{texto_restricoes}"
+            f"{texto_obs}\n" # <--- Inserindo no prompt
             f"IMC Atual: {user_profile.get('classificacao_imc')}\n"
             "Use este contexto para dar conselhos mais personalizados. "
-            "Você pode mencionar esses dados se for útil para a conversa (ex: 'Vejo que seu objetivo é ganhar força...')."
-            "Seja proativo; por exemplo, se o objetivo é 'emagrecer', foque nisso ao dar conselhos de exercício ou dieta."
+            "Considere com muita atenção o Histórico Médico ao sugerir exercícios ou mudanças de hábito. "
+            "Você pode mencionar esses dados se for útil para a conversa."
         )
         system_prompt_text += profile_context
 
@@ -118,15 +122,10 @@ def gerar_dieta_gemini(prompt_json):
                 "text": (
                     "Você é um nutricionista brasileiro experiente. "
                     "Seu objetivo é criar planos de dieta realistas para o público brasileiro. "
-                    "Considere alimentos comuns e acessíveis no Brasil (como arroz, feijão, frango, ovos, pão, tapioca, banana, mamão). "
-                    "Evite sugerir ingredientes caros ou difíceis de encontrar (como salmão fresco, quinoa, aspargos, mirtilos) nas opções 'acessiveis'. "
-                    "Use esses ingredientes mais caros apenas nas opções 'ideais' (ou 'variadas'). "
-                    "Para 'opcoes_acessiveis', foque no básico (arroz, feijão, frango, ovo, batata). "
-                    "Para 'opcoes_ideais', pode incluir itens como whey protein, iogurte grego, peixes mais caros, etc. "
+                    "Considere alimentos comuns e acessíveis no Brasil. "
+                    "Sempre respeite as restrições alimentares, preferências e condições de saúde informadas no prompt. "
                     "Sua única tarefa é retornar um objeto JSON válido. "
-                    "NUNCA adicione qualquer texto, explicação ou formatação (como ```json) antes ou depois do JSON. "
-                    "Responda apenas com o JSON."
-                    "IMPORTANTE: Se o prompt mencionar restrições alimentares (ex: vegano, sem glúten, intolerante a lactose), você DEVE respeitá-las rigorosamente."
+                    "NUNCA adicione qualquer texto antes ou depois do JSON."
                 )
             }]
         }
@@ -171,8 +170,9 @@ def chat_ia_view(request):
                 "idade": perfil.idade,
                 "sexo": perfil.sexo,
                 "objetivo": perfil.objetivo,
-                # Adicionado aqui também para o Chat usar
                 "restricoes_alimentares": perfil.restricoes_alimentares,
+                # --- MUDANÇA 2: Enviando a observação para a função do chat ---
+                "observacao_saude": perfil.observacao_saude, 
                 "peso": registro.peso if registro else "N/A",
                 "altura": registro.altura if registro else "N/A",
                 "classificacao_imc": registro.classificacao if registro else "N/A"
@@ -248,7 +248,7 @@ def gerar_dieta_ia_view(request):
             return Response(dieta_data, status=status.HTTP_201_CREATED)
 
         except json.JSONDecodeError:
-            return Response({"erro": "A IA não retornou um JSON válido.", "resposta_ia_invalida": resposta_string_json}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"erro": "A IA não retornou um JSON válido."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
     except RetryError as e:
         return Response({"erro": "A IA está sobrecarregada no momento. Tente novamente em alguns segundos."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

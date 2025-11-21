@@ -32,11 +32,11 @@ interface AuthApi {
     @POST("login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    // Rota para criar os dados pessoais (Nome, Idade, Objetivo, etc)
+    // Rota para criar os dados pessoais
     @POST("perfil/")
     suspend fun createProfile(@Body request: PerfilRequest): Response<Unit>
 
-    // Rota para criar o registro de IMC (Peso, Altura, IMC)
+    // Rota para criar o registro de IMC
     @POST("imc/")
     suspend fun createImcRecord(@Body request: RegistroImcRequest): Response<Unit>
 
@@ -54,7 +54,7 @@ interface AuthApi {
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
 
     // --- DIETA (GET e POST) ---
-
+    
     // Gera uma nova dieta (ou força nova)
     @POST("gerar-dieta-ia/")
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
@@ -76,6 +76,11 @@ interface AuthApi {
 
     @POST("logout/")
     suspend fun logout(@Body request: LogoutRequest): Response<Unit>
+
+    // --- ROTA DE E-MAIL (RECOLOCADA AQUI) ---
+    @POST("send-email/")
+    suspend fun sendEmail(@Body emailData: Map<String, String>): Response<Unit>
+    // ----------------------------------------
 
     @GET("compromissos/")
     suspend fun getCompromissos(): Response<List<Compromisso>>

@@ -72,7 +72,7 @@ fun AIPersonalizacaoScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .imePadding() // <--- ADICIONADO: Faz a tela subir com o teclado
+                .imePadding() // <--- CORREÇÃO DO SCROLL: Faz a tela subir com o teclado
         ) {
             when (val state = uiState) {
                 is PersonalizacaoState.Loading -> {
@@ -122,9 +122,11 @@ private fun PersonalizacaoForm(
     val altura by viewModel.altura.collectAsState()
     val sexo by viewModel.sexo.collectAsState()
     val objetivo by viewModel.objetivo.collectAsState()
+    
+    // CAMPOS NOVOS
     val restricoes by viewModel.restricoes.collectAsState()
+    val observacoes by viewModel.observacoes.collectAsState()
 
-    // Adiciona espaçamento extra no final para o scroll funcionar bem com teclado
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -209,6 +211,17 @@ private fun PersonalizacaoForm(
             maxLines = 3,
             enabled = !isSaving
         )
+        
+        // NOVO CAMPO NA TELA
+        CustomTextField(
+            value = observacoes,
+            onValueChange = { viewModel.observacoes.value = it },
+            label = "Histórico Médico / Saúde (Opcional)",
+            placeholder = "Ex: Hérnia de disco, asma, dores no joelho...",
+            singleLine = false,
+            maxLines = 3,
+            enabled = !isSaving
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -239,8 +252,8 @@ private fun PersonalizacaoForm(
             }
         }
 
-        // Espaço extra no final para garantir que o botão suba acima do teclado
-        Spacer(modifier = Modifier.height(100.dp))
+        // Espaço extra no final para garantir scroll confortável
+        Spacer(modifier = Modifier.height(50.dp))
     }
 }
 
