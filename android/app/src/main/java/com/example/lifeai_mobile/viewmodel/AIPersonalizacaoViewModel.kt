@@ -84,7 +84,7 @@ class AIPersonalizacaoViewModel(
                     if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
                         val ultimoRegistro = imcResponse.body()!!.last()
                         pesoStr = ultimoRegistro.peso.toString()
-                        alturaStr = ultimoRegistro.altura.toString()
+                        alturaStr = formatarAltura(ultimoRegistro.altura)
 
                         peso.value = pesoStr
                         altura.value = alturaStr
@@ -203,6 +203,14 @@ class AIPersonalizacaoViewModel(
             imc < 25.0 -> "Peso normal"
             imc < 30.0 -> "Sobrepeso"
             else -> "Obesidade"
+        }
+    }
+
+    private fun formatarAltura(valor: Double): String {
+        return if (valor < 3.0) {
+            String.format("%.2f", valor)
+        } else {
+            valor.toInt().toString()
         }
     }
 }

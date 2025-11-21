@@ -163,16 +163,15 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = UiState.Loading
             try {
-                // Conversão de valores
-                val pesoFloat = weight.toFloatOrNull() ?: 0.0f
-                val alturaFloatCm = height.toFloatOrNull() ?: 0.0f
-                val alturaDoubleM = alturaFloatCm / 100.0f
+                val pesoFloat = weight.replace(",", ".").trim().toFloatOrNull() ?: 0f
+                val alturaFloatCm = height.replace(",", ".").trim().toFloatOrNull() ?: 0f
+                val alturaDoubleM = alturaFloatCm / 100f
 
                 // Cálculo do IMC
                 val imcValor = if (alturaDoubleM > 0f) {
                     pesoFloat / (alturaDoubleM * alturaDoubleM)
                 } else {
-                    0.0f
+                    0f
                 }
 
                 // Lógica de Classificação
@@ -193,17 +192,12 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                     objetivo = objective
                 )
 
-                // 2. Objeto de IMC (Dados corporais)
-                // Convertemos para Double pois foi como definimos nas Data Classes
                 val imcRequest = RegistroImcRequest(
                     peso = pesoFloat.toDouble(),
-                    altura = alturaFloatCm.toDouble(),
+                    altura = alturaDoubleM.toDouble(),
                     imc = imcValor.toDouble(),
                     classificacao = classificacao
                 )
-
-                // --- CHAMADA AO REPOSITÓRIO (ORQUESTRAÇÃO) ---
-                // O repositório vai chamar /perfil/ e depois /imc/
                 val response = repository.createFullProfile(perfilRequest, imcRequest)
 
                 if (response.isSuccessful) {

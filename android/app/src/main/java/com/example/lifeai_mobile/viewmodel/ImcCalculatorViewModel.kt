@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
@@ -28,12 +29,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     var sexo by mutableStateOf("")
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
-
-    private fun getTodayAtUtcStart(): Date {
-        val instant = LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant()
-        return Date.from(instant)
-    }
-
     var dataConsulta by mutableStateOf(getTodayAtUtcStart())
     var isLoading by mutableStateOf(false)
     var isHeightFieldLocked by mutableStateOf(true)
@@ -45,41 +40,44 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
         loadInitialData()
     }
 
+    private fun getTodayAtUtcStart(): Date {
+        val instant = LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant()
+        return Date.from(instant)
+    }
+
     private fun loadInitialData() {
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val profileResponse = repository.getProfileData()
-                if (profileResponse.isSuccessful && profileResponse.body() != null) {
-                    val profile = profileResponse.body()!!
-                    idade = profile.idade.toString()
-                    sexo = profile.sexo
-                }
+        viewModelScope.launch {
+            // UI updates need Main dispatcher
+            withContext(Dispatchers.IO) {
+                try {
+                    val profileResponse = repository.getProfileData()
+                    val historyResponse = repository.getHistoricoImc()
 
-                val historyResponse = repository.getHistoricoImc()
-                if (historyResponse.isSuccessful && !historyResponse.body().isNullOrEmpty()) {
-                    val lista = historyResponse.body()!!
-
-                    // Pega o registro com maior ID (o mais recente)
-                    val ultimoRegistro = lista.maxByOrNull { it.id }
-
-                    if (ultimoRegistro != null && ultimoRegistro.altura > 0) {
-                        var alturaMetros = ultimoRegistro.altura
-                        if (alturaMetros > 3) {
-                            alturaMetros /= 100f
+                    withContext(Dispatchers.Main) {
+                        profileResponse.body()?.let { profile ->
+                            idade = profile.idade.toString()
+                            sexo = profile.sexo
                         }
-                        val alturaFormatada = String.format(Locale.US, "%.2f", alturaMetros)
-                        onAlturaChange(alturaFormatada)
+
+                        historyResponse.body()?.let { lista ->
+                            val ultimo = lista.maxByOrNull { it.id }
+                            if (ultimo != null && ultimo.altura > 0) {
+                                var alt = ultimo.altura
+                                if (alt > 3) alt /= 100f
+                                altura = String.format(Locale.US, "%.2f", alt)
+                            }
+                        }
                     }
+                } catch (e: Exception) {
+                    Log.e("IMC_CALC_VM", "Erro no load inicial", e)
                 }
-            } catch (e: Exception) {
-                Log.e("IMC_CALC_VM", "Erro ao carregar dados iniciais", e)
             }
         }
     }
 
-    fun onPesoChange(newValue: String) { peso = newValue }
-    fun onAlturaChange(newValue: String) { altura = newValue }
-    fun onDataChange(newDate: Date) { dataConsulta = newDate }
+    fun onPesoChange(v: String) { peso = v }
+    fun onAlturaChange(v: String) { altura = v }
+    fun onDataChange(d: Date) { dataConsulta = d }
     fun onUnlockHeightField() { isHeightFieldLocked = false }
 
     private fun resetFormState() {
@@ -89,63 +87,63 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     }
 
     fun calculateAndRegister() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             isLoading = true
 
-            val pesoFloat = peso.replace(',', '.').toFloatOrNull()
-            var alturaFloat = altura.replace(',', '.').toFloatOrNull()
+            // 1️⃣ heavy logic on IO
+            val validation = withContext(Dispatchers.IO) {
 
-            if (pesoFloat == null || pesoFloat <= 0 || pesoFloat > 400) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Peso inválido."))
-                isLoading = false
-                return@launch
-            }
-            if (alturaFloat == null || alturaFloat <= 0) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Altura inválida."))
-                isLoading = false
-                return@launch
-            }
+                val pesoFloat = peso.replace(',', '.').toFloatOrNull()
+                var alturaFloat = altura.replace(',', '.').toFloatOrNull()
 
-            // Normaliza para Metros para o cálculo
-            if (alturaFloat > 3) alturaFloat /= 100f
+                if (pesoFloat == null || pesoFloat <= 0 || pesoFloat > 400)
+                    return@withContext "Peso inválido."
 
-            if (alturaFloat < 0.5f || alturaFloat > 2.5f) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Altura fora do intervalo comum."))
-                isLoading = false
-                return@launch
-            }
+                if (alturaFloat == null || alturaFloat <= 0)
+                    return@withContext "Altura inválida."
 
-            val imcValor = pesoFloat / (alturaFloat * alturaFloat)
+                if (alturaFloat > 3) alturaFloat /= 100f
 
-            val classificacao = when {
-                imcValor < 18.5f -> "Abaixo do peso"
-                imcValor < 25f -> "Peso normal"
-                imcValor < 30f -> "Sobrepeso"
-                else -> "Obesidade"
-            }
+                if (alturaFloat !in 0.5f..2.5f)
+                    return@withContext "Altura fora do intervalo."
 
-            // O Backend agora espera METROS e faz o cálculo certo lá também.
-            val request = RegistroImcRequest(
-                peso = pesoFloat.toDouble(),
-                altura = alturaFloat.toDouble(),
-                imc = imcValor.toDouble(),
-                classificacao = classificacao
-            )
+                val imc = pesoFloat / (alturaFloat * alturaFloat)
 
-            try {
-                val response = repository.createImcRecord(request)
-                if (response.isSuccessful) {
-                    resetFormState()
-                    _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
-                    _eventFlow.emit(UiEvent.NavigateBack)
-                } else {
-                    _eventFlow.emit(UiEvent.ShowSnackbar("Erro ao registrar IMC."))
+                val classificacao = when {
+                    imc < 18.5f -> "Abaixo do peso"
+                    imc < 25f -> "Peso normal"
+                    imc < 30f -> "Sobrepeso"
+                    else -> "Obesidade"
                 }
-            } catch (e: Exception) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Falha na conexão."))
-            } finally {
-                isLoading = false
+
+                val request = RegistroImcRequest(
+                    peso = pesoFloat.toDouble(),
+                    altura = alturaFloat.toDouble(),
+                    imc = imc.toDouble(),
+                    classificacao = classificacao
+                )
+
+                // attempt network
+                try {
+                    val resp = repository.createImcRecord(request)
+                    if (resp.isSuccessful) null else "Erro ao registrar IMC."
+                } catch (e: Exception) {
+                    "Falha na conexão."
+                }
             }
+
+            // 2️⃣ apply results on Main
+            if (validation != null) {
+                isLoading = false
+                _eventFlow.emit(UiEvent.ShowSnackbar(validation))
+                return@launch
+            }
+
+            resetFormState()
+            isLoading = false
+
+            _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
+            _eventFlow.emit(UiEvent.NavigateBack)
         }
     }
 }
