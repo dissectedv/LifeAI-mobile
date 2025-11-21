@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lifeai-config
+  namespace: lifeai
+data:
+  # AQUI ESTÁ A CORREÇÃO: Apontando para a pasta LIFEAI_
+  DJANGO_SETTINGS_MODULE: "LIFEAI_.settings"
+  DEBUG: "True"
+  ALLOWED_HOSTS: "*"

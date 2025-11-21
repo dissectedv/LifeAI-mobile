@@ -100,8 +100,8 @@ pytest_cache/
 # ===============================
 # CONSTANTES / UTILS (ex: Kotlin)
 # ===============================
-LifeAI-mobile/app/src/main/java/com/example/lifeai_mobile/utils
-
+android\app\src\main\java\com\example\lifeai_mobile\utils\Constants.kt
+lifeai_k8s/secrets.env
 android/local.properties
 
 # ===============================

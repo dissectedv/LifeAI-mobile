@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django-deployment
+  namespace: lifeai
+  labels:
+    app: django
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      containers:
+      - name: backend
+        image: vitordissected/lifeai-backend:latest
+        imagePullPolicy: Always
+        command: ["/app/scripts/commands.sh"]
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: lifeai-config
+        env:
+        # --- MAPEAMENTO DE BANCO DE DADOS ---
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: "lifeAI"
+        - name: DB_ENGINE
+          value: "django.db.backends.postgresql"
+        
+        # AQUI ESTÁ A CORREÇÃO: Transformando chaves do Secret em variaveis do Django
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: lifeai-secrets
+              key: POSTGRES_USER
+
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: lifeai-secrets
+              key: POSTGRES_PASSWORD
+        - name: EMAIL_HOST
+          value: "smtp-relay.brevo.com"
+        - name: EMAIL_PORT
+          value: "587"
+        - name: EMAIL_USE_TLS
+          value: "True"
+        - name: EMAIL_USE_SSL
+          value: "False"
+        - name: DEFAULT_FROM_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: lifeai-secrets
+              key: DEFAULT_FROM_EMAIL
+        - name: EMAIL_HOST_USER
+          valueFrom:
+            secretKeyRef:
+              name: lifeai-secrets
+              key: EMAIL_HOST_USER
+        - name: EMAIL_HOST_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: lifeai-secrets
+              key: EMAIL_HOST_PASSWORD
+        
+        # Variáveis da IA (Gemini)
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: lifeai-secrets
+              key: GEMINI_API_KEY # Certifique-se de que essa chave existe no secret se for usar
+        - name: LM_API_URL
+          value: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash"
+

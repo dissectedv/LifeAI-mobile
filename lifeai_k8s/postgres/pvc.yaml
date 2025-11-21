@@ -4,7 +4,6 @@ metadata:
   name: postgres-data-pvc
   namespace: lifeai
 spec:
-  storageClassName: manual
   accessModes:
     - ReadWriteOnce
   resources:
