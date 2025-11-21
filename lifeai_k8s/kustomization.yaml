@@ -8,11 +8,4 @@ resources:
   - ingress.yaml
   - roles.yaml
   - rolebindings.yaml
-  # - serviceaccounts.yaml
-
-secretGenerator:
-- name: lifeai-secrets
-  namespace: lifeai
-  behavior: replace
-  envs:
-    - secrets.env
+  - secret.yaml
