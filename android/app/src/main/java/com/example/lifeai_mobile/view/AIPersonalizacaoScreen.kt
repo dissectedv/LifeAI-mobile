@@ -1,5 +1,6 @@
 package com.example.lifeai_mobile.view
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -7,12 +8,22 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Height
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material.icons.filled.Healing
+import androidx.compose.material.icons.filled.NoFood
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,12 +45,18 @@ fun AIPersonalizacaoScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // Observa mudanças de estado para mostrar Feedback
     LaunchedEffect(uiState) {
-        if (uiState is PersonalizacaoState.Success) {
-            scope.launch {
-                snackbarHostState.showSnackbar("Perfil atualizado com sucesso!")
+        when (uiState) {
+            is PersonalizacaoState.Success -> {
+                scope.launch { snackbarHostState.showSnackbar("Perfil atualizado com sucesso!") }
+                viewModel.resetState()
             }
-            viewModel.resetState()
+            is PersonalizacaoState.NoChanges -> {
+                scope.launch { snackbarHostState.showSnackbar("Nenhuma alteração para salvar.") }
+                viewModel.resetState()
+            }
+            else -> {} // Outros estados não precisam de snackbar automática
         }
     }
 
@@ -47,20 +64,10 @@ fun AIPersonalizacaoScreen(
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = {
-                    Text(
-                        "Personalizar IA",
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                },
+                title = { Text("Configuração da IA", fontWeight = FontWeight.Bold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar",
-                            tint = Color.White
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF0D1A26))
@@ -72,7 +79,7 @@ fun AIPersonalizacaoScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .imePadding() // <--- CORREÇÃO DO SCROLL: Faz a tela subir com o teclado
+                .imePadding() // Ajuda a subir a tela quando o teclado abre
         ) {
             when (val state = uiState) {
                 is PersonalizacaoState.Loading -> {
@@ -81,27 +88,10 @@ fun AIPersonalizacaoScreen(
                     }
                 }
                 is PersonalizacaoState.Error -> {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = state.message,
-                            color = MaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                        Button(
-                            onClick = { viewModel.carregarDadosAtuais() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
-                        ) {
-                            Text("Tentar Novamente")
-                        }
-                    }
+                    ErrorContent(state.message) { viewModel.carregarDadosAtuais() }
                 }
                 else -> {
-                    PersonalizacaoForm(
+                    ModernFormContent(
                         viewModel = viewModel,
                         isSaving = uiState is PersonalizacaoState.Saving
                     )
@@ -112,18 +102,39 @@ fun AIPersonalizacaoScreen(
 }
 
 @Composable
-private fun PersonalizacaoForm(
+fun ErrorContent(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = message,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(16.dp)
+        )
+        Button(
+            onClick = onRetry,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A90E2))
+        ) {
+            Text("Tentar Novamente")
+        }
+    }
+}
+
+@Composable
+private fun ModernFormContent(
     viewModel: AIPersonalizacaoViewModel,
     isSaving: Boolean
 ) {
+    // Coleta os estados dos campos
     val nome by viewModel.nome.collectAsState()
     val idade by viewModel.idade.collectAsState()
     val peso by viewModel.peso.collectAsState()
     val altura by viewModel.altura.collectAsState()
     val sexo by viewModel.sexo.collectAsState()
     val objetivo by viewModel.objetivo.collectAsState()
-    
-    // CAMPOS NOVOS
     val restricoes by viewModel.restricoes.collectAsState()
     val observacoes by viewModel.observacoes.collectAsState()
 
@@ -131,171 +142,222 @@ private fun PersonalizacaoForm(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
-        Text(
-            text = "Dados para a Inteligência Artificial",
-            style = MaterialTheme.typography.titleMedium,
-            color = Color.White,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "Mantenha seus dados atualizados para que a IA possa gerar dietas e treinos precisos para o seu momento atual.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f)
-        )
-
-        CustomTextField(
-            value = nome,
-            onValueChange = { viewModel.nome.value = it },
-            label = "Nome ou Apelido",
-            enabled = !isSaving
-        )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            CustomTextField(
-                value = sexo,
-                onValueChange = {},
-                label = "Sexo",
-                modifier = Modifier.weight(1f),
-                enabled = false
+        Column(modifier = Modifier.padding(top = 8.dp)) {
+            Text(
+                text = "Perfil Biométrico & IA",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold
             )
-
-            CustomTextField(
-                value = idade,
-                onValueChange = { viewModel.idade.value = it },
-                label = "Idade",
-                keyboardType = KeyboardType.Number,
-                modifier = Modifier.weight(1f),
-                enabled = !isSaving
+            Text(
+                text = "Mantenha seus dados atualizados para a IA calcular suas métricas corretamente.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            CustomTextField(
-                value = peso,
-                onValueChange = { viewModel.peso.value = it },
-                label = "Peso (kg)",
-                keyboardType = KeyboardType.Decimal,
-                modifier = Modifier.weight(1f),
+        SectionGroup("Identidade") {
+            ModernTextField(
+                value = nome,
+                onValueChange = { viewModel.nome.value = it },
+                label = "Nome ou Apelido",
+                icon = Icons.Default.Person,
                 enabled = !isSaving
             )
-            CustomTextField(
-                value = altura,
-                onValueChange = { viewModel.altura.value = it },
-                label = "Altura (m)",
-                keyboardType = KeyboardType.Decimal,
-                modifier = Modifier.weight(1f),
-                enabled = !isSaving
-            )
-        }
-
-        CustomTextField(
-            value = objetivo,
-            onValueChange = { viewModel.objetivo.value = it },
-            label = "Seu Objetivo Principal",
-            placeholder = "Ex: Ganhar massa muscular, Perder gordura...",
-            singleLine = false,
-            maxLines = 3,
-            enabled = !isSaving
-        )
-
-        CustomTextField(
-            value = restricoes,
-            onValueChange = { viewModel.restricoes.value = it },
-            label = "Preferências Alimentares (Opcional)",
-            placeholder = "Ex: Sou vegano, sem glúten, não gosto de peixe...",
-            singleLine = false,
-            maxLines = 3,
-            enabled = !isSaving
-        )
-        
-        // NOVO CAMPO NA TELA
-        CustomTextField(
-            value = observacoes,
-            onValueChange = { viewModel.observacoes.value = it },
-            label = "Histórico Médico / Saúde (Opcional)",
-            placeholder = "Ex: Hérnia de disco, asma, dores no joelho...",
-            singleLine = false,
-            maxLines = 3,
-            enabled = !isSaving
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = { viewModel.salvarAlteracoes() },
-            enabled = !isSaving,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF00C9A7),
-                disabledContainerColor = Color(0xFF00C9A7).copy(alpha = 0.5f)
-            )
-        ) {
-            if (isSaving) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color.White,
-                    strokeWidth = 2.dp
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ModernTextField(
+                    value = sexo,
+                    onValueChange = {},
+                    label = "Sexo",
+                    icon = Icons.Default.Face,
+                    modifier = Modifier.weight(1f),
+                    enabled = false // Campo read-only
                 )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Salvando...", fontWeight = FontWeight.Bold)
-            } else {
-                Icon(Icons.Default.Check, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Salvar Alterações", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                ModernTextField(
+                    value = idade,
+                    onValueChange = { viewModel.idade.value = it },
+                    label = "Idade",
+                    icon = Icons.Default.Cake,
+                    keyboardType = KeyboardType.Number,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isSaving
+                )
             }
         }
 
-        // Espaço extra no final para garantir scroll confortável
-        Spacer(modifier = Modifier.height(50.dp))
+        SectionGroup("Medidas Corporais") {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ModernTextField(
+                    value = peso,
+                    onValueChange = { viewModel.peso.value = it },
+                    label = "Peso (kg)",
+                    icon = Icons.Default.MonitorWeight,
+                    keyboardType = KeyboardType.Decimal, // Permite vírgula/ponto
+                    modifier = Modifier.weight(1f),
+                    enabled = !isSaving
+                )
+                ModernTextField(
+                    value = altura,
+                    onValueChange = { viewModel.altura.value = it },
+                    label = "Altura (cm ou m)", // Deixa claro para o user
+                    icon = Icons.Default.Height,
+                    keyboardType = KeyboardType.Decimal,
+                    modifier = Modifier.weight(1f),
+                    enabled = !isSaving
+                )
+            }
+        }
+
+        SectionGroup("Calibragem da IA") {
+            ModernTextField(
+                value = objetivo,
+                onValueChange = { viewModel.objetivo.value = it },
+                label = "Objetivo Principal",
+                icon = Icons.Default.FitnessCenter,
+                enabled = !isSaving
+            )
+            ModernTextField(
+                value = restricoes,
+                onValueChange = { viewModel.restricoes.value = it },
+                label = "Restrições Alimentares",
+                icon = Icons.Default.NoFood,
+                enabled = !isSaving
+            )
+            ModernTextField(
+                value = observacoes,
+                onValueChange = { viewModel.observacoes.value = it },
+                label = "Histórico de Saúde",
+                icon = Icons.Default.Healing,
+                enabled = !isSaving
+            )
+        }
+
+        SaveButton(isSaving = isSaving) { viewModel.salvarAlteracoes() }
+
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
 @Composable
-private fun CustomTextField(
+fun SectionGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = title.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            color = Color(0xFF4A90E2),
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
+        )
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+            shape = RoundedCornerShape(16.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                content = content
+            )
+        }
+    }
+}
+
+@Composable
+fun ModernTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     readOnly: Boolean = false,
     enabled: Boolean = true,
     placeholder: String = "",
-    singleLine: Boolean = true,
-    maxLines: Int = 1
+    singleLine: Boolean = true
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
-        placeholder = { if (placeholder.isNotEmpty()) Text(placeholder, color = Color.White.copy(alpha = 0.4f)) },
+        placeholder = {
+            if (placeholder.isNotEmpty()) Text(placeholder, color = Color.White.copy(0.3f))
+        },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) Color(0xFF4A90E2) else Color.Gray
+            )
+        },
         modifier = modifier.fillMaxWidth(),
         readOnly = readOnly,
         enabled = enabled,
         singleLine = singleLine,
-        maxLines = maxLines,
         keyboardOptions = KeyboardOptions(
             keyboardType = keyboardType,
             imeAction = ImeAction.Next
         ),
+        shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color(0xFF4A90E2),
+            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
             focusedLabelColor = Color(0xFF4A90E2),
-            unfocusedBorderColor = Color.White.copy(alpha = 0.4f),
-            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-            cursorColor = Color(0xFF4A90E2),
+            unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
-            disabledTextColor = Color.White.copy(alpha = 0.5f),
-            disabledBorderColor = Color.White.copy(alpha = 0.2f),
-            disabledLabelColor = Color.White.copy(alpha = 0.4f)
-        ),
-        shape = RoundedCornerShape(12.dp)
+            cursorColor = Color(0xFF4A90E2),
+            focusedContainerColor = Color(0xFF0D1A26).copy(alpha = 0.5f),
+            unfocusedContainerColor = Color(0xFF0D1A26).copy(alpha = 0.5f)
+        )
     )
+}
+
+@Composable
+fun SaveButton(isSaving: Boolean, onClick: () -> Unit) {
+    val gradientBrush = Brush.horizontalGradient(
+        colors = listOf(Color(0xFF00C9A7), Color(0xFF009E83))
+    )
+
+    Button(
+        onClick = onClick,
+        enabled = !isSaving,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            disabledContainerColor = Color(0xFF00C9A7).copy(alpha = 0.5f)
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (!isSaving) gradientBrush else Brush.linearGradient(listOf(Color.Gray, Color.Gray))),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isSaving) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Salvando...", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Save, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Salvar Alterações", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            }
+        }
+    }
 }

@@ -19,11 +19,25 @@ sealed class PersonalizacaoState {
     object Saving : PersonalizacaoState()
     object Success : PersonalizacaoState()
     data class Error(val message: String) : PersonalizacaoState()
+    object NoChanges : PersonalizacaoState()
 }
+
+private data class FormSnapshot(
+    val nome: String,
+    val idade: String,
+    val peso: String,
+    val altura: String,
+    val sexo: String,
+    val objetivo: String,
+    val restricoes: String,
+    val observacoes: String
+)
 
 class AIPersonalizacaoViewModel(
     private val repository: AuthRepository
 ) : ViewModel() {
+
+    private val TAG = "PersonalizacaoVM"
 
     private val _uiState = MutableStateFlow<PersonalizacaoState>(PersonalizacaoState.Loading)
     val uiState: StateFlow<PersonalizacaoState> = _uiState.asStateFlow()
@@ -34,10 +48,10 @@ class AIPersonalizacaoViewModel(
     val altura = MutableStateFlow("")
     val sexo = MutableStateFlow("")
     val objetivo = MutableStateFlow("")
-
-    // CAMPOS EXTRAS
     val restricoes = MutableStateFlow("")
-    val observacoes = MutableStateFlow("") // <--- NOVO: Histórico Médico / Observações
+    val observacoes = MutableStateFlow("")
+
+    private var dadosOriginais: FormSnapshot? = null
 
     init {
         carregarDadosAtuais()
@@ -46,8 +60,8 @@ class AIPersonalizacaoViewModel(
     fun carregarDadosAtuais() {
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = PersonalizacaoState.Loading
+
             try {
-                // 1. Busca Perfil e Histórico de IMC em paralelo
                 val profileJob = async { repository.getProfileData() }
                 val imcJob = async { repository.getHistoricoImc() }
 
@@ -57,26 +71,39 @@ class AIPersonalizacaoViewModel(
                 if (profileResponse.isSuccessful && profileResponse.body() != null) {
                     val profile = profileResponse.body()!!
 
-                    // Preenche dados do Perfil
                     nome.value = profile.nome
                     idade.value = profile.idade.toString()
                     sexo.value = profile.sexo
                     objetivo.value = profile.objetivo
-
-                    // Carrega campos opcionais
                     restricoes.value = profile.restricoesAlimentares ?: ""
-                    observacoes.value = profile.observacaoSaude ?: "" // <--- Carrega do banco
+                    observacoes.value = profile.observacaoSaude ?: ""
 
-                    // Preenche dados de Peso/Altura (pegando do último registro de IMC)
+                    var pesoStr = ""
+                    var alturaStr = ""
+
                     if (imcResponse.isSuccessful && !imcResponse.body().isNullOrEmpty()) {
                         val ultimoRegistro = imcResponse.body()!!.last()
-                        peso.value = ultimoRegistro.peso.toString()
-                        altura.value = ultimoRegistro.altura.toString()
+                        pesoStr = ultimoRegistro.peso.toString()
+                        alturaStr = ultimoRegistro.altura.toString()
+
+                        peso.value = pesoStr
+                        altura.value = alturaStr
                     }
+
+                    dadosOriginais = FormSnapshot(
+                        nome = profile.nome,
+                        idade = profile.idade.toString(),
+                        peso = pesoStr,
+                        altura = alturaStr,
+                        sexo = profile.sexo,
+                        objetivo = profile.objetivo,
+                        restricoes = profile.restricoesAlimentares ?: "",
+                        observacoes = profile.observacaoSaude ?: ""
+                    )
 
                     _uiState.value = PersonalizacaoState.Content
                 } else {
-                    _uiState.value = PersonalizacaoState.Error("Erro ao carregar dados: ${profileResponse.code()}")
+                    _uiState.value = PersonalizacaoState.Error("Erro ao carregar: ${profileResponse.code()}")
                 }
             } catch (e: Exception) {
                 _uiState.value = PersonalizacaoState.Error(e.message ?: "Erro de conexão")
@@ -85,74 +112,97 @@ class AIPersonalizacaoViewModel(
     }
 
     fun salvarAlteracoes() {
+        val dadosAtuais = FormSnapshot(
+            nome = nome.value.trim(),
+            idade = idade.value.trim(),
+            peso = peso.value.trim(),
+            altura = altura.value.trim(),
+            sexo = sexo.value,
+            objetivo = objetivo.value.trim(),
+            restricoes = restricoes.value.trim(),
+            observacoes = observacoes.value.trim()
+        )
+
+        if (dadosOriginais != null && dadosOriginais == dadosAtuais) {
+            _uiState.value = PersonalizacaoState.NoChanges
+            return
+        }
+
         viewModelScope.launch(Dispatchers.IO) {
             _uiState.value = PersonalizacaoState.Saving
+
             try {
                 val idadeInt = idade.value.toIntOrNull() ?: 0
-                val pesoDouble = peso.value.toDoubleOrNull() ?: 0.0
-                val alturaInput = altura.value.toDoubleOrNull() ?: 0.0
 
-                // Normalização de altura
+                val pesoDouble = peso.value.replace(',', '.').toDoubleOrNull() ?: 0.0
+                val alturaInput = altura.value.replace(',', '.').toDoubleOrNull() ?: 0.0
+
                 val alturaMetros = if (alturaInput > 3.0) alturaInput / 100.0 else alturaInput
-                // Altura para salvar (CM se for padrão do banco)
-                val alturaParaSalvar = if (alturaInput < 3.0) alturaInput * 100 else alturaInput
 
-                if (nome.value.isBlank() || idadeInt <= 0 || pesoDouble <= 0 || alturaMetros <= 0) {
-                    _uiState.value = PersonalizacaoState.Error("Preencha todos os campos obrigatórios.")
+                if (nome.value.isBlank() || idadeInt <= 0) {
+                    _uiState.value = PersonalizacaoState.Error("Nome e idade são obrigatórios.")
                     return@launch
                 }
 
-                val imcCalculado = pesoDouble / (alturaMetros * alturaMetros)
-                val classificacaoCalc = when {
-                    imcCalculado < 18.5 -> "Abaixo do peso"
-                    imcCalculado < 25.0 -> "Peso normal"
-                    imcCalculado < 30.0 -> "Sobrepeso"
-                    else -> "Obesidade"
-                }
-
-                // PASSO 1: Atualizar Perfil
                 val perfilRequest = PerfilRequest(
                     nome = nome.value,
                     idade = idadeInt,
                     sexo = sexo.value,
                     objetivo = objetivo.value,
-                    // Enviando os campos opcionais
                     restricoesAlimentares = if (restricoes.value.isBlank()) null else restricoes.value,
-                    observacaoSaude = if (observacoes.value.isBlank()) null else observacoes.value // <--- Envia novo
+                    observacaoSaude = if (observacoes.value.isBlank()) null else observacoes.value
                 )
                 val resPerfil = repository.updateProfileData(perfilRequest)
 
                 if (!resPerfil.isSuccessful) {
-                    _uiState.value = PersonalizacaoState.Error("Erro ao salvar perfil: ${resPerfil.code()}")
+                    _uiState.value = PersonalizacaoState.Error("Erro ao salvar perfil.")
                     return@launch
                 }
 
-                // PASSO 2: Criar novo registro de IMC
-                val imcRequest = RegistroImcRequest(
-                    peso = pesoDouble,
-                    altura = alturaParaSalvar,
-                    imc = imcCalculado,
-                    classificacao = classificacaoCalc
-                )
-                val resImc = repository.createImcRecord(imcRequest)
+                val pesoMudou = dadosOriginais?.peso != peso.value.trim()
+                val alturaMudou = dadosOriginais?.altura != altura.value.trim()
 
-                if (resImc.isSuccessful) {
-                    Log.d("LifeAI_Update", "✅ Sucesso! Dados atualizados.")
-                    _uiState.value = PersonalizacaoState.Success
-                } else {
-                    _uiState.value = PersonalizacaoState.Error("Perfil salvo, mas erro ao atualizar medidas.")
+                if ((pesoMudou || alturaMudou) && pesoDouble > 0 && alturaMetros > 0) {
+
+                    val imcCalculado = pesoDouble / (alturaMetros * alturaMetros)
+                    val classificacaoCalc = calcularClassificacao(imcCalculado)
+
+                    val imcRequest = RegistroImcRequest(
+                        peso = pesoDouble,
+                        altura = alturaMetros,
+                        imc = imcCalculado,
+                        classificacao = classificacaoCalc
+                    )
+
+                    val resImc = repository.createImcRecord(imcRequest)
+                    if (!resImc.isSuccessful) {
+                        _uiState.value = PersonalizacaoState.Error("Perfil salvo, mas falha ao registrar IMC.")
+                        return@launch
+                    }
                 }
 
+                dadosOriginais = dadosAtuais
+                _uiState.value = PersonalizacaoState.Success
+
             } catch (e: Exception) {
-                Log.e("LifeAI_Update", "❌ Erro de exceção: ${e.message}")
-                _uiState.value = PersonalizacaoState.Error(e.message ?: "Erro ao salvar dados")
+                _uiState.value = PersonalizacaoState.Error("Erro: ${e.message}")
             }
         }
     }
 
     fun resetState() {
-        if (_uiState.value is PersonalizacaoState.Success || _uiState.value is PersonalizacaoState.Error) {
+        if (_uiState.value !is PersonalizacaoState.Loading &&
+            _uiState.value !is PersonalizacaoState.Saving) {
             _uiState.value = PersonalizacaoState.Content
+        }
+    }
+
+    private fun calcularClassificacao(imc: Double): String {
+        return when {
+            imc < 18.5 -> "Abaixo do peso"
+            imc < 25.0 -> "Peso normal"
+            imc < 30.0 -> "Sobrepeso"
+            else -> "Obesidade"
         }
     }
 }

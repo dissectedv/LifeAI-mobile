@@ -35,20 +35,8 @@ class HistoricoImcViewModel(
             try {
                 val response = repository.getHistoricoImc()
                 if (response.isSuccessful) {
-                    val listaCrua = response.body() ?: emptyList()
-
-                    // --- CORREÇÃO DE DADOS (Mesma lógica do Resumo) ---
-                    val listaCorrigida = listaCrua.map { registro ->
-                        if (registro.imcRes < 5.0) {
-                            // Se vier errado (ex: 0.0032), multiplica por 10000
-                            registro.copy(imcRes = registro.imcRes * 10000)
-                        } else {
-                            registro
-                        }
-                    }
-                    // --------------------------------------------------
-
-                    _state.value = ImcHistoryState.Success(listaCorrigida)
+                    val lista = response.body() ?: emptyList()
+                    _state.value = ImcHistoryState.Success(lista)
                 } else {
                     _state.value = ImcHistoryState.Error("Falha ao buscar histórico: ${response.code()}")
                 }
@@ -65,22 +53,10 @@ class HistoricoImcViewModel(
             try {
                 repository.deleteImcRegistro(id)
 
-                // Recarrega a lista após deletar
                 val response = repository.getHistoricoImc()
                 if (response.isSuccessful) {
-                    val listaCrua = response.body() ?: emptyList()
-
-                    // --- APLICANDO A MESMA CORREÇÃO AQUI ---
-                    val listaCorrigida = listaCrua.map { registro ->
-                        if (registro.imcRes < 5.0) {
-                            registro.copy(imcRes = registro.imcRes * 10000)
-                        } else {
-                            registro
-                        }
-                    }
-                    // ---------------------------------------
-
-                    _state.value = ImcHistoryState.Success(listaCorrigida)
+                    val lista = response.body() ?: emptyList()
+                    _state.value = ImcHistoryState.Success(lista)
                 } else {
                     _state.value = ImcHistoryState.Error("Falha ao atualizar lista: ${response.code()}")
                 }

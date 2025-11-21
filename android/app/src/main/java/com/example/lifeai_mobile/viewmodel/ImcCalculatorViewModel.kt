@@ -35,7 +35,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     }
 
     var dataConsulta by mutableStateOf(getTodayAtUtcStart())
-
     var isLoading by mutableStateOf(false)
     var isHeightFieldLocked by mutableStateOf(true)
 
@@ -49,7 +48,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     private fun loadInitialData() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                // 1. Busca dados do Perfil (Idade e Sexo)
                 val profileResponse = repository.getProfileData()
                 if (profileResponse.isSuccessful && profileResponse.body() != null) {
                     val profile = profileResponse.body()!!
@@ -57,15 +55,15 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                     sexo = profile.sexo
                 }
 
-                // 2. Busca histórico para tentar preencher a Altura automaticamente
                 val historyResponse = repository.getHistoricoImc()
                 if (historyResponse.isSuccessful && !historyResponse.body().isNullOrEmpty()) {
-                    // Pega o último registro (assumindo ordem cronológica)
-                    val ultimoRegistro = historyResponse.body()!!.last()
+                    val lista = historyResponse.body()!!
 
-                    if (ultimoRegistro.altura > 0) {
+                    // Pega o registro com maior ID (o mais recente)
+                    val ultimoRegistro = lista.maxByOrNull { it.id }
+
+                    if (ultimoRegistro != null && ultimoRegistro.altura > 0) {
                         var alturaMetros = ultimoRegistro.altura
-                        // Se vier em CM (ex: 180), converte para metros visualmente (1.80)
                         if (alturaMetros > 3) {
                             alturaMetros /= 100f
                         }
@@ -74,21 +72,15 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                     }
                 }
             } catch (e: Exception) {
-                Log.e("IMC_CALC_VM", "Falha ao carregar dados iniciais", e)
+                Log.e("IMC_CALC_VM", "Erro ao carregar dados iniciais", e)
             }
         }
     }
 
     fun onPesoChange(newValue: String) { peso = newValue }
     fun onAlturaChange(newValue: String) { altura = newValue }
-
-    fun onDataChange(newDate: Date) {
-        dataConsulta = newDate
-    }
-
-    fun onUnlockHeightField() {
-        isHeightFieldLocked = false
-    }
+    fun onDataChange(newDate: Date) { dataConsulta = newDate }
+    fun onUnlockHeightField() { isHeightFieldLocked = false }
 
     private fun resetFormState() {
         peso = ""
@@ -97,8 +89,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     }
 
     fun calculateAndRegister() {
-        Log.d("IMC_CALC_DEBUG", "Iniciando cálculo. Peso: '$peso', Altura: '$altura', Data: '$dataConsulta'")
-
         viewModelScope.launch(Dispatchers.IO) {
             isLoading = true
 
@@ -106,26 +96,25 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
             var alturaFloat = altura.replace(',', '.').toFloatOrNull()
 
             if (pesoFloat == null || pesoFloat <= 0 || pesoFloat > 400) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Peso inválido. Ex: 70.5"))
+                _eventFlow.emit(UiEvent.ShowSnackbar("Peso inválido."))
                 isLoading = false
                 return@launch
             }
             if (alturaFloat == null || alturaFloat <= 0) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Altura inválida. Ex: 1.75"))
+                _eventFlow.emit(UiEvent.ShowSnackbar("Altura inválida."))
                 isLoading = false
                 return@launch
             }
 
-            // Garante que alturaFloat esteja em Metros para o cálculo do IMC
+            // Normaliza para Metros para o cálculo
             if (alturaFloat > 3) alturaFloat /= 100f
 
             if (alturaFloat < 0.5f || alturaFloat > 2.5f) {
-                _eventFlow.emit(UiEvent.ShowSnackbar("Altura fora do intervalo (0.5m a 2.5m)"))
+                _eventFlow.emit(UiEvent.ShowSnackbar("Altura fora do intervalo comum."))
                 isLoading = false
                 return@launch
             }
 
-            // Cálculo do IMC e Classificação
             val imcValor = pesoFloat / (alturaFloat * alturaFloat)
 
             val classificacao = when {
@@ -135,37 +124,24 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                 else -> "Obesidade"
             }
 
-            // Define o formatter para usar UTC
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }
-            val dataFormatada = dateFormat.format(dataConsulta)
-
-            // Cria o objeto de requisição
-            // Nota: Convertemos altura para Double e multiplicamos por 100 se o backend esperar CM
+            // O Backend agora espera METROS e faz o cálculo certo lá também.
             val request = RegistroImcRequest(
                 peso = pesoFloat.toDouble(),
-                altura = (alturaFloat * 100).toDouble(), // Enviando em CM
+                altura = alturaFloat.toDouble(),
                 imc = imcValor.toDouble(),
                 classificacao = classificacao
             )
 
-            Log.d("IMC_CALC_DEBUG", "Validação OK. Enviando para a API: $request")
-
             try {
                 val response = repository.createImcRecord(request)
                 if (response.isSuccessful) {
-                    Log.d("IMC_CALC_DEBUG", "Sucesso! Resposta: ${response.body()}")
                     resetFormState()
                     _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
                     _eventFlow.emit(UiEvent.NavigateBack)
                 } else {
-                    val errorBody = response.errorBody()?.string() ?: "Corpo do erro vazio"
-                    Log.e("IMC_CALC_DEBUG", "API retornou erro. Código: ${response.code()}. Corpo: $errorBody")
                     _eventFlow.emit(UiEvent.ShowSnackbar("Erro ao registrar IMC."))
                 }
             } catch (e: Exception) {
-                Log.e("IMC_CALC_DEBUG", "Exceção ao chamar a API", e)
                 _eventFlow.emit(UiEvent.ShowSnackbar("Falha na conexão."))
             } finally {
                 isLoading = false

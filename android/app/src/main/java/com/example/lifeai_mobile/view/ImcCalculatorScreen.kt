@@ -99,7 +99,8 @@ fun ImcCalculatorScreen(
         if (historicoState is ImcHistoryState.Success) {
             val historico = (historicoState as ImcHistoryState.Success).historico
             if (historico.isNotEmpty()) {
-                val ultimaAltura = historico.first().altura
+                // Usa last() pois a lista vem ordenada por ID (Antigo -> Novo)
+                val ultimaAltura = historico.last().altura
                 if (viewModel.altura.isBlank() && ultimaAltura > 0) {
                     var alturaMetros = ultimaAltura
                     if (alturaMetros > 3) alturaMetros /= 100f
@@ -196,7 +197,8 @@ fun ImcCalculatorScreen(
                             }
                         }
                     } else {
-                        val ultimoRegistro = currentState.historico.first()
+                        // CORREÇÃO: Pega o .last() para ter o registro mais recente
+                        val ultimoRegistro = currentState.historico.last()
                         item {
                             Text(
                                 "Seu Último Registro",
@@ -209,7 +211,6 @@ fun ImcCalculatorScreen(
                             ImcInsightCard(registro = ultimoRegistro)
                         }
 
-                        // --- TABELA DE REFERÊNCIA ADICIONADA AQUI ---
                         item {
                             ImcReferenceTable()
                         }

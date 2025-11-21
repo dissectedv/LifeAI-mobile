@@ -1,6 +1,6 @@
 package com.example.lifeai_mobile.viewmodel
 
-import android.util.Log // <--- Importante para os logs
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
@@ -52,7 +52,7 @@ sealed class ResumoState {
 
 class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
 
-    private val TAG = "ResumoVM_Debug" // Tag para filtrar no Logcat
+    private val TAG = "ResumoVM"
 
     private val _state = MutableStateFlow<ResumoState>(ResumoState.Loading)
     val state: StateFlow<ResumoState> = _state
@@ -101,8 +101,6 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 _state.value = ResumoState.Loading
             }
 
-            Log.d(TAG, "Iniciando busca de dados...")
-
             try {
                 val profileJob = async { repository.getProfileData() }
                 val imcJob = async { repository.getHistoricoImc() }
@@ -114,61 +112,38 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 val composicaoResponse = composicaoJob.await()
                 val compromissosResponse = compromissosJob.await()
 
-                Log.d(TAG, "Respostas recebidas -> Perfil: ${profileResponse.code()}, IMC: ${imcHistoryResponse.code()}")
-
                 if (!profileResponse.isSuccessful || profileResponse.body() == null) {
-                    Log.e(TAG, "Erro ao carregar perfil. Body nulo ou erro HTTP.")
                     _state.value = ResumoState.Error("Não foi possível carregar o perfil.")
                     return@launch
                 }
 
                 val perfilData = profileResponse.body()!!
-                Log.d(TAG, "Perfil carregado: ${perfilData.nome}")
 
-                // 4. Processamento do Histórico de IMC
+                // --- PROCESSAMENTO DO IMC (LIMPO) ---
                 var ultimoImcRegistro: ImcRegistro? = null
                 val graficoState: GraficoUIState
 
                 if (imcHistoryResponse.isSuccessful && !imcHistoryResponse.body().isNullOrEmpty()) {
                     val lista = imcHistoryResponse.body()!!
-                    Log.d(TAG, "Histórico IMC recebido. Tamanho: ${lista.size}")
 
-                    // Pega o último registro cru
-                    var rawLastRecord = lista.lastOrNull()
+                    // Pega o último registro diretamente, confiando no Backend
+                    ultimoImcRegistro = lista.lastOrNull()
 
-                    if (rawLastRecord != null) {
-                        Log.d(TAG, "Valor CRU do último IMC vindo do Backend: ${rawLastRecord.imcRes}")
-                        Log.d(TAG, "Peso: ${rawLastRecord.peso}, Altura: ${rawLastRecord.altura}")
+                    // Montagem do Gráfico sem "hacks" matemáticos
+                    val listaParaGrafico = lista.takeLast(10) // Opcional: pegar só os últimos 10 para o gráfico não ficar poluído
 
-                        // --- CORREÇÃO DE BUG DO BACKEND ---
-                        if (rawLastRecord.imcRes < 5.0) {
-                            Log.w(TAG, "Detectado IMC muito baixo (${rawLastRecord.imcRes}). Aplicando correção * 10000")
-                            val imcCorrigido = rawLastRecord.imcRes * 10000
-                            rawLastRecord = rawLastRecord.copy(imcRes = imcCorrigido)
-                            Log.d(TAG, "Novo valor IMC Corrigido: ${rawLastRecord.imcRes}")
-                        } else {
-                            Log.d(TAG, "IMC parece normal (>= 5.0). Nenhuma correção aplicada.")
-                        }
-                    }
-                    ultimoImcRegistro = rawLastRecord
-
-                    // Montagem do Gráfico
-                    val listaParaGrafico = lista.reversed()
-
-                    val valores = listaParaGrafico.map {
-                        // Aplica a mesma correção no gráfico
-                        if (it.imcRes < 5.0) (it.imcRes * 10000).toFloat() else it.imcRes.toFloat()
-                    }
+                    val valores = listaParaGrafico.map { it.imcRes.toFloat() }
 
                     val labels = listaParaGrafico.map {
                         val partes = it.dataConsulta.split("-")
                         if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""
                     }
+
                     graficoState = GraficoUIState.Success(valores, labels)
                 } else {
-                    Log.w(TAG, "Histórico de IMC vazio ou falhou.")
                     graficoState = GraficoUIState.Error("Sem histórico")
                 }
+                // ------------------------------------
 
                 val ultimoRegistroComposicao = if (composicaoResponse.isSuccessful) {
                     composicaoResponse.body()?.firstOrNull()
@@ -180,8 +155,6 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                     CompromissoState.NenhumAgendado
                 }
 
-                Log.d(TAG, "Emitindo estado de SUCESSO. IMC Final na tela: ${ultimoImcRegistro?.imcRes}")
-
                 _state.value = ResumoState.Success(
                     perfil = perfilData,
                     ultimoImc = ultimoImcRegistro,
@@ -191,9 +164,9 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 )
 
             } catch (e: Exception) {
-                Log.e(TAG, "Exceção fatal no ViewModel: ${e.message}", e)
+                Log.e(TAG, "Erro ao carregar resumo: ${e.message}")
                 if (_state.value !is ResumoState.Success) {
-                    _state.value = ResumoState.Error(e.message ?: "Erro de conexão.")
+                    _state.value = ResumoState.Error("Erro de conexão.")
                 }
             }
         }
