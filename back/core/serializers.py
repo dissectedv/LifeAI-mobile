@@ -6,7 +6,8 @@ from .models import (
     Compromisso,
     PontuacaoCompromisso,
     CompromissoAtividade,
-    ComposicaoCorporal
+    ComposicaoCorporal,
+    HistoricoExercicio
 )
 from datetime import date
 
@@ -79,3 +80,17 @@ class PontuacaoCompromissoSerializer(serializers.ModelSerializer):
             'id', 'compromisso_id', 'qtd_total_atv', 'qtd_atv_done',
             'porcentagem', 'criado_em', 'data_compromisso'
         ]
+
+class HistoricoExercicioSerializer(serializers.ModelSerializer):
+    exercise_name = serializers.CharField(source='nome_exercicio')
+    duration_seconds = serializers.IntegerField(source='duracao_segundos')
+    calories_burned = serializers.IntegerField(source='calorias_queimadas')
+    created_at = serializers.DateTimeField(source='data_treino')
+
+    class Meta:
+        model = HistoricoExercicio
+        fields = ['id', 'exercise_name', 'duration_seconds', 'calories_burned', 'created_at']
+
+    def create(self, validated_data):
+        validated_data['id_usuario'] = self.context['request'].user
+        return super().create(validated_data)

@@ -7,6 +7,7 @@ import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
+import com.example.lifeai_mobile.model.ExerciseSessionRequest // Importe Novo
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
@@ -156,5 +157,10 @@ class AuthRepository(
 
     suspend fun createComposicaoRecord(record: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro> {
         return api.createComposicaoRecord(record)
+    }
+
+    // --- EXERCÍCIOS (NOVO) ---
+    suspend fun saveExerciseSession(request: ExerciseSessionRequest): Response<Unit> {
+        return api.saveExerciseSession(request)
     }
 }

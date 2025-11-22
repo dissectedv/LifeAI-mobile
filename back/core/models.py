@@ -134,3 +134,17 @@ class Dieta(ModelBase):
 
     def __str__(self):
         return f"Dieta {self.id} - {self.data_criacao}"
+
+# --- NOVO MODEL ADICIONADO ---
+class HistoricoExercicio(ModelBase):
+    nome_exercicio = models.CharField(db_column='nome_exercicio', max_length=150, null=False)
+    duracao_segundos = models.PositiveIntegerField(db_column='duracao_segundos', null=False)
+    calorias_queimadas = models.PositiveIntegerField(db_column='calorias_queimadas', null=False)
+    data_treino = models.DateTimeField(db_column='data_treino', null=False)
+
+    class Meta:
+        db_table = 'historico_exercicio'
+        ordering = ['-data_treino']
+
+    def __str__(self):
+        return f"{self.nome_exercicio} ({self.calorias_queimadas}kcal)"

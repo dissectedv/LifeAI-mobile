@@ -25,4 +25,5 @@ urlpatterns = [
     path('pontuacoes/mensal/', viewsets.DesempenhoMensalAPIView.as_view(), name='pontuacoes-mensal'),
     path('compromissos/<int:compromisso_id>/pontuacao/', viewsets.GerarPontuacaoCompromissoAPIView.as_view(), name='gerar_pontuacao'),
     path('health/', views.health_check, name="health_check"),
+    path('exercicios/', viewsets.HistoricoExercicioView.as_view(), name='historico_exercicios'),
 ]

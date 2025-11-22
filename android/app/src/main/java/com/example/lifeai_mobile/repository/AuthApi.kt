@@ -6,6 +6,7 @@ import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
+import com.example.lifeai_mobile.model.ExerciseSessionRequest // Importe Novo
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
@@ -54,7 +55,7 @@ interface AuthApi {
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
 
     // --- DIETA (GET e POST) ---
-    
+
     // Gera uma nova dieta (ou força nova)
     @POST("gerar-dieta-ia/")
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
@@ -99,4 +100,8 @@ interface AuthApi {
 
     @POST("composicao-corporal/")
     suspend fun createComposicaoRecord(@Body request: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro>
+
+    // --- ROTA DE EXERCÍCIOS (NOVO) ---
+    @POST("exercicios/")
+    suspend fun saveExerciseSession(@Body request: ExerciseSessionRequest): Response<Unit>
 }

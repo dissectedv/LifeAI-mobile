@@ -66,7 +66,6 @@ class LoginView(APIView):
 
         user = authenticate(username=user.username, password=password)
 
-        # Check for profile existence (Onboarding check)
         onboarding_completed = hasattr(user, 'perfil')
 
         if user is not None:
@@ -140,7 +139,6 @@ class RegistroCorporalCreateView(APIView):
         serializer = serializers.RegistroCorporalSerializer(data=data, context={'request': request})
 
         if serializer.is_valid():
-            # Calculate IMC
             peso = serializer.validated_data['peso']
             altura = serializer.validated_data['altura']
             imc_valor = peso / (altura ** 2)
@@ -363,3 +361,18 @@ class DesempenhoMensalAPIView(APIView):
             })
 
         return Response(resultado)
+
+class HistoricoExercicioView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        historico = models.HistoricoExercicio.objects.filter(id_usuario=request.user).order_by('-data_treino')
+        serializer = serializers.HistoricoExercicioSerializer(historico, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        serializer = serializers.HistoricoExercicioSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
