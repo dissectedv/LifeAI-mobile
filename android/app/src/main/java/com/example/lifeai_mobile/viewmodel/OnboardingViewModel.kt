@@ -7,8 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.lifeai_mobile.model.PerfilRequest      // <--- NOVO IMPORT
-import com.example.lifeai_mobile.model.RegistroImcRequest // <--- NOVO IMPORT
+import com.example.lifeai_mobile.model.PerfilRequest
+import com.example.lifeai_mobile.model.RegistroImcRequest
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat // <--- Import necessário para a data
+import java.util.Date           // <--- Import necessário para a data
+import java.util.Locale         // <--- Import necessário para a data
 
 enum class InputType { TEXT, GENDER, NUMBER }
 
@@ -182,7 +185,10 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                     else -> "Obesidade"
                 }
 
-                // --- PREPARAÇÃO DOS OBJETOS SEPARADOS ---
+                // --- CORREÇÃO: Gerar a data atual ---
+                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val dataHoje = sdf.format(Date())
+                // ------------------------------------
 
                 // 1. Objeto de Perfil (Dados pessoais)
                 val perfilRequest = PerfilRequest(
@@ -192,12 +198,15 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                     objetivo = objective
                 )
 
+                // 2. Objeto de IMC (Agora com DATA)
                 val imcRequest = RegistroImcRequest(
                     peso = pesoFloat.toDouble(),
                     altura = alturaDoubleM.toDouble(),
                     imc = imcValor.toDouble(),
-                    classificacao = classificacao
+                    classificacao = classificacao,
+                    data = dataHoje // <--- Adicionado aqui
                 )
+
                 val response = repository.createFullProfile(perfilRequest, imcRequest)
 
                 if (response.isSuccessful) {

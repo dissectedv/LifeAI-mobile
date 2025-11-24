@@ -47,7 +47,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            // UI updates need Main dispatcher
             withContext(Dispatchers.IO) {
                 try {
                     val profileResponse = repository.getProfileData()
@@ -90,25 +89,15 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
         viewModelScope.launch {
             isLoading = true
 
-            // 1️⃣ heavy logic on IO
             val validation = withContext(Dispatchers.IO) {
-
                 val pesoFloat = peso.replace(',', '.').toFloatOrNull()
                 var alturaFloat = altura.replace(',', '.').toFloatOrNull()
 
-                if (pesoFloat == null || pesoFloat <= 0 || pesoFloat > 400)
-                    return@withContext "Peso inválido."
-
-                if (alturaFloat == null || alturaFloat <= 0)
-                    return@withContext "Altura inválida."
-
+                if (pesoFloat == null || pesoFloat <= 0 || pesoFloat > 400) return@withContext "Peso inválido."
+                if (alturaFloat == null || alturaFloat <= 0) return@withContext "Altura inválida."
                 if (alturaFloat > 3) alturaFloat /= 100f
 
-                if (alturaFloat !in 0.5f..2.5f)
-                    return@withContext "Altura fora do intervalo."
-
                 val imc = pesoFloat / (alturaFloat * alturaFloat)
-
                 val classificacao = when {
                     imc < 18.5f -> "Abaixo do peso"
                     imc < 25f -> "Peso normal"
@@ -116,34 +105,35 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                     else -> "Obesidade"
                 }
 
+                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                val dataFormatada = sdf.format(dataConsulta)
+
+                // AGORA ISSO VAI FUNCIONAR POIS O MODELO FOI ATUALIZADO
                 val request = RegistroImcRequest(
                     peso = pesoFloat.toDouble(),
                     altura = alturaFloat.toDouble(),
                     imc = imc.toDouble(),
-                    classificacao = classificacao
+                    classificacao = classificacao,
+                    data = dataFormatada
                 )
 
-                // attempt network
                 try {
                     val resp = repository.createImcRecord(request)
-                    if (resp.isSuccessful) null else "Erro ao registrar IMC."
+                    if (resp.isSuccessful) null else "Erro ao registrar: ${resp.code()}"
                 } catch (e: Exception) {
                     "Falha na conexão."
                 }
             }
 
-            // 2️⃣ apply results on Main
             if (validation != null) {
                 isLoading = false
                 _eventFlow.emit(UiEvent.ShowSnackbar(validation))
-                return@launch
+            } else {
+                isLoading = false
+                resetFormState()
+                _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
+                _eventFlow.emit(UiEvent.NavigateBack)
             }
-
-            resetFormState()
-            isLoading = false
-
-            _eventFlow.emit(UiEvent.ShowSnackbar("IMC registrado com sucesso!"))
-            _eventFlow.emit(UiEvent.NavigateBack)
         }
     }
 }

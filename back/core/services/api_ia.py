@@ -61,7 +61,7 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
         restricoes = user_profile.get('restricoes_alimentares')
         obs_saude = user_profile.get('observacao_saude') # <--- NOVO
         
-        texto_restricoes = f"\nPreferências/Restrições Alimentares: {restricoes}" if restricoes else ""
+        texto_restricoes = f"\nRestrições Alimentares: {restricoes}" if restricoes else ""
         texto_obs = f"\nHistórico Médico/Observações de Saúde: {obs_saude}" if obs_saude else "" # <--- NOVO
         
         profile_context = (
@@ -123,7 +123,7 @@ def gerar_dieta_gemini(prompt_json):
                     "Você é um nutricionista brasileiro experiente. "
                     "Seu objetivo é criar planos de dieta realistas para o público brasileiro. "
                     "Considere alimentos comuns e acessíveis no Brasil. "
-                    "Sempre respeite as restrições alimentares, preferências e condições de saúde informadas no prompt. "
+                    "Sempre respeite as restrições alimentares e condições de saúde informadas no prompt. "
                     "Sua única tarefa é retornar um objeto JSON válido. "
                     "NUNCA adicione qualquer texto antes ou depois do JSON."
                 )

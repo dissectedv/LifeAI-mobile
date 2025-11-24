@@ -124,17 +124,21 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 val graficoState: GraficoUIState
 
                 if (imcHistoryResponse.isSuccessful && !imcHistoryResponse.body().isNullOrEmpty()) {
-                    val lista = imcHistoryResponse.body()!!
+                    val listaBruta = imcHistoryResponse.body()!!
 
-                    // Pega o último registro diretamente, confiando no Backend
-                    ultimoImcRegistro = lista.lastOrNull()
+                    // 1. Ordena do ANTIGO para o NOVO usando a data
+                    val listaOrdenada = listaBruta.sortedBy { it.dataConsulta }
 
-                    // Montagem do Gráfico sem "hacks" matemáticos
-                    val listaParaGrafico = lista.takeLast(10) // Opcional: pegar só os últimos 10 para o gráfico não ficar poluído
+                    // 2. O último da lista ordenada é o registro mais atual
+                    ultimoImcRegistro = listaOrdenada.lastOrNull()
+
+                    // 3. Para o gráfico, pegamos os últimos 10 (que são os mais recentes na lista ordenada)
+                    val listaParaGrafico = listaOrdenada.takeLast(10)
 
                     val valores = listaParaGrafico.map { it.imcRes.toFloat() }
 
                     val labels = listaParaGrafico.map {
+                        // Formata "yyyy-MM-dd" para "dd/MM"
                         val partes = it.dataConsulta.split("-")
                         if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""
                     }

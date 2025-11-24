@@ -74,14 +74,3 @@ data class PerfilResponse(
     @SerializedName("observacao_saude")
     val observacaoSaude: String?
 )
-
-/**
- * Usado para ENVIAR e RECEBER registro de IMC (POST/GET /imc/)
- */
-data class RegistroImcRequest(
-    val peso: Double,
-    val altura: Double,
-    @SerializedName("imc_res")
-    val imc: Double,
-    val classificacao: String
-)
