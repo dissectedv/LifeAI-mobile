@@ -57,12 +57,11 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
     )
 
     if user_profile:
-        # --- MUDANÇA 1: Lendo Restrições E Observações de Saúde ---
         restricoes = user_profile.get('restricoes_alimentares')
-        obs_saude = user_profile.get('observacao_saude') # <--- NOVO
+        obs_saude = user_profile.get('observacao_saude')
         
         texto_restricoes = f"\nRestrições Alimentares: {restricoes}" if restricoes else ""
-        texto_obs = f"\nHistórico Médico/Observações de Saúde: {obs_saude}" if obs_saude else "" # <--- NOVO
+        texto_obs = f"\nHistórico Médico/Observações de Saúde: {obs_saude}" if obs_saude else ""
         
         profile_context = (
             "\n\n--- CONTEXTO DO PACIENTE ---\n"
@@ -73,7 +72,7 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
             f"Sexo: {user_profile.get('sexo')}\n"
             f"Objetivo: {user_profile.get('objetivo')}"
             f"{texto_restricoes}"
-            f"{texto_obs}\n" # <--- Inserindo no prompt
+            f"{texto_obs}\n"
             f"IMC Atual: {user_profile.get('classificacao_imc')}\n"
             "Use este contexto para dar conselhos mais personalizados. "
             "Considere com muita atenção o Histórico Médico ao sugerir exercícios ou mudanças de hábito. "
@@ -111,8 +110,26 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
     wait=wait_exponential(multiplier=1, min=1, max=10),
     stop=stop_after_attempt(3)
 )
-def gerar_dieta_gemini(prompt_json):
-    contents = [{"role": "user", "parts": [{"text": prompt_json}]}]
+def gerar_dieta_gemini(prompt_json, user_profile=None):
+    contexto_usuario = ""
+    if user_profile:
+        restricoes = user_profile.get('restricoes_alimentares', 'Nenhuma')
+        obs = user_profile.get('observacao_saude', 'Nenhuma')
+        
+        contexto_usuario = (
+            f"\n\n--- DADOS VITAIS DO USUÁRIO ---\n"
+            f"Idade: {user_profile.get('idade')} | Sexo: {user_profile.get('sexo')}\n"
+            f"Peso: {user_profile.get('peso')}kg | Altura: {user_profile.get('altura')}cm\n"
+            f"Objetivo: {user_profile.get('objetivo')}\n"
+            f"RESTRIÇÕES ALIMENTARES (CRÍTICO): {restricoes}\n"
+            f"OBSERVAÇÕES MÉDICAS: {obs}\n"
+            f"----------------------------------\n"
+            f"Considere OBRIGATORIAMENTE os dados acima ao montar o JSON.\n"
+        )
+
+    mensagem_final = f"{prompt_json}\n{contexto_usuario}"
+
+    contents = [{"role": "user", "parts": [{"text": mensagem_final}]}]
     
     payload = {
         "contents": contents,
@@ -123,7 +140,8 @@ def gerar_dieta_gemini(prompt_json):
                     "Você é um nutricionista brasileiro experiente. "
                     "Seu objetivo é criar planos de dieta realistas para o público brasileiro. "
                     "Considere alimentos comuns e acessíveis no Brasil. "
-                    "Sempre respeite as restrições alimentares e condições de saúde informadas no prompt. "
+                    "ATENÇÃO MÁXIMA: Verifique os dados vitais e restrições enviados no final do prompt do usuário. "
+                    "Se o usuário tiver diabetes, corte açúcares. Se for hipertenso, reduza sódio, etc. "
                     "Sua única tarefa é retornar um objeto JSON válido. "
                     "NUNCA adicione qualquer texto antes ou depois do JSON."
                 )
@@ -171,7 +189,6 @@ def chat_ia_view(request):
                 "sexo": perfil.sexo,
                 "objetivo": perfil.objetivo,
                 "restricoes_alimentares": perfil.restricoes_alimentares,
-                # --- MUDANÇA 2: Enviando a observação para a função do chat ---
                 "observacao_saude": perfil.observacao_saude, 
                 "peso": registro.peso if registro else "N/A",
                 "altura": registro.altura if registro else "N/A",
@@ -229,8 +246,29 @@ def gerar_dieta_ia_view(request):
     if not prompt_json:
         return Response({"erro": "Prompt (pergunta) não fornecido."}, status=status.HTTP_400_BAD_REQUEST)
         
+    user_profile_data = None
     try:
-        resposta_string_json = gerar_dieta_gemini(prompt_json)
+        perfil = PerfilUsuario.objects.filter(id_usuario=request.user).first()
+        registro = RegistroCorporal.objects.filter(id_usuario=request.user).order_by('-id').first()
+        
+        if perfil:
+            user_profile_data = {
+                "nome": perfil.nome,
+                "idade": perfil.idade,
+                "sexo": perfil.sexo,
+                "objetivo": perfil.objetivo,
+                "restricoes_alimentares": perfil.restricoes_alimentares,
+                "observacao_saude": perfil.observacao_saude, 
+                "peso": registro.peso if registro else "N/A",
+                "altura": registro.altura if registro else "N/A",
+                "classificacao_imc": registro.classificacao if registro else "N/A"
+            }
+            
+    except Exception as e:
+        print(f"Alerta: Não foi possível carregar o perfil do usuário {request.user.id} para a dieta: {str(e)}")
+
+    try:
+        resposta_string_json = gerar_dieta_gemini(prompt_json, user_profile=user_profile_data)
         
         if resposta_string_json.startswith("```json"):
             resposta_string_json = resposta_string_json[7:]
