@@ -4,17 +4,14 @@ from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Carrega .env apenas se existir (para ambiente local)
 dotenv_path = BASE_DIR.parent / '.env'
 if dotenv_path.exists():
     load_dotenv(dotenv_path)
 
-# Segurança
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret-key")
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1")
 ALLOWED_HOSTS = ['*']
 
-# Aplicações
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -43,7 +40,6 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'LIFEAI_.urls'
 WSGI_APPLICATION = 'LIFEAI_.wsgi.application'
 
-# ======== E-MAIL ========
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp-relay.brevo.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
@@ -53,7 +49,6 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-# ======== DATABASE ========
 DATABASES = {
     'default': {
         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
@@ -64,22 +59,18 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', ''),
     }
 }
-# ======== LOCALIZAÇÃO ========
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# ======== STATIC/MEDIA ========
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# ======== CORS ========
 CORS_ALLOW_ALL_ORIGINS = True
 
-# ======== REST FRAMEWORK ========
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
@@ -95,12 +86,10 @@ REST_FRAMEWORK = {
     ),
 }
 
-# ======== LLM SETTINGS ========
 LM_API_URL = os.getenv("LM_API_URL", "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 LM_API_MODEL = os.getenv("LM_API_MODEL", "")
 
-# ======== PASSWORDS ========
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -108,7 +97,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ======== DEFAULTS ========
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TEMPLATES = [

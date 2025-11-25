@@ -33,7 +33,6 @@ sealed class DietaState {
     data class Error(val message: String) : DietaState()
 }
 
-// Classe interna atualizada com as restrições
 private data class DadosParaDieta(
     val nome: String,
     val idade: Int,
@@ -131,7 +130,7 @@ class DietaViewModel(
                     objetivo = perfil.objetivo,
                     peso = pesoAtual,
                     altura = alturaAtual,
-                    restricoes = perfil.restricoesAlimentares // <--- Lendo do Perfil
+                    restricoes = perfil.restricoesAlimentares
                 )
 
                 val prompt = construirPrompt(dadosParaPrompt)

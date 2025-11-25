@@ -47,7 +47,7 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
     val textColorSecondary = Color(0xFF8B949E)
 
     Scaffold(
-        modifier = Modifier.systemBarsPadding(), // Só o padding do sistema
+        modifier = Modifier.systemBarsPadding(),
         containerColor = Color.Transparent,
         topBar = {
             CenterAlignedTopAppBar(
@@ -236,8 +236,6 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
         }
     }
 }
-
-// ... (O resto do seu código: CustomTextField, GenderSelector, etc. continua igual) ...
 
 @Composable
 private fun CustomTextField(

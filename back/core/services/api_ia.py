@@ -26,11 +26,9 @@ def is_retryable_server_error(exception):
     if isinstance(exception, requests.exceptions.HTTPError):
         is_server_error = 500 <= exception.response.status_code < 600
         if is_server_error:
-            print(f"Erro {exception.response.status_code} da API. Tentando novamente...")
             return True
     
     if isinstance(exception, requests.exceptions.ReadTimeout):
-        print("API demorou para responder (Timeout). Tentando novamente...")
         return True
         
     return False
@@ -64,8 +62,7 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
         texto_obs = f"\nHistórico Médico/Observações de Saúde: {obs_saude}" if obs_saude else ""
         
         profile_context = (
-            "\n\n--- CONTEXTO DO PACIENTE ---\n"
-            f"Nome: {user_profile.get('nome')}\n"
+            "\n\nNome: {user_profile.get('nome')}\n"
             f"Idade: {user_profile.get('idade')}\n"
             f"Peso: {user_profile.get('peso')} kg\n"
             f"Altura: {user_profile.get('altura')} cm\n"
@@ -74,9 +71,7 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
             f"{texto_restricoes}"
             f"{texto_obs}\n"
             f"IMC Atual: {user_profile.get('classificacao_imc')}\n"
-            "Use este contexto para dar conselhos mais personalizados. "
-            "Considere com muita atenção o Histórico Médico ao sugerir exercícios ou mudanças de hábito. "
-            "Você pode mencionar esses dados se for útil para a conversa."
+            "Use este contexto para dar conselhos mais personalizados e considerando dados de saúde."
         )
         system_prompt_text += profile_context
 
@@ -97,7 +92,7 @@ def perguntar_ia_gemini(historico_mensagens, user_profile=None):
     
     resposta = requests.post(url_completa, json=payload, headers=headers, timeout=30)
     
-    resposta.raise_for_status() 
+    resposta.raise_for_status()
     
     dados = resposta.json()
     try:
@@ -117,14 +112,11 @@ def gerar_dieta_gemini(prompt_json, user_profile=None):
         obs = user_profile.get('observacao_saude', 'Nenhuma')
         
         contexto_usuario = (
-            f"\n\n--- DADOS VITAIS DO USUÁRIO ---\n"
-            f"Idade: {user_profile.get('idade')} | Sexo: {user_profile.get('sexo')}\n"
+            f"\n\nIdade: {user_profile.get('idade')} | Sexo: {user_profile.get('sexo')}\n"
             f"Peso: {user_profile.get('peso')}kg | Altura: {user_profile.get('altura')}cm\n"
             f"Objetivo: {user_profile.get('objetivo')}\n"
-            f"RESTRIÇÕES ALIMENTARES (CRÍTICO): {restricoes}\n"
-            f"OBSERVAÇÕES MÉDICAS: {obs}\n"
-            f"----------------------------------\n"
-            f"Considere OBRIGATORIAMENTE os dados acima ao montar o JSON.\n"
+            f"Restrições: {restricoes}\n"
+            f"Observações: {obs}\n"
         )
 
     mensagem_final = f"{prompt_json}\n{contexto_usuario}"
@@ -139,11 +131,8 @@ def gerar_dieta_gemini(prompt_json, user_profile=None):
                 "text": (
                     "Você é um nutricionista brasileiro experiente. "
                     "Seu objetivo é criar planos de dieta realistas para o público brasileiro. "
-                    "Considere alimentos comuns e acessíveis no Brasil. "
-                    "ATENÇÃO MÁXIMA: Verifique os dados vitais e restrições enviados no final do prompt do usuário. "
-                    "Se o usuário tiver diabetes, corte açúcares. Se for hipertenso, reduza sódio, etc. "
-                    "Sua única tarefa é retornar um objeto JSON válido. "
-                    "NUNCA adicione qualquer texto antes ou depois do JSON."
+                    "Considere alimentos comuns e acessíveis no Brasil e as restrições do usuário. "
+                    "Retorne apenas um objeto JSON válido sem texto adicional."
                 )
             }]
         }
@@ -196,13 +185,13 @@ def chat_ia_view(request):
             }
             
     except Exception as e:
-        print(f"Alerta: Não foi possível carregar o perfil do usuário {request.user.id} para a IA: {str(e)}")
+        pass
 
     try:
         conversas_em_memoria[sessao_id].append({"role": "user", "content": pergunta})
         historico_atual = conversas_em_memoria[sessao_id]
         
-        resposta = perguntar_ia_gemini(historico_atual, user_profile_data) 
+        resposta = perguntar_ia_gemini(historico_atual, user_profile_data)
         
         conversas_em_memoria[sessao_id].append({"role": "assistant", "content": resposta})
         return Response({"resposta": resposta})
@@ -225,7 +214,6 @@ def chat_ia_view(request):
 @api_view(['POST', 'GET'])
 @permission_classes([IsAuthenticated])
 def gerar_dieta_ia_view(request):
-    
     if request.method == 'GET':
         dieta_existente = Dieta.objects.filter(id_usuario=request.user).order_by('-data_criacao').first()
         if dieta_existente:
@@ -265,7 +253,7 @@ def gerar_dieta_ia_view(request):
             }
             
     except Exception as e:
-        print(f"Alerta: Não foi possível carregar o perfil do usuário {request.user.id} para a dieta: {str(e)}")
+        pass
 
     try:
         resposta_string_json = gerar_dieta_gemini(prompt_json, user_profile=user_profile_data)
@@ -286,11 +274,11 @@ def gerar_dieta_ia_view(request):
             return Response(dieta_data, status=status.HTTP_201_CREATED)
 
         except json.JSONDecodeError:
-            return Response({"erro": "A IA não retornou um JSON válido."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"erro": "JSON inválido."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
-    except RetryError as e:
-        return Response({"erro": "A IA está sobrecarregada no momento. Tente novamente em alguns segundos."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except RetryError:
+        return Response({"erro": "IA sobrecarregada. Tente novamente."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
     except requests.exceptions.HTTPError as e:
-        return Response({"erro": f"Erro da API: {e.response.status_code}", "detalhe": e.response.text}, status=e.response.status_code)
+        return Response({"erro": f"Erro da API: {e.response.status_code}"}, status=e.response.status_code)
     except Exception as e:
-        return Response({"erro": f"Erro interno ao chamar a IA: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response({"erro": "Erro interno."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

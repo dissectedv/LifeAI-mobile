@@ -69,7 +69,6 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
     private fun getCompromissoState(compromissos: List<Compromisso>?): CompromissoState {
         if (compromissos.isNullOrEmpty()) return CompromissoState.NenhumAgendado
 
-        // CORREÇÃO: Usar java.time com ZoneId.systemDefault() para garantir horário local do Brasil
         val zoneId = ZoneId.systemDefault()
         val hoje = LocalDate.now(zoneId)
         val agora = LocalTime.now(zoneId)
@@ -84,7 +83,6 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
         val totalHoje = tarefasHoje.size
         val concluidasHoje = tarefasHoje.count { it.concluido }
 
-        // Atrasados: Data anterior a hoje E não concluído
         val atrasados = compromissos.filter { it.data < hojeStr && !it.concluido }.sortedBy { it.data }
 
         if (atrasados.isNotEmpty()) {
@@ -93,12 +91,10 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
 
         if (totalHoje == 0) return CompromissoState.NenhumAgendado
 
-        // Próximo de hoje: Não concluído E horário maior ou igual a agora
         val proximoHoje = tarefasHoje
             .filter { !it.concluido && it.hora_inicio >= agoraStr }
             .minByOrNull { it.hora_inicio }
 
-        // Pendente de hoje (caso o horário já tenha passado mas ainda não foi feito)
         val pendenteHoje = proximoHoje ?: tarefasHoje.filter { !it.concluido }.minByOrNull { it.hora_inicio }
 
         return if (pendenteHoje != null) {
@@ -132,26 +128,21 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
 
                 val perfilData = profileResponse.body()!!
 
-                // --- PROCESSAMENTO DO IMC ---
                 var ultimoImcRegistro: ImcRegistro? = null
                 val graficoState: GraficoUIState
 
                 if (imcHistoryResponse.isSuccessful && !imcHistoryResponse.body().isNullOrEmpty()) {
                     val listaBruta = imcHistoryResponse.body()!!
 
-                    // 1. Ordena do ANTIGO para o NOVO usando a string da data (yyyy-MM-dd funciona ok para sort)
                     val listaOrdenada = listaBruta.sortedBy { it.dataConsulta }
 
-                    // 2. O último da lista ordenada é o registro mais atual
                     ultimoImcRegistro = listaOrdenada.lastOrNull()
 
-                    // 3. Para o gráfico, pegamos os últimos 10
                     val listaParaGrafico = listaOrdenada.takeLast(10)
 
                     val valores = listaParaGrafico.map { it.imcRes.toFloat() }
 
                     val labels = listaParaGrafico.map {
-                        // Formata "yyyy-MM-dd" para "dd/MM"
                         val partes = it.dataConsulta.split("-")
                         if (partes.size >= 3) "${partes[2]}/${partes[1]}" else ""
                     }
@@ -160,7 +151,6 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
                 } else {
                     graficoState = GraficoUIState.Error("Sem histórico")
                 }
-                // ------------------------------------
 
                 val ultimoRegistroComposicao = if (composicaoResponse.isSuccessful) {
                     composicaoResponse.body()?.firstOrNull()

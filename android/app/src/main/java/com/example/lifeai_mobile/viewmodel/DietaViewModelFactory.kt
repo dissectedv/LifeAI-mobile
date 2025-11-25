@@ -1,6 +1,6 @@
 package com.example.lifeai_mobile.viewmodel
 
-import android.app.Application // <-- 1. IMPORTAR
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.lifeai_mobile.repository.AuthRepository

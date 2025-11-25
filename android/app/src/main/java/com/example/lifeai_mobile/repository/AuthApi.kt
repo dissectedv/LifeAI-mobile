@@ -7,6 +7,7 @@ import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
 import com.example.lifeai_mobile.model.ExerciseSessionRequest
+import com.example.lifeai_mobile.model.ExerciseSessionResponse
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
@@ -33,15 +34,11 @@ interface AuthApi {
     @POST("login/")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
-    // Rota para criar os dados pessoais
     @POST("perfil/")
     suspend fun createProfile(@Body request: PerfilRequest): Response<Unit>
 
-    // Rota para criar o registro de IMC
     @POST("imc/")
     suspend fun createImcRecord(@Body request: RegistroImcRequest): Response<Unit>
-
-    // --- LEITURA E ATUALIZAÇÃO DE PERFIL ---
 
     @GET("perfil/")
     suspend fun getProfileData(): Response<PerfilResponse>
@@ -49,22 +46,14 @@ interface AuthApi {
     @PATCH("perfil/")
     suspend fun updateProfileData(@Body data: PerfilRequest): Response<PerfilResponse>
 
-    // ----------------------------------------------------
-
     @POST("chat-ia/")
     suspend fun postChatMessage(@Body request: ChatRequest): Response<ChatResponse>
 
-    // --- DIETA (GET e POST) ---
-
-    // Gera uma nova dieta (ou força nova)
     @POST("gerar-dieta-ia/")
     suspend fun postDietaRequest(@Body request: ChatRequest): Response<DietaResponse>
 
-    // Consulta a dieta atual salva no banco (sem gerar)
     @GET("gerar-dieta-ia/")
     suspend fun getDietaAtual(): Response<DietaResponse>
-
-    // --------------------------
 
     @GET("imc/registrosConsultas/")
     suspend fun getHistoricoImc(): Response<List<ImcRegistro>>
@@ -78,10 +67,8 @@ interface AuthApi {
     @POST("logout/")
     suspend fun logout(@Body request: LogoutRequest): Response<Unit>
 
-    // --- ROTA DE E-MAIL ---
     @POST("send-email/")
     suspend fun sendEmail(@Body emailData: Map<String, String>): Response<Unit>
-    // ----------------------------------------
 
     @GET("compromissos/")
     suspend fun getCompromissos(): Response<List<Compromisso>>
@@ -101,11 +88,9 @@ interface AuthApi {
     @POST("composicao-corporal/")
     suspend fun createComposicaoRecord(@Body request: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro>
 
-    // --- EXERCÍCIOS ---
     @POST("exercicios/")
     suspend fun saveExerciseSession(@Body request: ExerciseSessionRequest): Response<Unit>
 
-    // NOVO: Buscar histórico para calcular totais do dia
     @GET("exercicios/")
-    suspend fun getExerciseHistory(): Response<List<ExerciseSessionRequest>>
+    suspend fun getExerciseHistory(): Response<List<ExerciseSessionResponse>>
 }

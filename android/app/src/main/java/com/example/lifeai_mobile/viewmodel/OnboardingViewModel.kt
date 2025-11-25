@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat // <--- Import necessário para a data
-import java.util.Date           // <--- Import necessário para a data
-import java.util.Locale         // <--- Import necessário para a data
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 enum class InputType { TEXT, GENDER, NUMBER }
 
@@ -190,7 +190,6 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                 val dataHoje = sdf.format(Date())
                 // ------------------------------------
 
-                // 1. Objeto de Perfil (Dados pessoais)
                 val perfilRequest = PerfilRequest(
                     nome = name,
                     idade = age.toInt(),

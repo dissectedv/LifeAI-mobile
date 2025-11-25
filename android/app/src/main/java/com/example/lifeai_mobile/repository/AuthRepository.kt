@@ -7,7 +7,8 @@ import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
-import com.example.lifeai_mobile.model.ExerciseSessionRequest // Importe Novo
+import com.example.lifeai_mobile.model.ExerciseSessionRequest
+import com.example.lifeai_mobile.model.ExerciseSessionResponse // <--- ADICIONE ESTE IMPORT
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
@@ -95,7 +96,6 @@ class AuthRepository(
     suspend fun createImcRecord(record: RegistroImcRequest): Response<Unit> {
         return api.createImcRecord(record)
     }
-    // -----------------------------------------------------
 
     // --- GESTÃO DE PERFIL ---
 
@@ -106,8 +106,6 @@ class AuthRepository(
     suspend fun updateProfileData(data: PerfilRequest): Response<PerfilResponse> {
         return api.updateProfileData(data)
     }
-
-    // -------------------------------------
 
     suspend fun postChatMessage(request: ChatRequest): Response<ChatResponse> {
         return api.postChatMessage(request)
@@ -121,7 +119,6 @@ class AuthRepository(
     suspend fun getDietaAtual(): Response<DietaResponse> {
         return api.getDietaAtual()
     }
-    // -------------
 
     suspend fun getHistoricoImc(): Response<List<ImcRegistro>> {
         return api.getHistoricoImc()
@@ -159,12 +156,13 @@ class AuthRepository(
         return api.createComposicaoRecord(record)
     }
 
-    // --- EXERCÍCIOS (NOVO) ---
+    // --- EXERCÍCIOS (CORRIGIDO) ---
     suspend fun saveExerciseSession(request: ExerciseSessionRequest): Response<Unit> {
         return api.saveExerciseSession(request)
     }
 
-    suspend fun getExerciseHistory(): Response<List<ExerciseSessionRequest>> {
+    // Mudei de Request para Response na lista de retorno
+    suspend fun getExerciseHistory(): Response<List<ExerciseSessionResponse>> {
         return api.getExerciseHistory()
     }
 }

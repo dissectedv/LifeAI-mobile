@@ -11,7 +11,7 @@ enum class ImcCategory {
 }
 
 /**
- * Representa o "Tipo" de exercício (Dados estáticos)
+ * Representa o "Tipo" de exercício (Dados estáticos da UI)
  */
 data class Exercise(
     val name: String,
@@ -20,17 +20,29 @@ data class Exercise(
     val idealPara: String,
     val beneficios: List<String>,
     val category: ImcCategory,
-    val caloriesBurnedPerMinute: Int // Novo campo para cálculo
+    val caloriesBurnedPerMinute: Int
 )
 
 /**
- * Representa o treino FINALIZADO que será enviado para a API (Dados dinâmicos)
+ * Representa o objeto enviado para SALVAR um treino (POST)
  */
 data class ExerciseSessionRequest(
     @SerializedName("exercise_name") val exerciseName: String,
     @SerializedName("duration_seconds") val durationSeconds: Long,
     @SerializedName("calories_burned") val caloriesBurned: Int,
-    @SerializedName("created_at") val createdAt: String // Formato ISO data
+    @SerializedName("created_at") val createdAt: String
+)
+
+/**
+ * [NOVO] Representa o objeto recebido do HISTÓRICO (GET)
+ * Inclui o ID gerado pelo banco de dados.
+ */
+data class ExerciseSessionResponse(
+    val id: Int,
+    @SerializedName("exercise_name") val exerciseName: String,
+    @SerializedName("duration_seconds") val durationSeconds: Long,
+    @SerializedName("calories_burned") val caloriesBurned: Int,
+    @SerializedName("created_at") val createdAt: String
 )
 
 object ExerciseRepository {

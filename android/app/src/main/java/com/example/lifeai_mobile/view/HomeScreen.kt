@@ -39,8 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
-import com.example.lifeai_mobile.model.ImcRegistro    // <--- NOVO
-import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO
+import com.example.lifeai_mobile.model.ImcRegistro
+import com.example.lifeai_mobile.model.PerfilResponse
 import com.example.lifeai_mobile.ui.navigation.BottomNavItem
 import com.example.lifeai_mobile.utils.HealthUiUtils
 import com.example.lifeai_mobile.viewmodel.CompromissoState
@@ -203,7 +203,7 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatGreetingCard(
-    perfil: PerfilResponse?, // Alterado de ImcBaseProfile para PerfilResponse
+    perfil: PerfilResponse?,
     navController: NavHostController,
     isLoading: Boolean
 ) {
@@ -414,7 +414,7 @@ private fun DonutChart(
 @Composable
 private fun ImcHistoricoCard(
     graficoState: GraficoUIState,
-    ultimoImc: ImcRegistro?, // Alterado para ImcRegistro para pegar o dado mais recente
+    ultimoImc: ImcRegistro?,
     onClick: () -> Unit
 ) {
     val gradientOverlay = Brush.verticalGradient(
@@ -567,7 +567,7 @@ private fun EmptyChartState(
 @Composable
 private fun ComposicaoCorporalCard(
     modifier: Modifier = Modifier,
-    perfil: PerfilResponse?, // Alterado para PerfilResponse para pegar o sexo
+    perfil: PerfilResponse?,
     ultimoRegistro: ComposicaoCorporalRegistro?,
     onClick: () -> Unit
 ) {

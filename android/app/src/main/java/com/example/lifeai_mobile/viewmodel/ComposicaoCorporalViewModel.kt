@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
-import com.example.lifeai_mobile.model.PerfilResponse // <--- NOVO MODEL
+import com.example.lifeai_mobile.model.PerfilResponse
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +51,6 @@ class ComposicaoCorporalViewModel(
     private val _state = MutableStateFlow<ComposicaoCorporalState>(ComposicaoCorporalState.Loading)
     val state: StateFlow<ComposicaoCorporalState> = _state.asStateFlow()
 
-    // CORREÇÃO: Usando o model correto de perfil
     private var perfilUsuario: PerfilResponse? = null
 
     private val apiDateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -96,12 +95,10 @@ class ComposicaoCorporalViewModel(
     }
 
     private suspend fun loadProfile() {
-        // CORREÇÃO: Chamando a rota correta (/perfil/)
         val response = repository.getProfileData()
         if (response.isSuccessful && response.body() != null) {
             perfilUsuario = response.body()
         } else {
-            // Não vamos travar se falhar o perfil, assumimos padrão masculino para não quebrar a UI
             Log.e("ComposicaoVM", "Falha ao carregar perfil: ${response.code()}")
         }
     }

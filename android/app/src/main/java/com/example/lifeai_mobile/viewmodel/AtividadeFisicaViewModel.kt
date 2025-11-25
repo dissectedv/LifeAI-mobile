@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.Exercise
 import com.example.lifeai_mobile.model.ExerciseSessionRequest
+import com.example.lifeai_mobile.model.ExerciseSessionResponse
 import com.example.lifeai_mobile.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,12 +28,20 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // --- NOVOS ESTADOS: RESUMO DO DIA ---
+    // --- RESUMO DO DIA E METAS ---
     private val _dailyCalories = MutableStateFlow(0)
     val dailyCalories: StateFlow<Int> = _dailyCalories.asStateFlow()
 
     private val _dailyTimeMinutes = MutableStateFlow(0)
     val dailyTimeMinutes: StateFlow<Int> = _dailyTimeMinutes.asStateFlow()
+
+    // [NOVO] Lista detalhada para o BottomSheet (Histórico)
+    private val _todaysExercises = MutableStateFlow<List<ExerciseSessionResponse>>(emptyList())
+    val todaysExercises: StateFlow<List<ExerciseSessionResponse>> = _todaysExercises.asStateFlow()
+
+    // [NOVO] Metas Diárias (Fixas por enquanto, mas preparadas para virem do perfil)
+    val dailyCalorieGoal = 500
+    val dailyTimeGoal = 60
 
     init {
         // Assim que a tela abre, carrega o resumo
@@ -51,6 +60,9 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
 
                     // Filtra apenas os treinos de HOJE
                     val todaysWorkouts = history.filter { isDateToday(it.createdAt) }
+
+                    // [NOVO] Salva a lista ordenada (Mais recente primeiro) para exibir no Sheet
+                    _todaysExercises.value = todaysWorkouts.sortedByDescending { it.createdAt }
 
                     // Soma os totais
                     val totalCals = todaysWorkouts.sumOf { it.caloriesBurned }
@@ -71,15 +83,10 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
      */
     private fun isDateToday(dateString: String): Boolean {
         return try {
-            // Formato padrão do Django REST Framework: "2025-11-22T10:00:00Z"
-            // Tenta parsear com milissegundos ou sem, por segurança usamos um padrão genérico
-            // Mas vamos assumir o padrão ISO simples aqui.
             val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
             format.timeZone = TimeZone.getTimeZone("UTC") // O Backend manda em UTC
 
-            // Corrige caso venha com 'Z' no final ou frações de segundos que o SimpleDateFormat odeia
             val cleanDateString = dateString.substringBefore(".").replace("Z", "")
-
             val date = format.parse(cleanDateString) ?: return false
 
             val currentCalendar = Calendar.getInstance()
@@ -130,7 +137,7 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
 
                 if (response.isSuccessful) {
                     _saveSuccess.value = true
-                    // ATUALIZA O RESUMO IMEDIATAMENTE
+                    // ATUALIZA O RESUMO IMEDIATAMENTE (Re-fetches list & totals)
                     fetchDailySummary()
                 } else {
                     _errorMessage.value = "Erro ao salvar: ${response.code()}"

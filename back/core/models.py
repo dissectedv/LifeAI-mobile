@@ -15,7 +15,7 @@ class ModelBase(models.Model):
     class Meta:
         abstract = True
 
-class RegistroCorporal(ModelBase):  # Antigo IMC
+class RegistroCorporal(ModelBase):
     data_consulta = models.DateField(db_column='data_consulta')
     peso = models.FloatField(db_column='peso', null=False)
     altura = models.FloatField(db_column='altura', null=False)
@@ -135,7 +135,6 @@ class Dieta(ModelBase):
     def __str__(self):
         return f"Dieta {self.id} - {self.data_criacao}"
 
-# --- NOVO MODEL ADICIONADO ---
 class HistoricoExercicio(ModelBase):
     nome_exercicio = models.CharField(db_column='nome_exercicio', max_length=150, null=False)
     duracao_segundos = models.PositiveIntegerField(db_column='duracao_segundos', null=False)

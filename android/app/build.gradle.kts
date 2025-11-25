@@ -53,6 +53,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.foundation)
     // --- Compose Core ---
     val composeVersion = "1.7.4"
     implementation("androidx.compose.ui:ui:$composeVersion")
