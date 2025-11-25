@@ -132,7 +132,6 @@ fun HomeScreen(
                 }
 
                 is ResumoState.Success -> {
-                    // --- CARD GRÁFICO HISTÓRICO ---
                     AnimatedVisibility(
                         visible = isVisible,
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 100)) +
@@ -147,17 +146,14 @@ fun HomeScreen(
                         )
                     }
 
-                    // --- RESUMO DO IMC ATUAL + CHAT ---
                     AnimatedVisibility(
                         visible = isVisible,
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 200)) +
                                 slideInVertically(initialOffsetY = { 50 })
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                            // Passa o último registro de IMC
                             ResumoImcCard(ultimoImc = currentState.ultimoImc)
 
-                            // Passa o perfil para pegar o nome
                             ChatGreetingCard(
                                 perfil = currentState.perfil,
                                 navController = navController,
@@ -166,7 +162,6 @@ fun HomeScreen(
                         }
                     }
 
-                    // --- COMPOSIÇÃO + COMPROMISSO ---
                     AnimatedVisibility(
                         visible = isVisible,
                         enter = fadeIn(animationSpec = tween(1000, delayMillis = 300)) +
@@ -178,7 +173,7 @@ fun HomeScreen(
                         ) {
                             ComposicaoCorporalCard(
                                 modifier = Modifier.weight(1f),
-                                perfil = currentState.perfil, // Passa perfil para saber o sexo
+                                perfil = currentState.perfil,
                                 ultimoRegistro = currentState.ultimoRegistroComposicao,
                                 onClick = {
                                     mainNavController.navigate("composicao_corporal_screen")

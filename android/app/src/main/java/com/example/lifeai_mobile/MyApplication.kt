@@ -31,12 +31,10 @@ class MyApplication : Application() {
         Log.d("INSTANCE_DEBUG", "MyApplication criou SessionManager: $sessionManager")
 
         // 2. Chamada para criar o canal
-        createNotificationChannels()
+        createNotificationChannel()
     }
 
-    // 3. Função privada para criar o canal (só roda em Android 8+)
-    private fun createNotificationChannels() {
-        // A verificação de versão é OBRIGATÓRIA.
+    private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 DIETA_CHANNEL_ID,

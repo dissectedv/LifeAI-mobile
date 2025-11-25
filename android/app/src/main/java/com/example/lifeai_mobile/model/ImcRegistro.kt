@@ -12,7 +12,6 @@ data class ImcRegistro(
     @SerializedName("classificacao") val classificacao: String
 )
 
-// Usado para envio (POST)
 data class RegistroImcRequest(
     @SerializedName("peso")
     val peso: Double,

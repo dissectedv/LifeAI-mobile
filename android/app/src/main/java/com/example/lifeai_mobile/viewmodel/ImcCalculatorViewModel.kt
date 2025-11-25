@@ -31,7 +31,6 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
 
-    // Inicializa com o início do dia no horário do dispositivo (não UTC)
     var dataConsulta by mutableStateOf(getTodayStart())
 
     var isLoading by mutableStateOf(false)
@@ -110,14 +109,9 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                     else -> "Obesidade"
                 }
 
-                // --- MUDANÇA PRINCIPAL AQUI ---
-                // Não usamos mais SimpleDateFormat.
-                // Convertemos o Date para LocalDate usando o fuso do sistema.
-                // Isso garante que se a data é "25/11 00:00 Manaus", ela vire "2025-11-25".
                 val instant = dataConsulta.toInstant()
                 val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate()
                 val dataFormatada = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                // ------------------------------
 
                 val request = RegistroImcRequest(
                     peso = pesoFloat.toDouble(),

@@ -84,16 +84,13 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
                 )
             )
         }
-        // --- 1. 'bottomBar' REMOVIDO DAQUI ---
     ) { innerPadding ->
 
-        // --- 2. CORREÇÃO: Usando um Box para controlar o layout ---
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding) // Padding do TopBar
+                .padding(innerPadding)
         ) {
-            // --- 3. ITEM 1: A Coluna que sobe com o teclado ---
             Column(
                 modifier = Modifier
                     .fillMaxSize() // Ocupa todo o espaço
@@ -115,7 +112,6 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
 
                 Spacer(modifier = Modifier.height(60.dp))
 
-                // [O seu 'when (currentStep.inputType)' ... ]
                 when (currentStep.inputType) {
                     InputType.TEXT -> {
                         if (currentStep.progressText == "1/6") {
@@ -172,7 +168,6 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    // [O seu 'when (uiState)' com o Botão 'Próximo'...]
                     when (uiState) {
                         is OnboardingViewModel.UiState.Loading -> {
                             CircularProgressIndicator(color = accentColor)
@@ -212,14 +207,9 @@ fun OnboardingScreen(navController: NavController, onboardingViewModel: Onboardi
                     )
                 }
 
-                // O Spacer flexível empurra tudo para cima, mas
-                // o "texto de aviso" não está mais aqui
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // --- 4. ITEM 2: O Texto de Aviso Fixo ---
-            // Ele fica na Box "pai", alinhado embaixo
-            // Ele NÃO tem imePadding, então o teclado vai cobri-lo
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter) // <-- A MÁGICA

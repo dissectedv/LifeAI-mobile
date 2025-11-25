@@ -53,7 +53,6 @@ fun DietaScreen(
     var showMenu by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    // Launcher para permissão de notificação
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { }
@@ -125,7 +124,6 @@ fun DietaScreen(
                 }
 
                 is DietaState.Generating -> {
-                    // Este estado aparece enquanto busca no banco OU gera na IA
                     GeneratingState()
                 }
 

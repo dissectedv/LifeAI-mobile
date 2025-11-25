@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat // <--- Import necessário
-import java.util.Date           // <--- Import necessário
-import java.util.Locale         // <--- Import necessário
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 sealed class PersonalizacaoState {
     object Loading : PersonalizacaoState()
@@ -170,17 +170,15 @@ class AIPersonalizacaoViewModel(
                     val imcCalculado = pesoDouble / (alturaMetros * alturaMetros)
                     val classificacaoCalc = calcularClassificacao(imcCalculado)
 
-                    // --- CORREÇÃO: Define a data formatada ---
                     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                     val dataFormatada = sdf.format(Date())
-                    // -----------------------------------------
 
                     val imcRequest = RegistroImcRequest(
                         peso = pesoDouble,
                         altura = alturaMetros,
                         imc = imcCalculado,
                         classificacao = classificacaoCalc,
-                        data = dataFormatada // Agora a variável existe
+                        data = dataFormatada
                     )
 
                     val resImc = repository.createImcRecord(imcRequest)

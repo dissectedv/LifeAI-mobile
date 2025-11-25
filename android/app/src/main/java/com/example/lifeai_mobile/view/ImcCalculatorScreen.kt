@@ -66,7 +66,6 @@ fun ImcCalculatorScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
-    // Formata a data para exibição no campo de texto (usando fuso local)
     val formattedDate by remember {
         derivedStateOf {
             val millis = viewModel.dataConsulta.time
@@ -267,10 +266,6 @@ fun ImcCalculatorScreen(
     }
 
     if (showDatePicker) {
-        // CORREÇÃO CRÍTICA PARA O DATE PICKER:
-        // 1. Pegamos a data de "Hoje" no horário do usuário (ex: Manaus).
-        // 2. Convertemos "Hoje" para o início do dia em UTC (que é a língua do DatePicker).
-        // 3. Tudo que for maior que isso é proibido.
         val maxDateMillis = remember {
             val hojeLocal = LocalDate.now(ZoneId.systemDefault())
             hojeLocal.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
@@ -284,8 +279,6 @@ fun ImcCalculatorScreen(
             }
         }
 
-        // Prepara o estado inicial. Se a data atual selecionada for "amanhã" em UTC (por erro de conversão anterior),
-        // forçamos para "Hoje" para o calendário não abrir num dia inválido.
         val initialMillis = remember {
             val selection = viewModel.dataConsulta.time
             if (selection > maxDateMillis) maxDateMillis else selection
@@ -298,9 +291,6 @@ fun ImcCalculatorScreen(
 
         LaunchedEffect(datePickerState.selectedDateMillis) {
             datePickerState.selectedDateMillis?.let { millis ->
-                // Quando o usuário seleciona um dia (que vem em UTC),
-                // convertemos para o meio-dia desse dia no fuso local para evitar
-                // problemas de "dia anterior" ao salvar.
                 val selectedDateUtc = Instant.ofEpochMilli(millis)
                     .atZone(ZoneId.of("UTC"))
                     .toLocalDate()

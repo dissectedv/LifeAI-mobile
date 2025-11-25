@@ -14,7 +14,6 @@ data class ChatRequest(
     val forceNew: Boolean = false
 )
 
-// O que recebemos da API
 data class ChatResponse(
     val resposta: String?,
     val erro: String?

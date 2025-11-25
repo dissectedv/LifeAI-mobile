@@ -170,14 +170,12 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                 val alturaFloatCm = height.replace(",", ".").trim().toFloatOrNull() ?: 0f
                 val alturaDoubleM = alturaFloatCm / 100f
 
-                // Cálculo do IMC
                 val imcValor = if (alturaDoubleM > 0f) {
                     pesoFloat / (alturaDoubleM * alturaDoubleM)
                 } else {
                     0f
                 }
 
-                // Lógica de Classificação
                 val classificacao = when {
                     imcValor < 18.5f -> "Abaixo do peso"
                     imcValor < 25f -> "Peso normal"
@@ -185,10 +183,8 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                     else -> "Obesidade"
                 }
 
-                // --- CORREÇÃO: Gerar a data atual ---
                 val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
                 val dataHoje = sdf.format(Date())
-                // ------------------------------------
 
                 val perfilRequest = PerfilRequest(
                     nome = name,
@@ -197,13 +193,12 @@ class OnboardingViewModel(private val repository: AuthRepository, private val se
                     objetivo = objective
                 )
 
-                // 2. Objeto de IMC (Agora com DATA)
                 val imcRequest = RegistroImcRequest(
                     peso = pesoFloat.toDouble(),
                     altura = alturaDoubleM.toDouble(),
                     imc = imcValor.toDouble(),
                     classificacao = classificacao,
-                    data = dataHoje // <--- Adicionado aqui
+                    data = dataHoje
                 )
 
                 val response = repository.createFullProfile(perfilRequest, imcRequest)

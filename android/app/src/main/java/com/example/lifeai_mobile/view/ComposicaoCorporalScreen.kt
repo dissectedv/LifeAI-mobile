@@ -39,7 +39,6 @@ fun ComposicaoCorporalScreen(
     val sheetStateManual = rememberModalBottomSheetState()
     val sheetStateEstimador = rememberModalBottomSheetState()
 
-    // Controle dos sheets
     var showSheetManual by remember { mutableStateOf(false) }
     var showSheetEstimador by remember { mutableStateOf(false) }
     var showInfo by remember { mutableStateOf(false) }
@@ -134,7 +133,6 @@ fun ComposicaoCorporalScreen(
         }
     }
 
-    // Sheet Manual
     if (showSheetManual) {
         ModalBottomSheet(
             onDismissRequest = { showSheetManual = false },
@@ -155,7 +153,6 @@ fun ComposicaoCorporalScreen(
         }
     }
 
-    // Sheet Estimador
     if (showSheetEstimador) {
         ModalBottomSheet(
             onDismissRequest = { showSheetEstimador = false },
@@ -176,7 +173,6 @@ fun ComposicaoCorporalScreen(
         }
     }
 
-    // BottomSheet de Informações
     if (showInfo) {
         ModalBottomSheet(
             onDismissRequest = { showInfo = false },
@@ -187,7 +183,6 @@ fun ComposicaoCorporalScreen(
     }
 }
 
-// Estado vazio
 @Composable
 private fun EmptyState(
     modifier: Modifier = Modifier,
@@ -231,7 +226,6 @@ private fun EmptyState(
     }
 }
 
-// Estado de sucesso
 @Composable
 private fun SuccessState(
     modifier: Modifier = Modifier,
@@ -287,7 +281,6 @@ private fun SuccessState(
     }
 }
 
-// Card de insight
 @Composable
 private fun AnaliseInsightCard(titulo: String, item: AnaliseItem) {
     if (item.valor.isBlank()) return
@@ -327,7 +320,6 @@ private fun AnaliseInsightCard(titulo: String, item: AnaliseItem) {
     }
 }
 
-// Sheet Manual
 @Composable
 private fun ManualEntrySheet(viewModel: ComposicaoCorporalViewModel, onSave: () -> Unit) {
     val gordura by viewModel.gorduraPercentual.collectAsState()
@@ -351,7 +343,6 @@ private fun ManualEntrySheet(viewModel: ComposicaoCorporalViewModel, onSave: () 
     }
 }
 
-// Sheet Estimativa
 @Composable
 private fun EstimativaSheetContent(viewModel: ComposicaoCorporalViewModel, onSave: () -> Unit) {
     val altura by viewModel.alturaEstimador.collectAsState()

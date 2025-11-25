@@ -25,14 +25,8 @@ fun MainAppScreen(
     dietaViewModelFactory: DietaViewModelFactory,
     rotinaViewModelFactory: RotinaViewModelFactory
 ) {
-    // -----------------------------
-    // NavController da BottomBar
-    // -----------------------------
     val bottomBarNavController = rememberNavController()
 
-    // -----------------------------
-    // Rota atual (para decidir quando mostrar a BottomBar)
-    // -----------------------------
     val currentRoute = bottomBarNavController.currentBackStackEntryFlow
         .collectAsState(initial = bottomBarNavController.currentBackStackEntry)
         .value?.destination?.route
@@ -46,9 +40,6 @@ fun MainAppScreen(
 
     val showBottomBar = currentRoute in routesWithBottomBar
 
-    // -----------------------------
-    // UI
-    // -----------------------------
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFF0D1C27)

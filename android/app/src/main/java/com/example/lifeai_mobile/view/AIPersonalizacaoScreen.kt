@@ -45,7 +45,6 @@ fun AIPersonalizacaoScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Observa mudanças de estado para mostrar Feedback
     LaunchedEffect(uiState) {
         when (uiState) {
             is PersonalizacaoState.Success -> {
@@ -128,7 +127,6 @@ private fun ModernFormContent(
     viewModel: AIPersonalizacaoViewModel,
     isSaving: Boolean
 ) {
-    // Coleta os estados dos campos
     val nome by viewModel.nome.collectAsState()
     val idade by viewModel.idade.collectAsState()
     val peso by viewModel.peso.collectAsState()

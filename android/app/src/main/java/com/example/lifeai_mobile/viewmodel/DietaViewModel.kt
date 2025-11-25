@@ -40,7 +40,7 @@ private data class DadosParaDieta(
     val objetivo: String,
     val peso: Double,
     val altura: Double,
-    val restricoes: String? // <--- NOVO CAMPO
+    val restricoes: String?
 )
 
 class DietaViewModel(
@@ -95,7 +95,6 @@ class DietaViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             _state.value = DietaState.Generating
             try {
-                // 1. Buscar dados de Perfil e IMC em paralelo
                 val profileJob = async { authRepository.getProfileData() }
                 val imcJob = async { authRepository.getHistoricoImc() }
 
@@ -193,7 +192,6 @@ class DietaViewModel(
     }
 
     private fun construirPrompt(dados: DadosParaDieta): String {
-        // Formata a string de restrição (se houver)
         val linhaRestricoes = if (!dados.restricoes.isNullOrBlank()) {
             "- Preferências/Restrições Alimentares: ${dados.restricoes}"
         } else {

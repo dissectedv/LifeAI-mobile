@@ -18,7 +18,6 @@ import java.util.TimeZone
 
 class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewModel() {
 
-    // Estados para controlar a UI (Loading e Erros)
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -28,29 +27,22 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // --- RESUMO DO DIA E METAS ---
     private val _dailyCalories = MutableStateFlow(0)
     val dailyCalories: StateFlow<Int> = _dailyCalories.asStateFlow()
 
     private val _dailyTimeMinutes = MutableStateFlow(0)
     val dailyTimeMinutes: StateFlow<Int> = _dailyTimeMinutes.asStateFlow()
 
-    // [NOVO] Lista detalhada para o BottomSheet (Histórico)
     private val _todaysExercises = MutableStateFlow<List<ExerciseSessionResponse>>(emptyList())
     val todaysExercises: StateFlow<List<ExerciseSessionResponse>> = _todaysExercises.asStateFlow()
 
-    // [NOVO] Metas Diárias (Fixas por enquanto, mas preparadas para virem do perfil)
     val dailyCalorieGoal = 500
     val dailyTimeGoal = 60
 
     init {
-        // Assim que a tela abre, carrega o resumo
         fetchDailySummary()
     }
 
-    /**
-     * Busca o histórico no backend e calcula os totais de HOJE
-     */
     private fun fetchDailySummary() {
         viewModelScope.launch {
             try {
@@ -58,13 +50,10 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
                 if (response.isSuccessful && response.body() != null) {
                     val history = response.body()!!
 
-                    // Filtra apenas os treinos de HOJE
                     val todaysWorkouts = history.filter { isDateToday(it.createdAt) }
 
-                    // [NOVO] Salva a lista ordenada (Mais recente primeiro) para exibir no Sheet
                     _todaysExercises.value = todaysWorkouts.sortedByDescending { it.createdAt }
 
-                    // Soma os totais
                     val totalCals = todaysWorkouts.sumOf { it.caloriesBurned }
                     val totalSeconds = todaysWorkouts.sumOf { it.durationSeconds }
 
@@ -72,19 +61,15 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
                     _dailyTimeMinutes.value = (totalSeconds / 60).toInt()
                 }
             } catch (e: Exception) {
-                // Falha silenciosa no resumo para não atrapalhar o uso
                 e.printStackTrace()
             }
         }
     }
 
-    /**
-     * Função auxiliar para verificar se a data (String UTC do Django) é "Hoje" no horário local do celular
-     */
     private fun isDateToday(dateString: String): Boolean {
         return try {
             val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            format.timeZone = TimeZone.getTimeZone("UTC") // O Backend manda em UTC
+            format.timeZone = TimeZone.getTimeZone("UTC")
 
             val cleanDateString = dateString.substringBefore(".").replace("Z", "")
             val date = format.parse(cleanDateString) ?: return false
@@ -100,9 +85,6 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
         }
     }
 
-    /**
-     * Função chamada quando o usuário clica em "Salvar Treino".
-     */
     fun finalizarExercicio(exercise: Exercise, durationSeconds: Long) {
         if (durationSeconds < 10) {
             _errorMessage.value = "Treino muito curto para ser salvo (min. 10s)."
@@ -115,17 +97,14 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
             _saveSuccess.value = false
 
             try {
-                // 1. Calcular Calorias
                 val durationMinutes = durationSeconds / 60.0
                 val caloriesBurned = (durationMinutes * exercise.caloriesBurnedPerMinute).toInt()
                 val finalCalories = if (caloriesBurned == 0) 1 else caloriesBurned
 
-                // 2. Gerar Timestamp (UTC)
                 val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
                 sdf.timeZone = TimeZone.getTimeZone("UTC")
                 val currentTime = sdf.format(Date())
 
-                // 3. Request
                 val request = ExerciseSessionRequest(
                     exerciseName = exercise.name,
                     durationSeconds = durationSeconds,
@@ -137,7 +116,6 @@ class AtividadeFisicaViewModel(private val repository: AuthRepository) : ViewMod
 
                 if (response.isSuccessful) {
                     _saveSuccess.value = true
-                    // ATUALIZA O RESUMO IMEDIATAMENTE (Re-fetches list & totals)
                     fetchDailySummary()
                 } else {
                     _errorMessage.value = "Erro ao salvar: ${response.code()}"
