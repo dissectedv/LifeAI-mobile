@@ -66,11 +66,12 @@ fun ImcCalculatorScreen(
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState()
 
+    // Formata a data para exibição no campo de texto (usando fuso local)
     val formattedDate by remember {
         derivedStateOf {
             val millis = viewModel.dataConsulta.time
             val localDate = Instant.ofEpochMilli(millis)
-                .atZone(ZoneId.of("UTC"))
+                .atZone(ZoneId.systemDefault())
                 .toLocalDate()
             localDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         }
@@ -99,7 +100,6 @@ fun ImcCalculatorScreen(
         if (historicoState is ImcHistoryState.Success) {
             val historico = (historicoState as ImcHistoryState.Success).historico
             if (historico.isNotEmpty()) {
-                // Usa last() pois a lista vem ordenada por ID (Antigo -> Novo)
                 val ultimaAltura = historico.last().altura
                 if (viewModel.altura.isBlank() && ultimaAltura > 0) {
                     var alturaMetros = ultimaAltura
@@ -197,7 +197,6 @@ fun ImcCalculatorScreen(
                             }
                         }
                     } else {
-                        // CORREÇÃO: Pega o .last() para ter o registro mais recente
                         val ultimoRegistro = currentState.historico.last()
                         item {
                             Text(
@@ -268,31 +267,46 @@ fun ImcCalculatorScreen(
     }
 
     if (showDatePicker) {
-        val todayMillisUtc = remember {
-            LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
+        // CORREÇÃO CRÍTICA PARA O DATE PICKER:
+        // 1. Pegamos a data de "Hoje" no horário do usuário (ex: Manaus).
+        // 2. Convertemos "Hoje" para o início do dia em UTC (que é a língua do DatePicker).
+        // 3. Tudo que for maior que isso é proibido.
+        val maxDateMillis = remember {
+            val hojeLocal = LocalDate.now(ZoneId.systemDefault())
+            hojeLocal.atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli()
         }
 
-        val selectableDates = remember {
+        val selectableDates = remember(maxDateMillis) {
             object : SelectableDates {
-                override fun isSelectableDate(millis: Long): Boolean {
-                    return millis <= todayMillisUtc
+                override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                    return utcTimeMillis <= maxDateMillis
                 }
             }
         }
 
+        // Prepara o estado inicial. Se a data atual selecionada for "amanhã" em UTC (por erro de conversão anterior),
+        // forçamos para "Hoje" para o calendário não abrir num dia inválido.
+        val initialMillis = remember {
+            val selection = viewModel.dataConsulta.time
+            if (selection > maxDateMillis) maxDateMillis else selection
+        }
+
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = viewModel.dataConsulta.time,
+            initialSelectedDateMillis = initialMillis,
             selectableDates = selectableDates
         )
 
         LaunchedEffect(datePickerState.selectedDateMillis) {
             datePickerState.selectedDateMillis?.let { millis ->
-                val localDate = Instant.ofEpochMilli(millis)
+                // Quando o usuário seleciona um dia (que vem em UTC),
+                // convertemos para o meio-dia desse dia no fuso local para evitar
+                // problemas de "dia anterior" ao salvar.
+                val selectedDateUtc = Instant.ofEpochMilli(millis)
                     .atZone(ZoneId.of("UTC"))
                     .toLocalDate()
 
                 val date = Date.from(
-                    localDate.atStartOfDay(ZoneId.of("UTC")).toInstant()
+                    selectedDateUtc.atStartOfDay(ZoneId.systemDefault()).toInstant()
                 )
                 viewModel.onDataChange(date)
             }

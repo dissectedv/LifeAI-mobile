@@ -13,9 +13,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 sealed class GraficoUIState {
     object Loading : GraficoUIState()
@@ -68,12 +69,22 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
     private fun getCompromissoState(compromissos: List<Compromisso>?): CompromissoState {
         if (compromissos.isNullOrEmpty()) return CompromissoState.NenhumAgendado
 
-        val hojeStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        val agoraStr = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        // CORREÇÃO: Usar java.time com ZoneId.systemDefault() para garantir horário local do Brasil
+        val zoneId = ZoneId.systemDefault()
+        val hoje = LocalDate.now(zoneId)
+        val agora = LocalTime.now(zoneId)
+
+        val formatterData = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val formatterHora = DateTimeFormatter.ofPattern("HH:mm")
+
+        val hojeStr = hoje.format(formatterData)
+        val agoraStr = agora.format(formatterHora)
 
         val tarefasHoje = compromissos.filter { it.data == hojeStr }
         val totalHoje = tarefasHoje.size
         val concluidasHoje = tarefasHoje.count { it.concluido }
+
+        // Atrasados: Data anterior a hoje E não concluído
         val atrasados = compromissos.filter { it.data < hojeStr && !it.concluido }.sortedBy { it.data }
 
         if (atrasados.isNotEmpty()) {
@@ -82,10 +93,12 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
 
         if (totalHoje == 0) return CompromissoState.NenhumAgendado
 
+        // Próximo de hoje: Não concluído E horário maior ou igual a agora
         val proximoHoje = tarefasHoje
             .filter { !it.concluido && it.hora_inicio >= agoraStr }
             .minByOrNull { it.hora_inicio }
 
+        // Pendente de hoje (caso o horário já tenha passado mas ainda não foi feito)
         val pendenteHoje = proximoHoje ?: tarefasHoje.filter { !it.concluido }.minByOrNull { it.hora_inicio }
 
         return if (pendenteHoje != null) {
@@ -119,20 +132,20 @@ class ResumoViewModel(private val repository: AuthRepository) : ViewModel() {
 
                 val perfilData = profileResponse.body()!!
 
-                // --- PROCESSAMENTO DO IMC (LIMPO) ---
+                // --- PROCESSAMENTO DO IMC ---
                 var ultimoImcRegistro: ImcRegistro? = null
                 val graficoState: GraficoUIState
 
                 if (imcHistoryResponse.isSuccessful && !imcHistoryResponse.body().isNullOrEmpty()) {
                     val listaBruta = imcHistoryResponse.body()!!
 
-                    // 1. Ordena do ANTIGO para o NOVO usando a data
+                    // 1. Ordena do ANTIGO para o NOVO usando a string da data (yyyy-MM-dd funciona ok para sort)
                     val listaOrdenada = listaBruta.sortedBy { it.dataConsulta }
 
                     // 2. O último da lista ordenada é o registro mais atual
                     ultimoImcRegistro = listaOrdenada.lastOrNull()
 
-                    // 3. Para o gráfico, pegamos os últimos 10 (que são os mais recentes na lista ordenada)
+                    // 3. Para o gráfico, pegamos os últimos 10
                     val listaParaGrafico = listaOrdenada.takeLast(10)
 
                     val valores = listaParaGrafico.map { it.imcRes.toFloat() }

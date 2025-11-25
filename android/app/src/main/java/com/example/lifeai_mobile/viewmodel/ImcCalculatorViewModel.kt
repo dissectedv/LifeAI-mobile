@@ -13,9 +13,10 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 sealed class UiEvent {
@@ -29,7 +30,10 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     var sexo by mutableStateOf("")
     var peso by mutableStateOf("")
     var altura by mutableStateOf("")
-    var dataConsulta by mutableStateOf(getTodayAtUtcStart())
+
+    // Inicializa com o início do dia no horário do dispositivo (não UTC)
+    var dataConsulta by mutableStateOf(getTodayStart())
+
     var isLoading by mutableStateOf(false)
     var isHeightFieldLocked by mutableStateOf(true)
 
@@ -40,8 +44,9 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
         loadInitialData()
     }
 
-    private fun getTodayAtUtcStart(): Date {
-        val instant = LocalDate.now().atStartOfDay(ZoneId.of("UTC")).toInstant()
+    private fun getTodayStart(): Date {
+        val zoneId = ZoneId.systemDefault()
+        val instant = LocalDate.now(zoneId).atStartOfDay(zoneId).toInstant()
         return Date.from(instant)
     }
 
@@ -82,7 +87,7 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
     private fun resetFormState() {
         peso = ""
         isHeightFieldLocked = true
-        dataConsulta = getTodayAtUtcStart()
+        dataConsulta = getTodayStart()
     }
 
     fun calculateAndRegister() {
@@ -105,10 +110,15 @@ class ImcCalculatorViewModel(private val repository: AuthRepository) : ViewModel
                     else -> "Obesidade"
                 }
 
-                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
-                val dataFormatada = sdf.format(dataConsulta)
+                // --- MUDANÇA PRINCIPAL AQUI ---
+                // Não usamos mais SimpleDateFormat.
+                // Convertemos o Date para LocalDate usando o fuso do sistema.
+                // Isso garante que se a data é "25/11 00:00 Manaus", ela vire "2025-11-25".
+                val instant = dataConsulta.toInstant()
+                val localDate = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+                val dataFormatada = localDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                // ------------------------------
 
-                // AGORA ISSO VAI FUNCIONAR POIS O MODELO FOI ATUALIZADO
                 val request = RegistroImcRequest(
                     peso = pesoFloat.toDouble(),
                     altura = alturaFloat.toDouble(),
