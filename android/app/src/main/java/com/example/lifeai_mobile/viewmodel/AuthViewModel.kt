@@ -6,12 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.lifeai_mobile.model.LoginResponse
 import com.example.lifeai_mobile.model.RegisterResponse
 import com.example.lifeai_mobile.repository.AuthRepository
+import com.example.lifeai_mobile.utils.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-import com.example.lifeai_mobile.utils.SessionManager
 
 class AuthViewModel(
     private val repository: AuthRepository,
@@ -83,6 +83,9 @@ class AuthViewModel(
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null) {
+                        if (body.access != null && body.refresh != null) {
+                            sessionManager.saveTokens(body.access, body.refresh)
+                        }
                         sessionManager.setOnboardingCompleted(body.onboardingCompleted)
                     }
                     _loginResponse.value = body
@@ -99,15 +102,21 @@ class AuthViewModel(
         _registerResponse.value = null
     }
 
-
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
 
     fun logout(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
-            repository.logoutUser()
-            onLogoutComplete()
+            try {
+                repository.logoutUser()
+            } catch (_: Exception) {
+            } finally {
+                _loginResponse.value = null
+                _registerResponse.value = null
+                _errorMessage.value = null
+                onLogoutComplete()
+            }
         }
     }
 }

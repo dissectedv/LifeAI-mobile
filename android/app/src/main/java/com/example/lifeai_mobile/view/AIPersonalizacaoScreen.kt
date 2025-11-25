@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,7 +57,7 @@ fun AIPersonalizacaoScreen(
                 scope.launch { snackbarHostState.showSnackbar("Nenhuma alteração para salvar.") }
                 viewModel.resetState()
             }
-            else -> {} // Outros estados não precisam de snackbar automática
+            else -> {}
         }
     }
 
@@ -78,7 +80,7 @@ fun AIPersonalizacaoScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .imePadding() // Ajuda a subir a tela quando o teclado abre
+                .imePadding()
         ) {
             when (val state = uiState) {
                 is PersonalizacaoState.Loading -> {
@@ -136,6 +138,8 @@ private fun ModernFormContent(
     val restricoes by viewModel.restricoes.collectAsState()
     val observacoes by viewModel.observacoes.collectAsState()
 
+    val focusManager = LocalFocusManager.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -162,7 +166,8 @@ private fun ModernFormContent(
             ModernTextField(
                 value = nome,
                 onValueChange = { viewModel.nome.value = it },
-                label = "Nome ou Apelido",
+                title = "Nome ou Apelido",
+                placeholder = "Ex: Carlos Silva",
                 icon = Icons.Default.Person,
                 enabled = !isSaving
             )
@@ -170,15 +175,17 @@ private fun ModernFormContent(
                 ModernTextField(
                     value = sexo,
                     onValueChange = {},
-                    label = "Sexo",
+                    title = "Sexo",
+                    placeholder = "Ex: Masculino",
                     icon = Icons.Default.Face,
                     modifier = Modifier.weight(1f),
-                    enabled = false // Campo read-only
+                    enabled = false
                 )
                 ModernTextField(
                     value = idade,
                     onValueChange = { viewModel.idade.value = it },
-                    label = "Idade",
+                    title = "Idade",
+                    placeholder = "Ex: 25",
                     icon = Icons.Default.Cake,
                     keyboardType = KeyboardType.Number,
                     modifier = Modifier.weight(1f),
@@ -192,16 +199,18 @@ private fun ModernFormContent(
                 ModernTextField(
                     value = peso,
                     onValueChange = { viewModel.peso.value = it },
-                    label = "Peso (kg)",
+                    title = "Peso",
+                    placeholder = "Ex: 75.5",
                     icon = Icons.Default.MonitorWeight,
-                    keyboardType = KeyboardType.Decimal, // Permite vírgula/ponto
+                    keyboardType = KeyboardType.Decimal,
                     modifier = Modifier.weight(1f),
                     enabled = !isSaving
                 )
                 ModernTextField(
                     value = altura,
                     onValueChange = { viewModel.altura.value = it },
-                    label = "Altura (cm ou m)", // Deixa claro para o user
+                    title = "Altura",
+                    placeholder = "Ex: 175",
                     icon = Icons.Default.Height,
                     keyboardType = KeyboardType.Decimal,
                     modifier = Modifier.weight(1f),
@@ -214,23 +223,28 @@ private fun ModernFormContent(
             ModernTextField(
                 value = objetivo,
                 onValueChange = { viewModel.objetivo.value = it },
-                label = "Objetivo Principal",
+                title = "Objetivo Principal",
+                placeholder = "Ex: Hipertrofia, Perda de peso...",
                 icon = Icons.Default.FitnessCenter,
                 enabled = !isSaving
             )
             ModernTextField(
                 value = restricoes,
                 onValueChange = { viewModel.restricoes.value = it },
-                label = "Restrições Alimentares",
+                title = "Restrições Alimentares",
+                placeholder = "Ex: Intolerância a lactose, Diabetes",
                 icon = Icons.Default.NoFood,
                 enabled = !isSaving
             )
             ModernTextField(
                 value = observacoes,
                 onValueChange = { viewModel.observacoes.value = it },
-                label = "Histórico de Saúde",
+                title = "Histórico de Saúde",
+                placeholder = "Ex: Cirurgia no joelho em 2020...",
                 icon = Icons.Default.Healing,
-                enabled = !isSaving
+                enabled = !isSaving,
+                imeAction = ImeAction.Done,
+                onImeAction = { focusManager.clearFocus() }
             )
         }
 
@@ -268,50 +282,70 @@ fun SectionGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
 fun ModernTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String,
+    title: String,
+    placeholder: String,
     icon: ImageVector,
     modifier: Modifier = Modifier,
     keyboardType: KeyboardType = KeyboardType.Text,
     readOnly: Boolean = false,
     enabled: Boolean = true,
-    placeholder: String = "",
-    singleLine: Boolean = true
+    singleLine: Boolean = true,
+    imeAction: ImeAction = ImeAction.Next,
+    onImeAction: () -> Unit = {}
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        placeholder = {
-            if (placeholder.isNotEmpty()) Text(placeholder, color = Color.White.copy(0.3f))
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (enabled) Color(0xFF4A90E2) else Color.Gray
-            )
-        },
+    Column(
         modifier = modifier.fillMaxWidth(),
-        readOnly = readOnly,
-        enabled = enabled,
-        singleLine = singleLine,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = keyboardType,
-            imeAction = ImeAction.Next
-        ),
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFF4A90E2),
-            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-            focusedLabelColor = Color(0xFF4A90E2),
-            unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            cursorColor = Color(0xFF4A90E2),
-            focusedContainerColor = Color(0xFF0D1A26).copy(alpha = 0.5f),
-            unfocusedContainerColor = Color(0xFF0D1A26).copy(alpha = 0.5f)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color(0xFF4A90E2),
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 4.dp)
         )
-    )
+
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    color = Color.White.copy(alpha = 0.3f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            },
+            leadingIcon = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = if (enabled) Color(0xFF4A90E2) else Color.Gray
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            readOnly = readOnly,
+            enabled = enabled,
+            singleLine = singleLine,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = keyboardType,
+                imeAction = imeAction
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { onImeAction() },
+                onNext = { onImeAction() }
+            ),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF4A90E2),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = Color(0xFF4A90E2),
+                focusedContainerColor = Color(0xFF0D1A26).copy(alpha = 0.5f),
+                unfocusedContainerColor = Color(0xFF0D1A26).copy(alpha = 0.5f)
+            )
+        )
+    }
 }
 
 @Composable
