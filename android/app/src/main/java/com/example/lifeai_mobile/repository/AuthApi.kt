@@ -6,7 +6,7 @@ import com.example.lifeai_mobile.model.Compromisso
 import com.example.lifeai_mobile.model.ComposicaoCorporalRegistro
 import com.example.lifeai_mobile.model.ComposicaoCorporalRequest
 import com.example.lifeai_mobile.model.DietaResponse
-import com.example.lifeai_mobile.model.ExerciseSessionRequest // Importe Novo
+import com.example.lifeai_mobile.model.ExerciseSessionRequest
 import com.example.lifeai_mobile.model.ImcRegistro
 import com.example.lifeai_mobile.model.LoginRequest
 import com.example.lifeai_mobile.model.LoginResponse
@@ -78,7 +78,7 @@ interface AuthApi {
     @POST("logout/")
     suspend fun logout(@Body request: LogoutRequest): Response<Unit>
 
-    // --- ROTA DE E-MAIL (RECOLOCADA AQUI) ---
+    // --- ROTA DE E-MAIL ---
     @POST("send-email/")
     suspend fun sendEmail(@Body emailData: Map<String, String>): Response<Unit>
     // ----------------------------------------
@@ -101,7 +101,11 @@ interface AuthApi {
     @POST("composicao-corporal/")
     suspend fun createComposicaoRecord(@Body request: ComposicaoCorporalRequest): Response<ComposicaoCorporalRegistro>
 
-    // --- ROTA DE EXERCÍCIOS (NOVO) ---
+    // --- EXERCÍCIOS ---
     @POST("exercicios/")
     suspend fun saveExerciseSession(@Body request: ExerciseSessionRequest): Response<Unit>
+
+    // NOVO: Buscar histórico para calcular totais do dia
+    @GET("exercicios/")
+    suspend fun getExerciseHistory(): Response<List<ExerciseSessionRequest>>
 }

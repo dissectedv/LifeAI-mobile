@@ -21,8 +21,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.OndemandVideo
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Square
 import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material.icons.filled.Timer
@@ -61,6 +64,7 @@ fun AtividadeFisicaScreen(
 ) {
     val context = LocalContext.current
 
+    // --- INJEÇÃO DE DEPENDÊNCIA ---
     val sessionManager = remember { SessionManager(context) }
     val retrofitInstance = remember { RetrofitInstance(sessionManager) }
     val api = remember { retrofitInstance.api }
@@ -68,34 +72,48 @@ fun AtividadeFisicaScreen(
     val factory = remember { AtividadeFisicaViewModelFactory(repository) }
     val viewModel: AtividadeFisicaViewModel = viewModel(factory = factory)
 
+    // --- ESTADOS DO VIEWMODEL ---
     val saveSuccess by viewModel.saveSuccess.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
+    // Novos estados do Resumo Diário
+    val dailyCalories by viewModel.dailyCalories.collectAsState()
+    val dailyTimeMinutes by viewModel.dailyTimeMinutes.collectAsState()
+
     val exerciseList = ExerciseRepository.getExercisesForImc(imc)
     val pagerState = rememberPagerState(pageCount = { exerciseList.size })
 
+    // --- ESTADOS LOCAIS DE CONTROLE ---
     var isExercising by remember { mutableStateOf(false) }
+    var isPaused by remember { mutableStateOf(false) } // NOVO: Controle de Pausa
     var exerciseTimerSeconds by remember { mutableLongStateOf(0L) }
     var showFinishDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(isExercising) {
-        if (isExercising) {
-            val startTime = System.currentTimeMillis() - (exerciseTimerSeconds * 1000)
-            while (isExercising) {
-                exerciseTimerSeconds = (System.currentTimeMillis() - startTime) / 1000
+    // --- LÓGICA DO CRONÔMETRO (COM PAUSA) ---
+    LaunchedEffect(isExercising, isPaused) {
+        if (isExercising && !isPaused) {
+            val startTime = System.currentTimeMillis()
+            var accumulatedTime = exerciseTimerSeconds
+
+            while (isExercising && !isPaused) {
+                // Usa delay simples para evitar drift complexo, reiniciando o loop
                 delay(1000L)
+                exerciseTimerSeconds++
             }
         }
     }
 
+    // Feedback de Sucesso/Erro
     LaunchedEffect(saveSuccess, errorMessage) {
         if (saveSuccess) {
-            Toast.makeText(context, "Treino salvo com sucesso! 💪", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Treino salvo! Histórico atualizado. 🔥", Toast.LENGTH_LONG).show()
             viewModel.resetState()
 
+            // Reseta a tela
             showFinishDialog = false
             isExercising = false
+            isPaused = false
             exerciseTimerSeconds = 0
         }
         if (errorMessage != null) {
@@ -116,8 +134,8 @@ fun AtividadeFisicaScreen(
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        if (isExercising) "Em Treino" else "Atividade Física",
-                        color = Color(0xFF00C89C),
+                        if (isExercising) (if(isPaused) "Pausado" else "Em Treino") else "Atividade Física",
+                        color = if(isPaused) Color.Yellow else Color(0xFF00C89C),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -142,6 +160,7 @@ fun AtividadeFisicaScreen(
             )
         },
         bottomBar = {
+            // --- BARRA INFERIOR INTELIGENTE ---
             if (exerciseList.isNotEmpty()) {
                 Surface(
                     color = Color(0xFF1B2A3D),
@@ -153,23 +172,45 @@ fun AtividadeFisicaScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                             .navigationBarsPadding(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (isExercising) {
+                            // Botão Pausar/Retomar
+                            Button(
+                                onClick = { isPaused = !isPaused },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if(isPaused) Color(0xFF00C89C) else Color(0xFFFFA000)
+                                ),
+                                modifier = Modifier.weight(1f).height(56.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    if(isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                                    contentDescription = null
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(if(isPaused) "Retomar" else "Pausar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            }
+
+                            // Botão Finalizar
                             Button(
                                 onClick = { showFinishDialog = true },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF4444)),
-                                modifier = Modifier.fillMaxWidth().height(56.dp),
+                                modifier = Modifier.weight(1f).height(56.dp),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(Icons.Default.Square, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Finalizar Treino", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                                Text("Finalizar", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
                         } else {
+                            // Botão Iniciar (Ocupa tudo)
                             Button(
-                                onClick = { isExercising = true },
+                                onClick = {
+                                    isExercising = true
+                                    isPaused = false
+                                },
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00C89C)),
                                 modifier = Modifier.fillMaxWidth().height(56.dp),
                                 shape = RoundedCornerShape(12.dp)
@@ -204,6 +245,17 @@ fun AtividadeFisicaScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
+
+                    // --- NOVO: CARD DE RESUMO DO DIA ---
+                    // Só mostra se não estiver treinando para limpar a tela
+                    AnimatedVisibility(visible = !isExercising) {
+                        ResumoDiarioCard(
+                            kcal = dailyCalories,
+                            minutes = dailyTimeMinutes
+                        )
+                    }
+
+                    // Título do Exercício
                     Text(
                         text = currentExercise.name,
                         style = MaterialTheme.typography.headlineMedium,
@@ -212,13 +264,15 @@ fun AtividadeFisicaScreen(
                         textAlign = TextAlign.Center
                     )
 
+                    // Área dinâmica: Carrossel ou Timer
                     AnimatedContentWrapper(isExercising = isExercising) { showTimer ->
                         if (showTimer) {
+                            // --- UI DO TIMER (EM TREINO) ---
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier
-                                        .size(220.dp)
+                                        .size(240.dp)
                                         .clip(CircleShape)
                                         .background(Color(0xFF1B2A3D))
                                         .padding(10.dp)
@@ -226,32 +280,45 @@ fun AtividadeFisicaScreen(
                                     CircularProgressIndicator(
                                         progress = { 1f },
                                         modifier = Modifier.fillMaxSize(),
-                                        color = Color(0xFF00C89C),
+                                        color = if(isPaused) Color.Yellow else Color(0xFF00C89C),
                                         trackColor = Color.Transparent,
                                         strokeWidth = 8.dp
                                     )
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Icon(
-                                            imageVector = Icons.Default.Timer,
-                                            contentDescription = null,
-                                            tint = Color(0xFF00C89C),
-                                            modifier = Modifier.size(32.dp)
-                                        )
+                                        // Calorias em tempo real
+                                        val currentBurned = remember(exerciseTimerSeconds) {
+                                            ((exerciseTimerSeconds / 60.0) * currentExercise.caloriesBurnedPerMinute).toInt()
+                                        }
+
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(Icons.Default.LocalFireDepartment, null, tint = Color(0xFFFF9800), modifier = Modifier.size(20.dp))
+                                            Text(
+                                                text = "$currentBurned kcal",
+                                                color = Color(0xFFFF9800),
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 18.sp
+                                            )
+                                        }
+
+                                        Spacer(Modifier.height(8.dp))
+
                                         Text(
                                             text = formattedTime,
                                             style = MaterialTheme.typography.displayMedium,
-                                            color = Color.White,
+                                            color = if(isPaused) Color.Gray else Color.White,
                                             fontWeight = FontWeight.Bold
                                         )
                                         Text(
-                                            text = "Tempo decorrido",
-                                            color = Color.Gray,
-                                            fontSize = 12.sp
+                                            text = if(isPaused) "PAUSADO" else "Tempo decorrido",
+                                            color = if(isPaused) Color.Yellow else Color.Gray,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
                             }
                         } else {
+                            // --- UI DO CARROSSEL ---
                             HorizontalPager(
                                 state = pagerState,
                                 contentPadding = PaddingValues(horizontal = 48.dp),
@@ -320,13 +387,14 @@ fun AtividadeFisicaScreen(
             }
         }
 
+        // --- DIALOG DE FINALIZAÇÃO ---
         if (showFinishDialog) {
             AlertDialog(
                 onDismissRequest = {
                     if (!isLoading) showFinishDialog = false
                 },
                 containerColor = Color(0xFF1B2A3D),
-                title = { Text("Parabéns!", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Finalizar Treino?", color = Color.White, fontWeight = FontWeight.Bold) },
                 text = {
                     Column {
                         Text(
@@ -334,12 +402,18 @@ fun AtividadeFisicaScreen(
                             color = Color.White
                         )
                         Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Tempo total: $formattedTime",
-                            color = Color(0xFF00C89C),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp
-                        )
+
+                        // Cálculo final para mostrar no Dialog
+                        val currentBurned = ((exerciseTimerSeconds / 60.0) * exerciseList[pagerState.currentPage].caloriesBurnedPerMinute).toInt()
+
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Tempo:", color = Color.Gray)
+                            Text(formattedTime, color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+                        Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                            Text("Calorias:", color = Color.Gray)
+                            Text("~$currentBurned kcal", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
+                        }
                     }
                 },
                 confirmButton = {
@@ -372,6 +446,57 @@ fun AtividadeFisicaScreen(
                     }
                 }
             )
+        }
+    }
+}
+
+// --- COMPOSABLE NOVO: RESUMO DO DIA ---
+@Composable
+fun ResumoDiarioCard(kcal: Int, minutes: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2A3D)),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Coluna Kcal
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.LocalFireDepartment, null, tint = Color(0xFFFF9800))
+                Text(
+                    text = "$kcal",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text("Kcal Hoje", fontSize = 12.sp, color = Color.Gray)
+            }
+
+            // Divisor Vertical
+            Box(
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(1.dp)
+                    .background(Color.White.copy(alpha = 0.2f))
+            )
+
+            // Coluna Minutos
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(Icons.Default.Schedule, null, tint = Color(0xFF00C89C))
+                Text(
+                    text = "$minutes",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text("Min Hoje", fontSize = 12.sp, color = Color.Gray)
+            }
         }
     }
 }

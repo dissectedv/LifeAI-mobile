@@ -163,4 +163,8 @@ class AuthRepository(
     suspend fun saveExerciseSession(request: ExerciseSessionRequest): Response<Unit> {
         return api.saveExerciseSession(request)
     }
+
+    suspend fun getExerciseHistory(): Response<List<ExerciseSessionRequest>> {
+        return api.getExerciseHistory()
+    }
 }
