@@ -1,1 +1,7 @@
-/build
+# Ignorar arquivo de Constantes (Chaves de API)
+android/app/src/main/java/com/example/lifeai_mobile/utils/Constants.kt
+
+# Ignorar pastas de Build do Android/Kotlin (em qualquer subpasta)
+**/build/
+.gradle/
+local.properties
