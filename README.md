@@ -31,8 +31,8 @@ Para testar o aplicativo em seu dispositivo Android, faça o download do APK atr
 
 | Login & Onboarding | Home & Dashboard | Chat IA |
 |:---:|:---:|:---:|
-| <img src="https://drive.google.com/uc?export=view&id=1gyClTHVtYaJ90QsehNuk9cXn6z9y7Ig7" width="250"> | <img src="https://drive.google.com/uc?export=view&id=1HHR7oz8oSyhXWxnVUBT8WkIF2f15uRy1" width="250"> | <img src="https://drive.google.com/uc?export=view&id=1_uK7EUouur12stkvHhknBnojYzM5aEZc" width="250"> |
-| *Login seguro e perfil base* | *Resumo de desempenho* | *Assistente virtual* |
+| ![Tela de Login](./assets/onboarding.jpeg) | ![Home Dashboard](./assets/home.jpeg) | ![Chat IA](./assets/chat.jpeg) |
+| *Perfil base e objetivo* | *Resumo de desempenho* | *Assistente virtual* |
 
 ## Arquitetura e Tecnologias
 
@@ -79,7 +79,7 @@ LifeAI-mobile/
     ```
 
 2.  **Configuração de Ambiente:**
-    Crie um arquivo `.env` na raiz do projeto com as credenciais necessárias (Chave da API Gemini, Credenciais AWS/Banco).
+    Acesse a pasta `lifeai_k8s/` e edite o arquivo `secret.yaml` (ou crie um `.env` na raiz) inserindo suas credenciais reais (Chave da API Gemini, Senhas do Banco e AWS).
 
 3.  **Backend (Docker/K8s):**
     Navegue até a pasta `lifeai_k8s/` e aplique os manifestos para subir os serviços:
