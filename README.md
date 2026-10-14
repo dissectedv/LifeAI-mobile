@@ -64,33 +64,6 @@ LifeAI-mobile/
 └── README.md         # Documentação principal
 ```
 
-## Como Rodar o Projeto
-
-### Pré-requisitos
-* Android Studio instalado.
-* Docker e Kubectl configurados (para rodar a infraestrutura localmente).
-* Python configurado.
-
-### Passo a Passo
-
-1.  **Clone o repositório:**
-    ```bash
-    git clone [https://github.com/dissectedv/LifeAI-mobile.git](https://github.com/dissectedv/LifeAI-mobile.git)
-    ```
-
-2.  **Configuração de Ambiente:**
-    Acesse a pasta `lifeai_k8s/` e edite o arquivo `secret.yaml` (ou crie um `.env` na raiz) inserindo suas credenciais reais (Chave da API Gemini, Senhas do Banco e AWS).
-
-3.  **Backend (Docker/K8s):**
-    Navegue até a pasta `lifeai_k8s/` e aplique os manifestos para subir os serviços:
-    ```bash
-    cd lifeai_k8s/
-    kubectl apply -f .
-    ```
-
-4.  **Mobile:**
-    Abra o diretório `android/` no Android Studio, aguarde a sincronização do Gradle e execute no emulador ou dispositivo físico.
-
 ## Autores
 
 Projeto desenvolvido pelos alunos da **Escola Tecnológica FPFtech**:
